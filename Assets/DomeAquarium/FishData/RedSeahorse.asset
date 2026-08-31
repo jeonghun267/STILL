@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: RedSeahorse
   koreanName: "\uBD89\uC740\uD574\uB9C8"
+  englishName: Red Seahorse
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 4523671466260567008, guid: d87ca0710095fb24ba90df5543270519, type: 3}
   swimScale: 0.24670644
   revealScale: 0.6030602

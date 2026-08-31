@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: LinedCardinal
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: LinedCardinal
-  koreanName: LinedCardinal
+  koreanName: "\uC904\uBB34\uB2AC\uCE74\uB514\uB110\uD53C\uC26C"
+  englishName: Lined Cardinal
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 4688676499626308042, guid: 0e448e8b285a5e54aaf57bbe42f8e396, type: 3}
   swimScale: 0.22457927
   revealScale: 0.617593

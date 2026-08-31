@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: PeppermintAngelfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PeppermintAngelfish
-  koreanName: PeppermintAngelfish
+  koreanName: "\uD398\uD37C\uBBFC\uD2B8\uC5D4\uC824\uD53C\uC26C"
+  englishName: Peppermint Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 1950008481182150223, guid: d79c1b1a909771143a6558b1ee701a68, type: 3}
   swimScale: 0.8112204
   revealScale: 0.8112204

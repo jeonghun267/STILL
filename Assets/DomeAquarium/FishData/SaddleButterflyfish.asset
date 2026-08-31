@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: SaddleButterflyfish
   koreanName: "\uC0C8\uB4E4\uB098\uBE44\uACE0\uAE30"
+  englishName: Saddle Butterflyfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 8138693550640892485, guid: 97e008540414a3b40922f48b47405797, type: 3}
   swimScale: 0.51354563
   revealScale: 0.6276669

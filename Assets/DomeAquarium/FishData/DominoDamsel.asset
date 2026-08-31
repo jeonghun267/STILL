@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: DominoDamsel
   koreanName: "\uB3C4\uBBF8\uB178\uB2F4\uC140"
+  englishName: Domino Damsel
   scientificName: 
   description: 
   sizeTag: 

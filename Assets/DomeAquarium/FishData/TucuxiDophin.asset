@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: TucuxiDophin
   koreanName: "\uD22C\uCFE0\uC2DC\uB3CC\uACE0\uB798"
+  englishName: Tucuxi Dolphin
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 571081687526979222, guid: fb383c2d5d038c747969ce82a9ab11d2, type: 3}
   swimScale: 0.93830574
   revealScale: 0.44308886

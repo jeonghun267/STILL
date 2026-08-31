@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: BlackcapBasslet
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BlackcapBasslet
-  koreanName: BlackcapBasslet
+  koreanName: "\uBE14\uB799\uCEA1\uBC14\uC2AC\uB81B"
+  englishName: Blackcap Basslet
   scientificName: 
   description: 
   sizeTag: 

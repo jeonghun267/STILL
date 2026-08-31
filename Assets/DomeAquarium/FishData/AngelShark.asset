@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: AngelShark
   koreanName: "\uC804\uC790\uB9AC\uC0C1\uC5B4"
+  englishName: Angel Shark
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 7082323940949079748, guid: b205dc73a5a273943845f52f254bff4f, type: 3}
   swimScale: 0.3903241
   revealScale: 0.27647954

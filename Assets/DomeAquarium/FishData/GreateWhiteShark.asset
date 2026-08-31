@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: GreateWhiteShark
   koreanName: "\uBC31\uC0C1\uC544\uB9AC"
+  englishName: Great White Shark
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 4
   prefab: {fileID: 5268092496700119527, guid: 6fec270884648aa439b5c3aaecf59e35, type: 3}
   swimScale: 0.8179586
   revealScale: 0.24830888

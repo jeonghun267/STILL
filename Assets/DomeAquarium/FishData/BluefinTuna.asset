@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BluefinTuna
   koreanName: "\uCC38\uB2E4\uB791\uC5B4"
+  englishName: Bluefin Tuna
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 2552671844760119945, guid: 6ac62bc046b78d144bef2a0e628d82d5, type: 3}
   swimScale: 2.1545265
   revealScale: 1.0174154

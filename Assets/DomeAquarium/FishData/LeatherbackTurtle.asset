@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: LeatherbackTurtle
   koreanName: "\uC7A5\uC218\uAC70\uBD81"
+  englishName: Leatherback Turtle
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 5551360879698767066, guid: 85c454b5c2cce8d40984b51e005721a5, type: 3}
   swimScale: 0.9681563
   revealScale: 0.5486219

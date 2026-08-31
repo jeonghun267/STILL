@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: HawksbillTurtle
   koreanName: "\uB9E4\uBD80\uB9AC\uBC14\uB2E4\uAC70\uBD81"
+  englishName: Hawksbill Turtle
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 8230579411645296635, guid: 95e668a28cbf1be40b6eed6480cc8e1e, type: 3}
   swimScale: 0.7849303
   revealScale: 0.66719073

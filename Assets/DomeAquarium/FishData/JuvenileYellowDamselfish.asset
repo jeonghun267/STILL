@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: JuvenileYellowDamselfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: JuvenileYellowDamselfish
-  koreanName: JuvenileYellowDamselfish
+  koreanName: "\uC5B4\uB9B0\uC610\uB85C\uC6B0\uB2F4\uC140"
+  englishName: Juvenile Yellow Damselfish
   scientificName: 
   description: 
   sizeTag: 

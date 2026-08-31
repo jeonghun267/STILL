@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PygmeSeahorse
   koreanName: "\uD53C\uADF8\uBBF8\uD574\uB9C8"
+  englishName: Pygmy Seahorse
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 3456531798994328118, guid: 17edd762b376c1f458b4e01f9c15c16c, type: 3}
   swimScale: 0.24379702
   revealScale: 0.5959482

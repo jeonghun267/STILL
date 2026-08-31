@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: ThreeStripeDamsel
   koreanName: "\uC138\uC904\uB2F4\uC140"
+  englishName: Three Stripe Damsel
   scientificName: 
   description: 
   sizeTag: 

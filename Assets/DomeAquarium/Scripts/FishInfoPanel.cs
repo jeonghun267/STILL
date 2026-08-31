@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // 공개된 물고기 아래에 붙어 따라다니는 읽기 전용 정보 패널.
-// 설명(description)은 비어 있으면 그대로 숨긴다. 임의 문구로 채우지 않는다.
+// 설명은 사람 원고 > Gemini > 안전한 상위 분류 폴백 순서로 표시하고 한국어 TTS로 읽는다.
 public class FishInfoPanel : MonoBehaviour
 {
     [Header("루트")]
@@ -24,8 +24,13 @@ public class FishInfoPanel : MonoBehaviour
 
     [Header("추종")]
     public Transform player;
-    public float dropBelowFish = 0.3f;
+    public float dropBelowFish = 0.04f;
+    public float sideOffset = -0.50f;
+    public float towardViewerOffset = 0.06f;
     public float fadeTime = 0.35f;
+
+    [Header("음성 안내")]
+    public bool narrate = true;
 
     [Header("등급 테이블 (길이 5, FishRarity 순서)")]
     public Color[] rarityColors;
@@ -49,6 +54,7 @@ public class FishInfoPanel : MonoBehaviour
     Transform anchor;
     Transform viewerCache;      // player 가 비었을 때의 Main Camera 캐시 (매 프레임 탐색 금지)
     Coroutine fadeRoutine;
+    Coroutine descriptionFallbackRoutine;
     bool snapNextFrame;
 
     void Awake()
@@ -64,6 +70,16 @@ public class FishInfoPanel : MonoBehaviour
 
     // 지금 화면에 띄우고 있는 종. 늦게 온 Gemini 응답을 버릴지 판단하는 데 쓴다.
     private FishData pendingData;
+    private int presentationId;
+    private int narratedPresentationId = -1;
+
+    /// <summary>물고기가 무대로 접근하는 동안 설명 요청을 미리 시작한다.</summary>
+    public void PreloadDescription(FishData data)
+    {
+        if (data == null || data.HasDescription) return;
+        var svc = GeminiDescriptionService.Instance;
+        if (svc != null) svc.Request(data, _ => { });
+    }
 
     public void Show(FishData data, Transform target)
     {
@@ -77,14 +93,21 @@ public class FishInfoPanel : MonoBehaviour
 
         anchor = target;
         snapNextFrame = true;
+        pendingData = data;
+        int token = ++presentationId;
+        StopDescriptionFallback();
+        FishNarrationService.Instance?.Stop();
 
         ApplyText(nameText, data.DisplayName);
-        ApplyText(scientificText, data.scientificName);
-        RequestDescription(data);                        // 원고가 있으면 그것, 없으면 Gemini. 없으면 비운다.
+        ApplyText(scientificText, data.SubtitleName);
+        RequestDescription(data, token);
         ApplyText(sizeTagText, data.sizeTag);
         ApplyText(habitatTagText, data.habitatTag);
 
         int index = Mathf.Clamp((int)data.rarity, 0, RarityCount - 1);
+        Color tint = (rarityColors != null && index < rarityColors.Length)
+            ? rarityColors[index]
+            : FallbackColors[index];
 
         if (rarityLabel != null)
         {
@@ -92,12 +115,10 @@ public class FishInfoPanel : MonoBehaviour
                 ? rarityNames[index]
                 : FallbackNames[index];
             if (!rarityLabel.gameObject.activeSelf) rarityLabel.gameObject.SetActive(true);
-            rarityLabel.text = label;
+            // 현실의 멸종위기 등급이 아니라 뽑기 시스템의 게임 내 발견 등급임을 명확히 한다.
+            rarityLabel.text = $"발견 등급  ·  {label}";
+            rarityLabel.color = Color.Lerp(Color.white, tint, 0.48f);
         }
-
-        Color tint = (rarityColors != null && index < rarityColors.Length)
-            ? rarityColors[index]
-            : FallbackColors[index];
 
         if (rarityBadge != null) rarityBadge.color = tint;
 
@@ -114,17 +135,15 @@ public class FishInfoPanel : MonoBehaviour
     }
 
     /// <summary>
-    /// 설명 줄을 채운다. 우선순위: 사람이 쓴 원고 > Gemini 응답 > 비움.
+    /// 설명 줄을 채운다. 우선순위: 사람이 쓴 원고 > Gemini 응답 > 안전한 상위 분류 설명.
     /// 응답이 늦게 도착했는데 그 사이 다른 종으로 바뀌었으면 버린다.
     /// </summary>
-    private void RequestDescription(FishData data)
+    private void RequestDescription(FishData data, int token)
     {
-        pendingData = data;
-
-        if (data.HasDescription) { ApplyText(descriptionText, data.description); return; }
+        if (data.HasDescription) { ApplyDescriptionAndNarrate(data, data.description, token); return; }
 
         var svc = GeminiDescriptionService.Instance;
-        if (svc == null) { ApplyText(descriptionText, string.Empty); return; }
+        if (svc == null) { ApplyDescriptionAndNarrate(data, data.FallbackDescription, token); return; }
 
         var cfg = GeminiSettings.Load();
         string loading = cfg != null ? cfg.loadingText : "설명을 불러오는 중…";
@@ -132,19 +151,58 @@ public class FishInfoPanel : MonoBehaviour
         // 캐시 적중이면 Request 가 그 자리에서 콜백하므로, 로딩 문구는 그 뒤에 덮인다.
         ApplyText(descriptionText, loading);
 
+        // 네트워크가 느리거나 끊겨도 패널 표시 시간 안에 이름과 설명을 반드시 읽는다.
+        // Gemini가 먼저 오면 이 폴백은 취소되고, 늦게 오면 화면 문구만 더 정확한 설명으로 갱신한다.
+        if (isActiveAndEnabled)
+            descriptionFallbackRoutine = StartCoroutine(UseFallbackAfterDelay(data, token));
+
         svc.Request(data, text =>
         {
             if (this == null) return;                 // 패널이 파괴됨
             if (pendingData != data) return;          // 이미 다른 종을 보고 있다
-            if (!string.IsNullOrEmpty(text)) { ApplyText(descriptionText, text); return; }
+            if (presentationId != token) return;       // 이미 숨었거나 같은 종을 다시 열었다
 
-            string fail = cfg != null ? cfg.failureText : string.Empty;
-            ApplyText(descriptionText, fail);         // 비면 설명 줄이 숨는다
+            StopDescriptionFallback();
+            string resolved = string.IsNullOrWhiteSpace(text) ? data.FallbackDescription : text;
+            ApplyDescriptionAndNarrate(data, resolved, token);
         });
+    }
+
+    IEnumerator UseFallbackAfterDelay(FishData data, int token)
+    {
+        yield return new WaitForSecondsRealtime(1.4f);
+        descriptionFallbackRoutine = null;
+
+        if (pendingData != data || presentationId != token) yield break;
+        ApplyDescriptionAndNarrate(data, data.FallbackDescription, token);
+    }
+
+    void StopDescriptionFallback()
+    {
+        if (descriptionFallbackRoutine == null) return;
+        StopCoroutine(descriptionFallbackRoutine);
+        descriptionFallbackRoutine = null;
+    }
+
+    void ApplyDescriptionAndNarrate(FishData data, string text, int token)
+    {
+        if (pendingData != data || presentationId != token) return;
+        if (string.IsNullOrWhiteSpace(text)) text = data.FallbackDescription;
+
+        ApplyText(descriptionText, text);
+        if (narrate && narratedPresentationId != token)
+        {
+            narratedPresentationId = token;
+            FishNarrationService.Instance?.Speak(data.DisplayName, text);
+        }
     }
 
     public void Hide()
     {
+        pendingData = null;
+        presentationId++;
+        StopDescriptionFallback();
+        FishNarrationService.Instance?.Stop();
         StartFade(0f);
     }
 
@@ -222,6 +280,22 @@ public class FishInfoPanel : MonoBehaviour
 
         Vector3 desired = anchor.position - Vector3.up * dropBelowFish;
 
+        // 물고기 바로 아래에 붙이면 카드와 모델이 겹쳐 형태를 볼 수 없다.
+        // 사용자의 좌우 축을 기준으로 카드는 왼쪽에, 물고기는 오른쪽에 분리한다.
+        if (viewer != null)
+        {
+            Vector3 right = viewer.right;
+            right.y = 0f;
+            if (right.sqrMagnitude > 1e-6f) right.Normalize();
+            else right = Vector3.right;
+
+            Vector3 towardViewer = viewer.position - anchor.position;
+            if (towardViewer.sqrMagnitude > 1e-6f) towardViewer.Normalize();
+            else towardViewer = -viewer.forward;
+
+            desired += right * sideOffset + towardViewer * towardViewerOffset;
+        }
+
         if (snap || snapNextFrame)
         {
             transform.position = desired;
@@ -268,5 +342,9 @@ public class FishInfoPanel : MonoBehaviour
             canvasGroup.blocksRaycasts = false;
         }
         anchor = null;
+        pendingData = null;
+        presentationId++;
+        StopDescriptionFallback();
+        FishNarrationService.Instance?.Stop();
     }
 }

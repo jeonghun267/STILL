@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: ConspicAngelfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: ConspicAngelfish
-  koreanName: ConspicAngelfish
+  koreanName: "\uCF58\uC2A4\uD53D\uC5D4\uC824\uD53C\uC26C"
+  englishName: Conspic Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 8066187670972948469, guid: fd19372a72fb6b345b35fc0191be3900, type: 3}
   swimScale: 0.8044651
   revealScale: 0.8044651

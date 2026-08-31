@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PowderBlueTang
   koreanName: "\uD30C\uC6B0\uB354\uBE14\uB8E8\uD0F1"
+  englishName: Powder Blue Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 7359338685732064734, guid: 4d516b0a2b8a06b4081cb07649fedddc, type: 3}
   swimScale: 0.7470429
   revealScale: 0.7470429

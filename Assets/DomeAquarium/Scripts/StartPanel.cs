@@ -18,10 +18,10 @@ public class StartPanel : MonoBehaviour
 
     [Header("배치")]
     public float distance = 1.35f;         // 플레이어로부터의 수평 거리
-    public float boxDistance = 0.55f;      // 박스까지의 거리 — 팔 뻗으면 닿는 곳
-    public float boxDrop = 0.25f;          // 눈높이보다 이만큼 아래
-    public float stageDistance = 1.2f;     // 물고기가 멈춰 서는 거리
-    public float stageDrop = 0.15f;
+    public float boxDistance = 0.85f;      // MysteryBox 기본 배치와 같은 값(레거시 씬 호환)
+    public float boxDrop = 0.10f;
+    public float stageDistance = 1.35f;
+    public float stageDrop = 0.02f;
     public float followSharpness = 4f;     // 클수록 빨리 따라온다. 너무 크면 헤드락이 되어 멀미가 난다
     public float eyeDrop = 0.18f;          // 눈높이보다 살짝 아래로 내려 배치
 
@@ -135,6 +135,9 @@ public class StartPanel : MonoBehaviour
         if (began) return;
         began = true;
 
+        PlayStartBubbleBurst();
+        AquariumAudioDirector.Instance?.BeginExperience();
+
         if (canvasGroup != null)
         {
             // 연출 중에는 더 이상 입력을 받지 않는다.
@@ -150,6 +153,37 @@ public class StartPanel : MonoBehaviour
         }
 
         StartCoroutine(SinkRoutine());
+    }
+
+    void PlayStartBubbleBurst()
+    {
+        if (mysteryBoxRoot == null) return;
+
+        MysteryBox box = mysteryBoxRoot.GetComponent<MysteryBox>();
+        if (box == null || box.burstFx == null) return;
+
+        // 비활성 상태인 상자 안의 거품 파티클을 월드 루트로 복제한다.
+        // 시작 패널이 곧 꺼져도 거품은 남아 자연스럽게 위로 떠오른다.
+        Vector3 origin = tr != null ? tr.position - Vector3.up * 0.06f : transform.position;
+        GameObject fxObject = Instantiate(box.burstFx.gameObject, origin, Quaternion.identity);
+        fxObject.name = "StartBubbleBurst_Runtime";
+        fxObject.transform.SetParent(null, true);
+        fxObject.transform.localScale = Vector3.one;
+        fxObject.SetActive(true);
+
+        ParticleSystem particles = fxObject.GetComponent<ParticleSystem>();
+        if (particles == null)
+        {
+            Destroy(fxObject);
+            return;
+        }
+
+        particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        particles.Play(true);
+
+        ParticleSystem.MainModule main = particles.main;
+        float longestLifetime = main.startLifetime.constantMax;
+        Destroy(fxObject, main.duration + longestLifetime + 0.25f);
     }
 
     private IEnumerator SinkRoutine()

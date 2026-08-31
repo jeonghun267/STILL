@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BlackSeahorse
   koreanName: "\uAC80\uC740\uD574\uB9C8"
+  englishName: Black Seahorse
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 2909048284647647917, guid: fe52892f917d5ec4a9fad07599914a53, type: 3}
   swimScale: 0.24655038
   revealScale: 0.6026787

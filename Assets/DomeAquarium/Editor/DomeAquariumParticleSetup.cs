@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 파티클이 흰 사각형으로 보이는 문제를 고친다.
@@ -17,6 +19,8 @@ using UnityEngine;
 public static class DomeAquariumParticleSetup
 {
     const string TexPath = "Assets/DomeAquarium/Materials/SoftDot.png";
+    const string BubbleMaterialPath = "Assets/DomeAquarium/Materials/Mat_BurstFX.mat";
+    const string BubbleShaderName = "DomeAquarium/Bubble Particle";
     const int Size = 64;
 
     static readonly string[] MaterialRoots =
@@ -58,8 +62,133 @@ public static class DomeAquariumParticleSetup
             Debug.Log($"[DomeAquarium] 파티클 텍스처 배선: {path}");
         }
 
+        int bubbleCount = 0;
+        var touchedScenes = new HashSet<Scene>();
+        foreach (var ps in Resources.FindObjectsOfTypeAll<ParticleSystem>())
+        {
+            if (ps == null || ps.gameObject.name != "BurstFX") continue;
+            if (EditorUtility.IsPersistent(ps) || !ps.gameObject.scene.IsValid()) continue;
+
+            ConfigureBubbleBurst(ps);
+            EditorUtility.SetDirty(ps);
+            EditorUtility.SetDirty(ps.GetComponent<ParticleSystemRenderer>());
+            touchedScenes.Add(ps.gameObject.scene);
+            bubbleCount++;
+        }
+
+        foreach (Scene scene in touchedScenes)
+        {
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+        }
+
         AssetDatabase.SaveAssets();
-        Debug.Log($"[DomeAquarium] 파티클 머티리얼 {fixedCount}개에 소프트닷 텍스처를 물렸다.");
+        Debug.Log($"[DomeAquarium] 파티클 머티리얼 {fixedCount}개 배선, 상자 거품 효과 {bubbleCount}개 갱신.");
+    }
+
+    /// <summary>상자 등장/뽑기 효과를 위로 떠오르는 반투명 거품으로 구성한다.</summary>
+    public static void ConfigureBubbleBurst(ParticleSystem ps)
+    {
+        if (ps == null) return;
+
+        var main = ps.main;
+        main.duration = 1.8f;
+        main.loop = false;
+        main.playOnAwake = false;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(1.15f, 1.9f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.12f, 0.42f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.025f, 0.085f);
+        main.startColor = new ParticleSystem.MinMaxGradient(
+            new Color(0.52f, 0.86f, 1f, 0.42f),
+            new Color(0.86f, 0.97f, 1f, 0.72f));
+        main.maxParticles = 48;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var emission = ps.emission;
+        emission.enabled = true;
+        emission.rateOverTime = 0f;
+        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 32) });
+
+        var shape = ps.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.18f;
+        shape.radiusThickness = 1f;
+
+        var velocity = ps.velocityOverLifetime;
+        velocity.enabled = true;
+        velocity.space = ParticleSystemSimulationSpace.World;
+        velocity.x = new ParticleSystem.MinMaxCurve(-0.12f, 0.12f);
+        velocity.y = new ParticleSystem.MinMaxCurve(0.52f, 0.95f);
+        velocity.z = new ParticleSystem.MinMaxCurve(-0.12f, 0.12f);
+
+        var size = ps.sizeOverLifetime;
+        size.enabled = true;
+        size.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(
+            new Keyframe(0f, 0.55f),
+            new Keyframe(0.28f, 0.9f),
+            new Keyframe(1f, 1.28f)));
+
+        var gradient = new Gradient();
+        gradient.SetKeys(
+            new[]
+            {
+                new GradientColorKey(new Color(0.65f, 0.9f, 1f), 0f),
+                new GradientColorKey(new Color(0.88f, 0.97f, 1f), 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(0f, 0f),
+                new GradientAlphaKey(0.8f, 0.12f),
+                new GradientAlphaKey(0.62f, 0.72f),
+                new GradientAlphaKey(0f, 1f)
+            });
+        var color = ps.colorOverLifetime;
+        color.enabled = true;
+        color.color = new ParticleSystem.MinMaxGradient(gradient);
+
+        var noise = ps.noise;
+        noise.enabled = true;
+        noise.quality = ParticleSystemNoiseQuality.Low;
+        noise.strength = new ParticleSystem.MinMaxCurve(0.045f, 0.11f);
+        noise.frequency = 0.7f;
+        noise.scrollSpeed = 0.2f;
+        noise.damping = true;
+        noise.octaveCount = 1;
+
+        var renderer = ps.GetComponent<ParticleSystemRenderer>();
+        if (renderer == null) return;
+
+        renderer.renderMode = ParticleSystemRenderMode.Billboard;
+        renderer.alignment = ParticleSystemRenderSpace.View;
+        renderer.enableGPUInstancing = true;
+        renderer.sharedMaterial = EnsureBubbleMaterial();
+    }
+
+    static Material EnsureBubbleMaterial()
+    {
+        var shader = Shader.Find(BubbleShaderName);
+        if (shader == null)
+        {
+            Debug.LogError($"[DomeAquarium] 거품 셰이더를 찾지 못했다: {BubbleShaderName}");
+            return AssetDatabase.LoadAssetAtPath<Material>(BubbleMaterialPath);
+        }
+
+        var material = AssetDatabase.LoadAssetAtPath<Material>(BubbleMaterialPath);
+        if (material == null)
+        {
+            material = new Material(shader) { name = "Mat_BurstFX" };
+            AssetDatabase.CreateAsset(material, BubbleMaterialPath);
+        }
+        else if (material.shader != shader)
+        {
+            material.shader = shader;
+        }
+
+        material.SetColor("_BaseColor", new Color(0.65f, 0.92f, 1f, 0.72f));
+        material.renderQueue = 3000;
+        EditorUtility.SetDirty(material);
+        return material;
     }
 
     /// <summary>가운데가 밝고 가장자리로 투명해지는 원형 텍스처. 없으면 만든다.</summary>

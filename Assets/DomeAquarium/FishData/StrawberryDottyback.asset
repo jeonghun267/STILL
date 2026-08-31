@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: StrawberryDottyback
   koreanName: "\uC2A4\uD2B8\uB85C\uBCA0\uB9AC\uB3C4\uD2F0\uBC31"
+  englishName: Strawberry Dottyback
   scientificName: 
   description: 
   sizeTag: 

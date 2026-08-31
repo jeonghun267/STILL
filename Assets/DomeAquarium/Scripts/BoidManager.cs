@@ -71,6 +71,9 @@ public class BoidManager : MonoBehaviour
     public int neighborScanBudget = 24;
 
     [Header("이동")]
+    [Range(0.1f, 1.5f)]
+    [Tooltip("모든 생물의 종별 유영 속도에 곱하는 전역 배율")]
+    public float globalSpeedMultiplier = 0.78f;
     public float boundarySoftness = 2.5f;
     public float wallMargin = 0.35f;
     public float minSpeedMultiplier = 0.45f;
@@ -251,7 +254,7 @@ public class BoidManager : MonoBehaviour
             float minY, maxY;
             ComputeBand(s, out minY, out maxY);
 
-            float baseSpeed = Mathf.Max(0.05f, s.swimSpeed);
+            float baseSpeed = Mathf.Max(0.05f, s.swimSpeed * Mathf.Clamp(globalSpeedMultiplier, 0.1f, 1.5f));
             float scale = Mathf.Max(0.001f, s.swimScale);
 
             for (int m = 0; m < c && n < total; m++, n++)

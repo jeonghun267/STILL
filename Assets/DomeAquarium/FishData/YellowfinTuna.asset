@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: YellowfinTuna
   koreanName: "\uD669\uB2E4\uB791\uC5B4"
+  englishName: Yellowfin Tuna
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 6378786065993609, guid: b708b3a65194d5440b9b530a824beeb5, type: 3}
   swimScale: 1.6559895
   revealScale: 1.0054222

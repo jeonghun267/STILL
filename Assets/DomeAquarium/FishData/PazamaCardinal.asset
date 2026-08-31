@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: PazamaCardinal
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PazamaCardinal
-  koreanName: PazamaCardinal
+  koreanName: "\uD30C\uC790\uB9C8\uCE74\uB514\uB110\uD53C\uC26C"
+  englishName: Pajama Cardinal
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 3665091497537222182, guid: e99b9c2924b807745bf6049db27e44c7, type: 3}
   swimScale: 0.22314861
   revealScale: 0.6136587

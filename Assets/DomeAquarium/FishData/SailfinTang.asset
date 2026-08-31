@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: SailfinTang
   koreanName: "\uB3DB\uB300\uD0F1"
+  englishName: Sailfin Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 499065606644288287, guid: f9294826ceccd844789b0ba5e58ddf81, type: 3}
   swimScale: 0.937103
   revealScale: 0.937103

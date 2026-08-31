@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: KaudernsCardinalfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: KaudernsCardinalfish
-  koreanName: KaudernsCardinalfish
+  koreanName: "\uBC29\uAC00\uC774\uCE74\uB514\uB110\uD53C\uC26C"
+  englishName: Kaudern's Cardinalfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 3987181873358747046, guid: b788bc4ab2d70de4897c4f9cc22aa3e8, type: 3}
   swimScale: 0.20402475
   revealScale: 0.56106806

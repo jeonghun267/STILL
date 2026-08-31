@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: MantaRay
   koreanName: "\uC950\uAC00\uC624\uB9AC"
+  englishName: Manta Ray
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 4
   prefab: {fileID: 2521829893214467312, guid: a1e7e1d1881fab648a11f4d837f83eb0, type: 3}
   swimScale: 1.2510233
   revealScale: 0.40898842

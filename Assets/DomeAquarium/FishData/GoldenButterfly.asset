@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: GoldenButterfly
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: GoldenButterfly
-  koreanName: GoldenButterfly
+  koreanName: "\uD669\uAE08\uB098\uBE44\uACE0\uAE30"
+  englishName: Golden Butterfly
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 92497191984817677, guid: da2d41113277e6342999630d480de12f, type: 3}
   swimScale: 0.47890258
   revealScale: 0.58532536

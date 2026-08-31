@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: QueenAngelfish
   koreanName: "\uD038\uC5D4\uC824\uD53C\uC26C"
+  englishName: Queen Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 4010596388117761114, guid: 3e20d8e19d426344ea4111bd1f087d29, type: 3}
   swimScale: 0.7435181
   revealScale: 0.7435181

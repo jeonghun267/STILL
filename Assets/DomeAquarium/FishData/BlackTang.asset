@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: BlackTang
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BlackTang
-  koreanName: BlackTang
+  koreanName: "\uBE14\uB799\uD0F1"
+  englishName: Black Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 5762220819805832626, guid: e64453c51d828ee48be56020aae46f26, type: 3}
   swimScale: 0.6649136
   revealScale: 0.6649136

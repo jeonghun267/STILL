@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: FrenchAngelfish
   koreanName: "\uD504\uB80C\uCE58\uC5D4\uC824\uD53C\uC26C"
+  englishName: French Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 7999282873213488048, guid: 5cb8a9bd06555044ea88939cab7ab15c, type: 3}
   swimScale: 0.91402286
   revealScale: 0.91402286

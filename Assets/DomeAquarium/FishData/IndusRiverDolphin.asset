@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: IndusRiverDolphin
   koreanName: "\uC778\uB354\uC2A4\uAC15\uB3CC\uACE0\uB798"
+  englishName: Indus River Dolphin
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 4
   prefab: {fileID: 6027640030935283630, guid: 623bf9227ae99fa45a4cdb61e3093fba, type: 3}
   swimScale: 0.8401749
   revealScale: 0.3967493

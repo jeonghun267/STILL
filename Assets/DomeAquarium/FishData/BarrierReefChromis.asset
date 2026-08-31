@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BarrierReefChromis
   koreanName: "\uBC30\uB9AC\uC5B4\uB9AC\uD504\uD06C\uB85C\uBBF8\uC2A4"
+  englishName: Barrier Reef Chromis
   scientificName: 
   description: 
   sizeTag: 

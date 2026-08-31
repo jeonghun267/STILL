@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: ZebraSeahorse
   koreanName: "\uC5BC\uB8E9\uB9D0\uD574\uB9C8"
+  englishName: Zebra Seahorse
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 7031451351804476678, guid: fc86c4db8de05a542bae2e583345c860, type: 3}
   swimScale: 0.24392608
   revealScale: 0.5962637

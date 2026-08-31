@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: MazeAngelfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: MazeAngelfish
-  koreanName: MazeAngelfish
+  koreanName: "\uBA54\uC774\uC988\uC5D4\uC824\uD53C\uC26C"
+  englishName: Maze Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 4804346105032752013, guid: be4e7392e8f703a43ba18cb6aa4ba75a, type: 3}
   swimScale: 0.85376084
   revealScale: 0.85376084

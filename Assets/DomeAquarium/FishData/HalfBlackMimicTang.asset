@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: HalfBlackMimicTang
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: HalfBlackMimicTang
-  koreanName: HalfBlackMimicTang
+  koreanName: "\uD558\uD504\uBE14\uB799\uBBF8\uBBF9\uD0F1"
+  englishName: Half Black Mimic Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 5891226785194532487, guid: 46d47ace7bfb6c045b210bd3e8f0eecb, type: 3}
   swimScale: 0.72168803
   revealScale: 0.72168803

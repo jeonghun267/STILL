@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: BicolorAngelfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BicolorAngelfish
-  koreanName: BicolorAngelfish
+  koreanName: "\uBC14\uC774\uCEEC\uB7EC\uC5D4\uC824\uD53C\uC26C"
+  englishName: Bicolor Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 4314161489066835213, guid: 0b02f23768c7a0240846adaa40f0e564, type: 3}
   swimScale: 0.82046574
   revealScale: 0.82046574

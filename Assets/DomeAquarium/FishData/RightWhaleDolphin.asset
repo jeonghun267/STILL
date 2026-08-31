@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: RightWhaleDolphin
   koreanName: "\uCC38\uB3CC\uACE0\uB798\uBD99\uC774"
+  englishName: Right Whale Dolphin
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 5005791612948219312, guid: 1c58ba2f5cbe8e74c99e1b5d83b57c31, type: 3}
   swimScale: 0.9641898
   revealScale: 0.4553119

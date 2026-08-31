@@ -27,6 +27,7 @@ public class WristMenu : MonoBehaviour
     // 시작 연출이 끝나기 전에는 뜨지 않는다.
     // 안 그러면 시작 패널과 같은 자리에 겹쳐 그려지고, 더 가까이 있어서 클릭까지 가로챈다.
     public bool armed;
+    [HideInInspector] public bool suppressed;   // 큰 도감/설정 패널이 열려 있을 때 잠시 숨김
 
     float alpha;
 
@@ -48,7 +49,7 @@ public class WristMenu : MonoBehaviour
 
         bool visible = false;
 
-        if (!armed)
+        if (!armed || suppressed)
         {
             // 아직 시작 전. 완전히 숨기고 입력도 막는다.
             alpha = Mathf.MoveTowards(alpha, 0f, fadeSpeed * Time.deltaTime);
@@ -78,12 +79,12 @@ public class WristMenu : MonoBehaviour
         else if (viewer != null)
         {
             // 폴백 — 컨트롤러가 없거나 추적이 안 될 때. 에디터 게임뷰 테스트가 이 경로를 탄다.
-            // 시야 정중앙을 피해 왼쪽 아래로 치운다. 가운데 두면 물고기 연출과 정보 패널을 가린다.
+            // 시야 정중앙과 왼쪽 정보 카드를 피해 오른쪽 아래에 둔다.
             Vector3 right = viewer.right; right.y = 0f;
             if (right.sqrMagnitude < 0.0001f) right = Vector3.right; else right.Normalize();
 
-            transform.position = viewer.position + viewer.forward * 0.75f
-                               + Vector3.down * 0.38f - right * 0.30f;
+            transform.position = viewer.position + viewer.forward * 0.90f
+                               + Vector3.down * 0.24f + right * 0.38f;
             transform.rotation = Quaternion.LookRotation(transform.position - viewer.position, Vector3.up);
             SetWorldScale(scale);
             visible = true;

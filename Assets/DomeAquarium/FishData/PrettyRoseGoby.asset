@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: PrettyRoseGoby
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PrettyRoseGoby
-  koreanName: PrettyRoseGoby
+  koreanName: "\uD504\uB9AC\uD2F0\uB85C\uC988\uACE0\uBE44"
+  englishName: Pretty Rose Goby
   scientificName: 
   description: 
   sizeTag: 

@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: YellowTang
   koreanName: "\uC610\uB85C\uC6B0\uD0F1"
+  englishName: Yellow Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 3418234708253470664, guid: e0fd6b04834696f4089d0e933ed6da81, type: 3}
   swimScale: 0.66895854
   revealScale: 0.66895854

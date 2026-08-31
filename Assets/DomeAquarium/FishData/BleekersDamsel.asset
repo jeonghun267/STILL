@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: BleekersDamsel
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BleekersDamsel
-  koreanName: BleekersDamsel
+  koreanName: "\uBE14\uB9AC\uCEE4\uB2F4\uC140"
+  englishName: Bleeker's Damsel
   scientificName: 
   description: 
   sizeTag: 

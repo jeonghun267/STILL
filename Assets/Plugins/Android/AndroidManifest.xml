@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Android 11+에서 기본 TTS 서비스를 검색할 수 있도록 패키지 가시성을 선언한다. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+    <!-- Unity의 unityLibrary manifest에 있는 Activity/설정이 여기에 병합된다. -->
+    <application />
+</manifest>

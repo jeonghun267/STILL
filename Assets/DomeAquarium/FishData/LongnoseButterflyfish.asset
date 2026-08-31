@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: LongnoseButterflyfish
   koreanName: "\uAE34\uCF54\uB098\uBE44\uACE0\uAE30"
+  englishName: Longnose Butterflyfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 7774326845647256262, guid: 95d1f7f9a6622ab4a8e1e34c14976dce, type: 3}
   swimScale: 0.5100343
   revealScale: 0.62337524

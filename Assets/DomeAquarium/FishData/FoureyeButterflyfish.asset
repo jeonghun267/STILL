@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: FoureyeButterflyfish
   koreanName: "\uB124\uB208\uB098\uBE44\uACE0\uAE30"
+  englishName: Foureye Butterflyfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 9013336678220942620, guid: 66763a4d68a073a4d81b45760ca2d6a3, type: 3}
   swimScale: 0.50812924
   revealScale: 0.62104684

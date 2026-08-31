@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BlueLobster
   koreanName: "\uBE14\uB8E8\uB78D\uC2A4\uD130"
+  englishName: Blue Lobster
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 3872595999642117609, guid: fbaa92a0456a05d47955a2f4dd984284, type: 3}
   swimScale: 0.5549651
   revealScale: 0.5549651

@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: JamTang
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: JamTang
-  koreanName: JamTang
+  koreanName: "\uC82C\uD0F1"
+  englishName: Gem Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 8622984731438788743, guid: 99a151ee6bc9c11439368f4705f39206, type: 3}
   swimScale: 0.6792142
   revealScale: 0.6792142

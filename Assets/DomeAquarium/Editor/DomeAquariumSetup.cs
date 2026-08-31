@@ -20,6 +20,66 @@ public static class DomeAquariumSetup
     const string FontAssetPath = Root + "/Fonts/NotoSansKR-Medium SDF.asset";
     const string SourceFontPath = Root + "/Fonts/NotoSansKR-Medium.ttf";
 
+    // 현실의 보전 등급이 아니라 뽑기용 "발견 등급"이다. 대표성·크기·전시 희소성을 기준으로 고정한다.
+    static readonly HashSet<string> LegendaryDiscoveries = new HashSet<string>
+    {
+        "GreateWhiteShark", "MantaRay", "HectorDolphin", "IndusRiverDolphin"
+    };
+
+    static readonly HashSet<string> EpicDiscoveries = new HashSet<string>
+    {
+        "AngelShark", "BlacktipReefShark", "CommonThresherShark", "NurseShark",
+        "GreenTurtle", "HawksbillTurtle", "LeatherbackTurtle", "LoggerheadTurtle",
+        "PinkDolphin", "RightWhaleDolphin", "TucuxiDophin", "SpottedEagleRay"
+    };
+
+    static readonly HashSet<string> RareDiscoveries = new HashSet<string>
+    {
+        "BluefinTuna", "YellowfinTuna", "BlueLobster", "BumblebeeGrouper",
+        "BlackSeahorse", "GreenSeahorse", "RedSeahorse", "PygmeSeahorse", "ZebraSeahorse",
+        "PeppermintAngelfish", "MaskedAngelfish", "ConspicAngelfish", "BallinaAngelfish",
+        "BanditAngelfish", "BlackTang", "WhiteTang", "CandyBasslet"
+    };
+
+    public static FishRarity DiscoveryRarityFor(string speciesId)
+    {
+        if (string.IsNullOrEmpty(speciesId)) return FishRarity.Common;
+        if (LegendaryDiscoveries.Contains(speciesId)) return FishRarity.Legendary;
+        if (EpicDiscoveries.Contains(speciesId)) return FishRarity.Epic;
+        if (RareDiscoveries.Contains(speciesId)) return FishRarity.Rare;
+
+        string n = speciesId.ToLowerInvariant();
+        if (n.Contains("angelfish") || n.Contains("butterfly") || n.Contains("tang")
+            || n.Contains("clownfish") || n.Contains("seahorse") || n.Contains("lobster")
+            || n.Contains("grouper") || n.Contains("tuna") || n.Contains("cardinal")
+            || n.Contains("moorishidol") || n.Contains("tilefish"))
+            return FishRarity.Uncommon;
+
+        return FishRarity.Common;
+    }
+
+    [MenuItem("DomeAquarium/2. 발견 등급 데이터 적용", priority = 2)]
+    public static int ApplyDiscoveryRarities()
+    {
+        int changed = 0;
+        foreach (string guid in AssetDatabase.FindAssets("t:FishData", new[] { Root + "/FishData" }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            FishData data = AssetDatabase.LoadAssetAtPath<FishData>(path);
+            if (data == null) continue;
+
+            string id = string.IsNullOrWhiteSpace(data.speciesId) ? data.name : data.speciesId;
+            FishRarity expected = DiscoveryRarityFor(id);
+            if (data.rarity == expected) continue;
+            data.rarity = expected;
+            EditorUtility.SetDirty(data);
+            changed++;
+        }
+
+        if (changed > 0) AssetDatabase.SaveAssets();
+        return changed;
+    }
+
     // ─────────────────────────────────────────────────────────────
     // 1. 머티리얼 URP 변환
     // ─────────────────────────────────────────────────────────────
@@ -297,6 +357,47 @@ public static class DomeAquariumSetup
         { "RightWhaleDolphin", "참돌고래붙이" },
         { "BlueLobster", "블루랍스터" },
         { "Lobster", "바닷가재" },
+        { "AchilesTang", "아킬레스탱" },
+        { "BallinaAngelfish", "발리나엔젤피쉬" },
+        { "BanditAngelfish", "밴디트엔젤피쉬" },
+        { "BicolorAngelfish", "바이컬러엔젤피쉬" },
+        { "BlackandWhiteChromis", "블랙앤화이트크로미스" },
+        { "BlackcapBasslet", "블랙캡바슬렛" },
+        { "BlackTang", "블랙탱" },
+        { "BleekersDamsel", "블리커담셀" },
+        { "BumblebeeGrouper", "범블비그루퍼" },
+        { "CandyBasslet", "캔디바슬렛" },
+        { "CaptiveBredYellowlineGoby", "옐로라인고비" },
+        { "ConspicAngelfish", "콘스픽엔젤피쉬" },
+        { "CorazonDamsel", "코라존담셀" },
+        { "DarwinClownfish", "다윈흰동가리" },
+        { "EightbandedButterflyfish", "여덟띠나비고기" },
+        { "GoldenButterfly", "황금나비고기" },
+        { "GoldneonPygmyGoby", "골드네온피그미고비" },
+        { "HalfBlackMimicTang", "하프블랙미믹탱" },
+        { "JamTang", "젬탱" },
+        { "JennniferDottyback", "제니퍼도티백" },
+        { "JewelTang", "주얼탱" },
+        { "JuggaloClownfish", "저갈로흰동가리" },
+        { "JuvenileYellowDamselfish", "어린옐로우담셀" },
+        { "KaudernsCardinalfish", "방가이카디널피쉬" },
+        { "LemonPeelAngelfish", "레몬필엔젤피쉬" },
+        { "LinedCardinal", "줄무늬카디널피쉬" },
+        { "MaskedAngelfish", "마스크드엔젤피쉬" },
+        { "MazeAngelfish", "메이즈엔젤피쉬" },
+        { "PandaAngelfish", "판다엔젤피쉬" },
+        { "PantherGrouper", "팬서그루퍼" },
+        { "PazamaCardinal", "파자마카디널피쉬" },
+        { "PeppermintAngelfish", "페퍼민트엔젤피쉬" },
+        { "PinkSmithDamsel", "핑크스미스담셀" },
+        { "PrettyRoseGoby", "프리티로즈고비" },
+        { "SkunkTilefish", "스컹크타일피쉬" },
+        { "SpeckeldButterfly", "스페클드버터플라이피쉬" },
+        { "WatanabeAngelfish", "와타나베엔젤피쉬" },
+        { "WhiteTailTang", "화이트테일탱" },
+        { "WhiteTang", "화이트탱" },
+        { "WyomingWhiteClownfish", "와이오밍화이트흰동가리" },
+        { "ZosterButterflyfish", "조스터나비고기" },
     };
 
     struct Band { public float center; public float width; }
@@ -368,18 +469,22 @@ public static class DomeAquariumSetup
             if (KoreanNames.TryGetValue(n, out string kr)) data.koreanName = kr;
             else { data.koreanName = n; unmapped.Add(n); }
 
+            // 모델 팩의 붙여쓰기와 철자 오류를 교정한 영문 통용명도 함께 저장한다.
+            // Gemini에 한국어명과 같이 넘기면 관상어 품종명을 종으로 오인하는 경우가 줄어든다.
+            data.englishName = GeminiDescriptionService.ToEnglishName(n);
+
             // 설명은 지어내지 않는다. 런타임에 Gemini 가 채운다.
             data.description = string.Empty;
 
             var band = BandFor(n);
             data.bandCenter = band.center;
             data.bandWidth = band.width;
+            data.rarity = DiscoveryRarityFor(n);
             if (Mathf.Approximately(band.center, 0.5f) && Mathf.Approximately(band.width, 0.6f))
                 uncertainBand.Add(n);
 
             if (isNew)
             {
-                data.rarity = FishRarity.Common;           // 배분은 사용자가 조정
                 data.swimScale = 0.25f;
                 data.revealScale = 0.4f;
                 data.schoolCount = 6;

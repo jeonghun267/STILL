@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: JennniferDottyback
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: JennniferDottyback
-  koreanName: JennniferDottyback
+  koreanName: "\uC81C\uB2C8\uD37C\uB3C4\uD2F0\uBC31"
+  englishName: Jennifer Dottyback
   scientificName: 
   description: 
   sizeTag: 

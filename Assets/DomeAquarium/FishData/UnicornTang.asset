@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: UnicornTang
   koreanName: "\uC720\uB2C8\uCF58\uD0F1"
+  englishName: Unicorn Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 4071820326859771619, guid: 4b2b9b0ced2039143aff5d841c174a6b, type: 3}
   swimScale: 1.040901
   revealScale: 1.040901

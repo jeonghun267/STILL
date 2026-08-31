@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: NurseShark
   koreanName: "\uAC04\uD638\uC0C1\uC5B4"
+  englishName: Nurse Shark
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 4134688657981179705, guid: ba90209a349e0b940b9c8ea65e8e77b2, type: 3}
   swimScale: 0.6330173
   revealScale: 0.26903236

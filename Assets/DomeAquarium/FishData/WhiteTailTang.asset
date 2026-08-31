@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: WhiteTailTang
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: WhiteTailTang
-  koreanName: WhiteTailTang
+  koreanName: "\uD654\uC774\uD2B8\uD14C\uC77C\uD0F1"
+  englishName: White Tail Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 1351927055384784537, guid: fc3e61b50d77b9249b3516fccc929fce, type: 3}
   swimScale: 0.7001177
   revealScale: 0.7001177

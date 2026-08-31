@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PinkDolphin
   koreanName: "\uBD84\uD64D\uB3CC\uACE0\uB798"
+  englishName: Pink Dolphin
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 107164966007952768, guid: 9f04a9944a1f6ab47a6d78a8745d91b7, type: 3}
   swimScale: 0.9527472
   revealScale: 0.44990844

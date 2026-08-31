@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: KoranAngelfish
   koreanName: "\uCF54\uB780\uC5D4\uC824\uD53C\uC26C"
+  englishName: Koran Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 6742890190357792748, guid: 3a0a1da01fb7da4469ba5ff5f182c6bd, type: 3}
   swimScale: 0.7824796
   revealScale: 0.7824796

@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: LoggerheadTurtle
   koreanName: "\uBD89\uC740\uBC14\uB2E4\uAC70\uBD81"
+  englishName: Loggerhead Turtle
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 5872907359432839463, guid: 9d40c8e0747840249a6cfd400fbbc753, type: 3}
   swimScale: 0.6415953
   revealScale: 0.545356

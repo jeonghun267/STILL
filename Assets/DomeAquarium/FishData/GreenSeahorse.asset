@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: GreenSeahorse
   koreanName: "\uCD08\uB85D\uD574\uB9C8"
+  englishName: Green Seahorse
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 4818896874322554446, guid: 00463c72a77b4894fa64e5ab52a04f2f, type: 3}
   swimScale: 0.24663456
   revealScale: 0.6028844

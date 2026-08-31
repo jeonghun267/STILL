@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: LemonPeelAngelfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: LemonPeelAngelfish
-  koreanName: LemonPeelAngelfish
+  koreanName: "\uB808\uBAAC\uD544\uC5D4\uC824\uD53C\uC26C"
+  englishName: Lemon Peel Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 8420684796371704251, guid: 09fb8092ab3e4d44994530dcf1ffed6d, type: 3}
   swimScale: 0.8015661
   revealScale: 0.8015661

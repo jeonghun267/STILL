@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: WatanabeAngelfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: WatanabeAngelfish
-  koreanName: WatanabeAngelfish
+  koreanName: "\uC640\uD0C0\uB098\uBCA0\uC5D4\uC824\uD53C\uC26C"
+  englishName: Watanabe Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 1501394559167870041, guid: 1f0131967efa35c4e83c282af4399dcd, type: 3}
   swimScale: 0.8035987
   revealScale: 0.8035987

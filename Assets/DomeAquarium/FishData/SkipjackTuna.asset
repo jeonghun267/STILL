@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: SkipjackTuna
   koreanName: "\uAC00\uB2E4\uB791\uC5B4"
+  englishName: Skipjack Tuna
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 6894118194348484911, guid: 0d13f52eb2dabc340a12eaf4a1293a21, type: 3}
   swimScale: 1.2016195
   revealScale: 1.0213766

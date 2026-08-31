@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: ZosterButterflyfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: ZosterButterflyfish
-  koreanName: ZosterButterflyfish
+  koreanName: "\uC870\uC2A4\uD130\uB098\uBE44\uACE0\uAE30"
+  englishName: Zoster Butterflyfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 1450256912754114608, guid: 1fbf8beb35e2e364ea09f1199e365706, type: 3}
   swimScale: 0.46948776
   revealScale: 0.5738183

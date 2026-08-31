@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: TomatoClownfish
   koreanName: "\uD1A0\uB9C8\uD1A0\uD770\uB3D9\uAC00\uB9AC"
+  englishName: Tomato Clownfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 7093988455960538664, guid: 68f438a301c330b4885e36e612cf3fff, type: 3}
   swimScale: 0.3746256
   revealScale: 0.7492512

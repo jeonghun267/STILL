@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: BumblebeeGrouper
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BumblebeeGrouper
-  koreanName: BumblebeeGrouper
+  koreanName: "\uBC94\uBE14\uBE44\uADF8\uB8E8\uD37C"
+  englishName: Bumblebee Grouper
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 9057084917297727130, guid: 739c7cf9105218045a0399b2077cec41, type: 3}
   swimScale: 1.752505
   revealScale: 1.752505

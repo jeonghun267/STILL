@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PinkSkunkClownfish
   koreanName: "\uD551\uD06C\uC2A4\uCEF9\uD06C\uD770\uB3D9\uAC00\uB9AC"
+  englishName: Pink Skunk Clownfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 6935894864497038359, guid: a723827196adeaf4ea7ef5dea4596455, type: 3}
   swimScale: 0.3789449
   revealScale: 0.7578898

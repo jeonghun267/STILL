@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: GreenTurtle
   koreanName: "\uD478\uB978\uBC14\uB2E4\uAC70\uBD81"
+  englishName: Green Turtle
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 4671732492452227065, guid: 24570ed1d2a2fd74e8024ac69cbbe3a4, type: 3}
   swimScale: 0.77906746
   revealScale: 0.66220737

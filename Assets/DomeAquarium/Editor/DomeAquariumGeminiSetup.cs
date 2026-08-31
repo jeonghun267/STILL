@@ -48,6 +48,18 @@ public static class DomeAquariumGeminiSetup
             EditorUtility.SetDirty(settings);
         }
 
+        // 이전 프롬프트는 종을 정확히 특정하지 못하면 '정보없음'만 반환했다.
+        // 교정된 영문명과 ID까지 함께 보내고, 불확실할 때는 안전한 상위 분류를 설명하도록 갱신한다.
+        if (string.IsNullOrWhiteSpace(settings.promptTemplate) ||
+            settings.promptTemplate.Contains("정보없음' 이라고만") ||
+            !settings.promptTemplate.Contains("{ENGLISH}") ||
+            !settings.promptTemplate.Contains("{ID}"))
+        {
+            settings.promptTemplate = GeminiSettings.DefaultPromptTemplate;
+            EditorUtility.SetDirty(settings);
+            Debug.Log("[DomeAquarium] Gemini 종 식별 프롬프트를 한국어명+영문명+ID 방식으로 갱신했다.");
+        }
+
         string key = ReadKeyFromEnv();
         if (string.IsNullOrEmpty(key))
         {

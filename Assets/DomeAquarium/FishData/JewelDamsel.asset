@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: JewelDamsel
   koreanName: "\uC8FC\uC5BC\uB2F4\uC140"
+  englishName: Jewel Damsel
   scientificName: 
   description: 
   sizeTag: 

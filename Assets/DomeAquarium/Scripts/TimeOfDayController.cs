@@ -36,6 +36,13 @@ public class TimeOfDayController : MonoBehaviour
     public Material seaweedGlowMaterial;
     public Color seaweedGlowTint = new Color(0.25f, 0.75f, 1.00f);
 
+    [Header("산호 군락 보조광")]
+    [Tooltip("산호 자체 발광이 실제로 주변 바닥도 비추도록 배치한 저비용 포인트 라이트들")]
+    public Light[] coralAccentLights;
+    [Min(0f)] public float coralLightDayFloor = 0.14f;
+    [Min(0f)] public float coralLightMaxIntensity = 1.6f;
+    [Min(0.1f)] public float coralLightRange = 2.8f;
+
     [Header("동작")]
     public bool useSystemClock = true;
     [Range(0f, 24f)] public float overrideHour = 13f;   // useSystemClock 이 꺼졌을 때 쓸 시각
@@ -171,10 +178,27 @@ public class TimeOfDayController : MonoBehaviour
 
         float glow = Mathf.Lerp(k.coralGlow, m.coralGlow, t);
         // 발광은 HDR 이라 1을 넘겨야 블룸이 걸려 "빛난다"고 읽힌다.
+        // 한낮에는 아주 약한 바탕값만 남기고, 저녁부터 빠르게 살아나게 한다.
         if (coralGlowMaterial != null && coralGlowMaterial.HasProperty(EmissionId))
-            coralGlowMaterial.SetColor(EmissionId, coralGlowTint * (glow * 2.2f));
+            coralGlowMaterial.SetColor(EmissionId, coralGlowTint * (0.30f + glow * 2.45f));
         if (seaweedGlowMaterial != null && seaweedGlowMaterial.HasProperty(EmissionId))
-            seaweedGlowMaterial.SetColor(EmissionId, seaweedGlowTint * (glow * 1.8f));
+            seaweedGlowMaterial.SetColor(EmissionId, seaweedGlowTint * (0.18f + glow * 2.05f));
+
+        // Emission은 표면만 밝게 보이고 주변 지형을 실제로 비추지는 않는다.
+        // 겹침이 적도록 군락마다 하나씩만 둔 포인트 라이트를 같은 시간값으로 제어한다.
+        if (coralAccentLights != null)
+        {
+            float lightIntensity = coralLightDayFloor + glow * coralLightMaxIntensity;
+            for (int i = 0; i < coralAccentLights.Length; i++)
+            {
+                Light accent = coralAccentLights[i];
+                if (accent == null) continue;
+                accent.color = coralGlowTint;
+                accent.range = coralLightRange;
+                accent.intensity = lightIntensity;
+                accent.enabled = lightIntensity > 0.01f;
+            }
+        }
     }
 
     /// <summary>기본 시간대 프리셋. 수조 안이라 한낮에도 완전히 밝지는 않다.</summary>

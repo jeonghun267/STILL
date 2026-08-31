@@ -14,6 +14,20 @@ public class GeminiSettings : ScriptableObject
 {
     public const string ResourcePath = "GeminiSettings";
 
+    public const string DefaultPromptTemplate =
+        "너는 아쿠아리움의 한국어 도슨트야. 아래 이름들은 같은 전시 생물을 가리켜.\n\n" +
+        "한국어 표시명: {KOREAN}\n" +
+        "영문 통용명: {ENGLISH}\n" +
+        "학명: {SCIENTIFIC}\n" +
+        "데이터 ID: {ID}\n\n" +
+        "규칙:\n" +
+        "- 한국어 3문장, 총 120자 이내로 써.\n" +
+        "- 첫 문장은 반드시 '{KOREAN}'으로 시작해.\n" +
+        "- 정확한 종을 알면 그 종의 검증 가능한 특징을 설명해.\n" +
+        "- 관상어 품종명·상품명이거나 정확한 종이 불확실하면 속·과·일반 분류 수준까지만 설명해.\n" +
+        "- '정보없음'만 답하지 말고, 확실한 상위 분류의 안전한 사실을 설명해.\n" +
+        "- 수치와 서식 범위를 추측하지 마. 인사말, 머리말, 목록 기호는 쓰지 마.";
+
     [Header("인증")]
     public string apiKey = "";
 
@@ -32,16 +46,7 @@ public class GeminiSettings : ScriptableObject
 
     [Header("프롬프트")]
     [TextArea(6, 14)]
-    public string promptTemplate =
-        "너는 아쿠아리움 도슨트야. 아래 해양생물을 관람객에게 소개해 줘.\n\n" +
-        "종 이름: {KOREAN}\n" +
-        "학명/영문명: {SCIENTIFIC}\n\n" +
-        "규칙:\n" +
-        "- 한국어 3문장, 총 120자 이내.\n" +
-        "- 확실히 아는 사실만 말해. 크기·서식지·특징 중 확실한 것만 골라 써.\n" +
-        "- 이 종을 정확히 특정할 수 없으면 첫 줄에 정확히 '정보없음' 이라고만 답해.\n" +
-        "- 수치를 지어내지 마. 애매하면 수치를 빼고 서술해.\n" +
-        "- 인사말, 머리말, 목록 기호 없이 설명 문장만 출력해.";
+    public string promptTemplate = DefaultPromptTemplate;
 
     [Header("동작")]
     public bool enableGemini = true;

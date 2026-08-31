@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: SpeckeldButterfly
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: SpeckeldButterfly
-  koreanName: SpeckeldButterfly
+  koreanName: "\uC2A4\uD398\uD074\uB4DC\uBC84\uD130\uD50C\uB77C\uC774\uD53C\uC26C"
+  englishName: Speckled Butterfly
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 1273925008648483624, guid: 362c2dbbe13fc154b980745bf72e0d76, type: 3}
   swimScale: 0.4617713
   revealScale: 0.56438714

@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: JuggaloClownfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: JuggaloClownfish
-  koreanName: JuggaloClownfish
+  koreanName: "\uC800\uAC08\uB85C\uD770\uB3D9\uAC00\uB9AC"
+  englishName: Juggalo Clownfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 6958174832671200110, guid: 5def1ef6b909c7847a6675421197ff75, type: 3}
   swimScale: 0.38400874
   revealScale: 0.7680175

@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: PantherGrouper
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PantherGrouper
-  koreanName: PantherGrouper
+  koreanName: "\uD32C\uC11C\uADF8\uB8E8\uD37C"
+  englishName: Panther Grouper
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 8078839212286905422, guid: 8a9e16bacbbf81f46bd75463581b9f6c, type: 3}
   swimScale: 1.3603686
   revealScale: 1.3603686

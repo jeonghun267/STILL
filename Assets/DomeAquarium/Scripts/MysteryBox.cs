@@ -18,14 +18,14 @@ public class MysteryBox : MonoBehaviour
 
     [Header("소환 위치")]
     public Transform player;                            // 비면 Camera.main
-    public float summonDistance = 0.55f;                // 팔 뻗으면 닿는 거리
-    public float summonDrop = 0.25f;                    // 눈높이보다 이만큼 아래
+    public float summonDistance = 0.85f;                // 화면을 과하게 채우지 않는 거리
+    public float summonDrop = 0.10f;                    // 눈높이에서 살짝 아래
 
     // 물고기가 다가와 멈추는 지점. 상자와 **같은 방향**으로 같이 옮겨야 한다.
     // 상자만 눈앞에 있고 물고기가 등 뒤에서 나오면 소용이 없다.
     public Transform revealStage;
-    public float stageDistance = 1.2f;
-    public float stageDrop = 0.15f;
+    public float stageDistance = 1.35f;
+    public float stageDrop = 0.02f;
 
     [Header("사운드")]
     public AudioSource sfx;                             // 없으면 조용히 건너뛴다
@@ -52,7 +52,8 @@ public class MysteryBox : MonoBehaviour
     private int recentHead;
     private int recentFilled;
 
-    private float[] weightBuffer;          // 후보 가중치 재사용 버퍼
+    const int RarityCount = 5;
+    private readonly int[] rarityCandidateCounts = new int[RarityCount];
 
     private Vector3 boxBaseLocalPos;
     private Quaternion boxBaseLocalRot;
@@ -62,6 +63,10 @@ public class MysteryBox : MonoBehaviour
 
     private bool warnedEmptyPool;
 
+    // RPG Pack 상자 안에는 흰 사각형으로 보이는 구형 별 파티클이 들어 있다.
+    // 전용 거품 BurstFX 만 사용하도록 캐시해 두고 렌더링을 막는다.
+    private ParticleSystem[] legacyBoxParticles;
+
     public bool CanTrigger
     {
         get { return reveal != null && !reveal.IsBusy && pool != null && pool.Length > 0; }
@@ -70,6 +75,7 @@ public class MysteryBox : MonoBehaviour
     private void Awake()
     {
         CacheVisual();
+        DisableLegacyBoxParticles();
         EnsureBuffers();
         SetShattered(false);   // 조각 더미는 터지기 전까지 숨긴다
     }
@@ -98,7 +104,34 @@ public class MysteryBox : MonoBehaviour
         }
     }
 
-    // 링버퍼 / 가중치 버퍼 크기 보정. 인스펙터에서 값이 바뀌어도 안전하게 재할당.
+    private void DisableLegacyBoxParticles()
+    {
+        if (boxVisual == null) return;
+
+        if (legacyBoxParticles == null)
+            legacyBoxParticles = boxVisual.GetComponentsInChildren<ParticleSystem>(true);
+
+        foreach (ParticleSystem ps in legacyBoxParticles)
+        {
+            if (ps == null) continue;
+
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var emission = ps.emission;
+            emission.enabled = false;
+
+            ParticleSystemRenderer particleRenderer = ps.GetComponent<ParticleSystemRenderer>();
+            if (particleRenderer != null) particleRenderer.enabled = false;
+        }
+    }
+
+    private void PlayBubbleBurst()
+    {
+        if (burstFx == null) return;
+        burstFx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        burstFx.Play(true);
+    }
+
+    // 최근 중복 방지용 링버퍼 크기 보정. 인스펙터에서 값이 바뀌어도 안전하게 재할당.
     private void EnsureBuffers()
     {
         int window = noRepeatWindow;
@@ -109,12 +142,6 @@ public class MysteryBox : MonoBehaviour
             recentBuffer = new FishData[window];
             recentHead = 0;
             recentFilled = 0;
-        }
-
-        int poolLen = (pool != null) ? pool.Length : 0;
-        if (weightBuffer == null || weightBuffer.Length < poolLen)
-        {
-            weightBuffer = new float[poolLen > 0 ? poolLen : 1];
         }
     }
 
@@ -156,6 +183,9 @@ public class MysteryBox : MonoBehaviour
         // 연출 중에 다시 부르면 물고기 앞에 상자가 끼어든다.
         if (reveal != null && reveal.IsBusy) return;
 
+        // 다시 뽑기 화면에는 도감에서 생성한 관찰용 복제 모델이 절대 남지 않게 한다.
+        FishEncyclopediaPanel.RemoveAllPreviewObjects();
+
         Transform p = player;
         if (p == null)
         {
@@ -187,11 +217,17 @@ public class MysteryBox : MonoBehaviour
         }
 
         gameObject.SetActive(true);
+
+        // 프리팹의 사각 별 파티클은 숨기고 상자 등장 순간부터 거품을 보여 준다.
+        DisableLegacyBoxParticles();
+        PlayBubbleBurst();
     }
 
     /// <summary>상자를 치운다. 물고기 연출이 끝난 뒤 호출된다.</summary>
     public void Dismiss()
     {
+        if (burstFx != null)
+            burstFx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         gameObject.SetActive(false);
     }
 
@@ -200,6 +236,8 @@ public class MysteryBox : MonoBehaviour
     {
         if (reveal == null) return;
         if (reveal.IsBusy) return;
+
+        AquariumAudioDirector.Instance?.PulseEventDuck(2.2f);
 
         if (pool == null || pool.Length == 0)
         {
@@ -229,7 +267,7 @@ public class MysteryBox : MonoBehaviour
 
         PushRecent(data);
 
-        if (burstFx != null) burstFx.Play();
+        PlayBubbleBurst();
         if (sfx != null && pokeClip != null) sfx.PlayOneShot(pokeClip);
         PlayCrash();
 
@@ -280,40 +318,57 @@ public class MysteryBox : MonoBehaviour
         Dismiss();
     }
 
-    // respectRecent 가 true 면 최근 목록에 있는 종의 가중치를 0으로 만든다.
+    // 등급을 설정 확률로 먼저 뽑은 뒤, 그 등급 안에서 종을 균등 선택한다.
+    // 종마다 등급 가중치를 더하면 해당 등급의 종 수에 따라 실제 확률이 왜곡된다.
     private int PickIndex(bool respectRecent)
     {
         int len = pool.Length;
-        float total = 0f;
+        System.Array.Clear(rarityCandidateCounts, 0, rarityCandidateCounts.Length);
 
         for (int i = 0; i < len; i++)
         {
             FishData d = pool[i];
-            float w = WeightOf(d);
-            if (w > 0f && respectRecent && IsRecent(d)) w = 0f;
-            weightBuffer[i] = w;
-            total += w;
+            if (d == null || (respectRecent && IsRecent(d))) continue;
+            rarityCandidateCounts[RarityIndex(d)]++;
         }
 
+        float total = 0f;
+        for (int r = 0; r < RarityCount; r++)
+        {
+            if (rarityCandidateCounts[r] > 0) total += WeightOfRarity(r);
+        }
         if (total <= 0f) return -1;
 
         float roll = Random.value * total;
         float acc = 0f;
+        int selectedRarity = -1;
+        for (int r = 0; r < RarityCount; r++)
+        {
+            if (rarityCandidateCounts[r] <= 0) continue;
+            float w = WeightOfRarity(r);
+            acc += w;
+            if (roll <= acc)
+            {
+                selectedRarity = r;
+                break;
+            }
+        }
 
+        if (selectedRarity < 0)
+        {
+            for (int r = RarityCount - 1; r >= 0; r--)
+                if (rarityCandidateCounts[r] > 0 && WeightOfRarity(r) > 0f) { selectedRarity = r; break; }
+        }
+        if (selectedRarity < 0) return -1;
+
+        int pick = Random.Range(0, rarityCandidateCounts[selectedRarity]);
         for (int i = 0; i < len; i++)
         {
-            float w = weightBuffer[i];
-            if (w <= 0f) continue;
-            acc += w;
-            if (roll <= acc) return i;
+            FishData d = pool[i];
+            if (d == null || (respectRecent && IsRecent(d)) || RarityIndex(d) != selectedRarity) continue;
+            if (pick == 0) return i;
+            pick--;
         }
-
-        // 부동소수 오차로 끝까지 못 골랐을 때: 유효한 마지막 후보
-        for (int i = len - 1; i >= 0; i--)
-        {
-            if (weightBuffer[i] > 0f) return i;
-        }
-
         return -1;
     }
 
@@ -338,16 +393,16 @@ public class MysteryBox : MonoBehaviour
         return -1;
     }
 
-    private float WeightOf(FishData d)
+    private static int RarityIndex(FishData d)
     {
-        if (d == null) return 0f;
+        return Mathf.Clamp((int)d.rarity, 0, RarityCount - 1);
+    }
+
+    private float WeightOfRarity(int rarity)
+    {
         if (rarityWeights == null || rarityWeights.Length == 0) return 1f;
-
-        int r = (int)d.rarity;
-        if (r < 0) r = 0;
-        if (r >= rarityWeights.Length) r = rarityWeights.Length - 1;
-
-        float w = rarityWeights[r];
+        int index = Mathf.Clamp(rarity, 0, rarityWeights.Length - 1);
+        float w = rarityWeights[index];
         return w > 0f ? w : 0f;
     }
 

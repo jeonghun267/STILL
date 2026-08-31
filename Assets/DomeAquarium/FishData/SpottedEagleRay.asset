@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: SpottedEagleRay
   koreanName: "\uC810\uBC15\uC774\uB9E4\uAC00\uC624\uB9AC"
+  englishName: Spotted Eagle Ray
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 4074812338002093122, guid: 8c5f24858ad48f84186b6b7471a391cc, type: 3}
   swimScale: 0.8232593
   revealScale: 0.4373565

@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: MaskedAngelfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: MaskedAngelfish
-  koreanName: MaskedAngelfish
+  koreanName: "\uB9C8\uC2A4\uD06C\uB4DC\uC5D4\uC824\uD53C\uC26C"
+  englishName: Masked Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 3162224623576824690, guid: e8097719af7de624ca1b7bad6a527d5b, type: 3}
   swimScale: 0.7935037
   revealScale: 0.7935037

@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: BlackandWhiteChromis
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BlackandWhiteChromis
-  koreanName: BlackandWhiteChromis
+  koreanName: "\uBE14\uB799\uC564\uD654\uC774\uD2B8\uD06C\uB85C\uBBF8\uC2A4"
+  englishName: Blackand White Chromis
   scientificName: 
   description: 
   sizeTag: 

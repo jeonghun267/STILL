@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: FlameAngelfish
   koreanName: "\uD50C\uB808\uC784\uC5D4\uC824\uD53C\uC26C"
+  englishName: Flame Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 7775739741393635707, guid: b2f7f8aa3af94ed49ad087928c7a15c2, type: 3}
   swimScale: 0.8015154
   revealScale: 0.8015154

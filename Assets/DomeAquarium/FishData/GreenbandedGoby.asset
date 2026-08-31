@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: GreenbandedGoby
   koreanName: "\uADF8\uB9B0\uBC34\uB4DC\uACE0\uBE44"
+  englishName: Greenbanded Goby
   scientificName: 
   description: 
   sizeTag: 

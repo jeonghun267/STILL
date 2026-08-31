@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: AchilesTang
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: AchilesTang
-  koreanName: AchilesTang
+  koreanName: "\uC544\uD0AC\uB808\uC2A4\uD0F1"
+  englishName: Achilles Tang
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 7206346733388345847, guid: 1495f89617e1ac44686d1971de51c4bf, type: 3}
   swimScale: 0.6566702
   revealScale: 0.6566702

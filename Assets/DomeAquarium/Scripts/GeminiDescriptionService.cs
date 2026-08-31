@@ -9,7 +9,7 @@ using UnityEngine.Networking;
 /// 어종 설명을 Gemini 로 받아 온다.
 ///
 /// 설계 원칙:
-///  - 설명을 이 코드가 지어내지 않는다. 모델이 특정하지 못하면 '정보없음' 을 받아 그대로 비운다.
+///  - 모델에는 한국어명·교정된 영문명·학명·ID를 함께 보내 종 식별 가능성을 높인다.
 ///  - speciesId 로 캐시한다. 같은 종을 다시 뽑아도 두 번 호출하지 않는다 (할당량·지연 절약).
 ///  - 캐시는 PlayerPrefs 에 남겨 앱을 다시 켜도 유지된다.
 ///  - FishData.description 이 이미 채워져 있으면 그쪽이 항상 우선이다 (사람이 쓴 원고가 우선).
@@ -45,7 +45,7 @@ public class GeminiDescriptionService : MonoBehaviour
 
     /// <summary>
     /// 설명을 요청한다. 캐시가 있으면 그 자리에서 콜백이 불린다.
-    /// 실패하거나 모델이 특정하지 못하면 빈 문자열로 콜백한다 — 호출부는 그때 설명 줄을 숨긴다.
+    /// 실패하거나 모델이 특정하지 못하면 빈 문자열로 콜백한다 — 호출부는 안전한 상위 분류 설명을 쓴다.
     /// </summary>
     public void Request(FishData data, Action<string> onDone)
     {
@@ -104,11 +104,13 @@ public class GeminiDescriptionService : MonoBehaviour
             .Replace("Dophin", "Dolphin")
             .Replace("Jennnifer", "Jennifer")
             .Replace("Pygme", "Pygmy")
-            .Replace("Corazon", "Coral")
             .Replace("Kauderns", "Kaudern's")
             .Replace("Bleekers", "Bleeker's")
             .Replace("Wheelers", "Wheeler's")
-            .Replace("Achiles", "Achilles");
+            .Replace("Achiles", "Achilles")
+            .Replace("Goldneon", "Gold Neon")
+            .Replace("Pazama", "Pajama")
+            .Replace("JamTang", "GemTang");
 
         // 붙어 있는 낱말을 띄운다: "PowderBlueTang" -> "Powder Blue Tang"
         var sb = new StringBuilder(s.Length + 8);
@@ -124,17 +126,16 @@ public class GeminiDescriptionService : MonoBehaviour
 
     IEnumerator Fetch(string id, FishData data)
     {
-        string english = ToEnglishName(string.IsNullOrWhiteSpace(data.scientificName) ? data.name : data.scientificName);
-
-        // 한국어명이 실제로 매핑된 경우에만 쓴다.
-        // FishData 생성기는 매핑이 없으면 koreanName 에 프리팹 이름을 그대로 넣으므로
-        // (예: "AchilesTang") 그걸 종명으로 넘기면 모델이 종을 특정하지 못해 '정보없음' 이 나온다.
-        bool koreanMapped = !string.IsNullOrWhiteSpace(data.koreanName) && data.koreanName != data.name;
-        string primary = koreanMapped ? data.koreanName : english;
+        string english = data.CanonicalEnglishName;
+        string korean = data.DisplayName;
+        string scientific = string.IsNullOrWhiteSpace(data.scientificName) ? "미확인" : data.scientificName;
+        string speciesId = string.IsNullOrWhiteSpace(data.speciesId) ? data.name : data.speciesId;
 
         string prompt = settings.promptTemplate
-            .Replace("{KOREAN}", primary)
-            .Replace("{SCIENTIFIC}", english);
+            .Replace("{KOREAN}", korean)
+            .Replace("{ENGLISH}", english)
+            .Replace("{SCIENTIFIC}", scientific)
+            .Replace("{ID}", speciesId);
 
         string url = $"https://generativelanguage.googleapis.com/v1beta/models/{settings.model}:generateContent";
         string body = BuildRequestJson(prompt, settings.maxOutputTokens, settings.temperature);
@@ -161,8 +162,8 @@ public class GeminiDescriptionService : MonoBehaviour
                 result = ExtractText(req.downloadHandler.text);
                 if (IsUnknown(result))
                 {
-                    // 모델이 특정하지 못했다. 지어내지 않고 비워 둔다.
-                    Debug.Log($"[Gemini] '{id}' — 모델이 종을 특정하지 못했다. 설명 비움.");
+                    // 호출부가 프리팹 이름에서 확실한 상위 분류 설명으로 대체한다.
+                    Debug.Log($"[Gemini] '{id}' — 정확한 종 설명이 없어 안전한 범주 설명으로 대체한다.");
                     result = string.Empty;
                 }
             }

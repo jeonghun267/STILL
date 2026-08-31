@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: Clownfish
   koreanName: "\uD770\uB3D9\uAC00\uB9AC"
+  englishName: Clownfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 4811707055762447647, guid: a993c0c9f586df34dacf316042c6d5f3, type: 3}
   swimScale: 0.38400874
   revealScale: 0.7680175

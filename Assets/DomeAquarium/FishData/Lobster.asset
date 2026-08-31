@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: Lobster
   koreanName: "\uBC14\uB2F7\uAC00\uC7AC"
+  englishName: Lobster
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 6240128407442343231, guid: a6026760a5e713d409e5a33057c6e784, type: 3}
   swimScale: 0.5549651
   revealScale: 0.5549651

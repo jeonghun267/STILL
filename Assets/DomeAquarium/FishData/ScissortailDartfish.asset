@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: ScissortailDartfish
   koreanName: "\uAC00\uC704\uAF2C\uB9AC\uB2E4\uD2B8\uD53C\uC26C"
+  englishName: Scissortail Dartfish
   scientificName: 
   description: 
   sizeTag: 

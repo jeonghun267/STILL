@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: HectorDolphin
   koreanName: "\uD5E5\uD130\uB3CC\uACE0\uB798"
+  englishName: Hector Dolphin
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 4
   prefab: {fileID: 6401269938281611424, guid: d0672ae4634714a4b90beed1b4135c42, type: 3}
   swimScale: 0.9629668
   revealScale: 0.45473436

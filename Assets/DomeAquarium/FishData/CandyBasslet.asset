@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: CandyBasslet
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: CandyBasslet
-  koreanName: CandyBasslet
+  koreanName: "\uCE94\uB514\uBC14\uC2AC\uB81B"
+  englishName: Candy Basslet
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 8153765304729817725, guid: 2f6d2ad40714cdd43b03d3743b2613fc, type: 3}
   swimScale: 0.16442114
   revealScale: 0.60287756

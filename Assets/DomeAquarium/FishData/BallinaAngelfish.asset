@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: BallinaAngelfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BallinaAngelfish
-  koreanName: BallinaAngelfish
+  koreanName: "\uBC1C\uB9AC\uB098\uC5D4\uC824\uD53C\uC26C"
+  englishName: Ballina Angelfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 2
   prefab: {fileID: 5155832332735975555, guid: db527e96c40aeea4d92184567b355d80, type: 3}
   swimScale: 0.80798125
   revealScale: 0.80798125

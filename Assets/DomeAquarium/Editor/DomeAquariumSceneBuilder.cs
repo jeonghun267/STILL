@@ -28,7 +28,7 @@ public static class DomeAquariumSceneBuilder
     {
         "WaterTank", "ReefFloor", "FishSwarm", "StartPanelRoot",
         "MysteryBox", "RevealStage", "FishRevealManager", "InfoPanelRoot",
-        "GeminiService", "AmbientAudio", "WristMenu", "Seabed"
+        "GeminiService", "AmbientAudio", "WristMenu", "FishEncyclopediaRoot", "Seabed"
     };
 
     // VR 템플릿이 기본으로 깔아둔 콘텐츠. 수조 안에 있으면 안 되므로 비활성한다.
@@ -88,6 +88,7 @@ public static class DomeAquariumSceneBuilder
         var box = BuildMysteryBox(cameraOffset, reveal, stage);
         BuildStartPanel(cameraOffset, box, mainCam != null ? mainCam.transform : null, stage);
         BuildWristMenu(cameraOffset, mainCam != null ? mainCam.transform : null, box);
+        DomeAquariumEncyclopediaSetup.Apply(saveScene: false);
         AttachGazeFallback(mainCam, box);
 
         // 산호 배치는 마지막에 — 프리팹 참조가 다 꽂힌 뒤여야 한다.
@@ -95,6 +96,8 @@ public static class DomeAquariumSceneBuilder
 
         ApplyReefGlow(reef, out var coralMat, out var seaweedMat);
         SetupTimeOfDay(coralMat, seaweedMat);
+        // 바닥 평면의 z-fighting을 없애고, 산호 자체 발광이 주변 바닥에도 닿게 한다.
+        DomeAquariumEnvironmentSetup.Apply(saveScene: false);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -442,6 +445,8 @@ public static class DomeAquariumSceneBuilder
         tank.name = "WaterTank";
         tank.transform.position = Vector3.zero;
         tank.transform.localScale = new Vector3(TankRadius * 2f, TankHeight / 2f, TankRadius * 2f);
+        // 아래 캡은 흙을 가리므로 제거하되, 위는 수면으로 막아 하늘이 보이지 않게 한다.
+        tank.GetComponent<MeshFilter>().sharedMesh = DomeAquariumEnvironmentSetup.EnsureOpenTankWallMesh();
 
         // (1) Collider 반드시 삭제 — 없으면 컨트롤러/레이가 벽에 먼저 막힌다.
         var col = tank.GetComponent<Collider>();
@@ -560,6 +565,7 @@ public static class DomeAquariumSceneBuilder
 
     const string AmbientClipPath =
         "Assets/Samples/XR Interaction Toolkit/3.5.1/Hands Interaction Demo/DemoAssets/Audio/AmbientBackgroundNoise.mp3";
+    const string MusicClipPath = Root + "/Audio/geoffharvey-aquatic-downtime-363761.mp3";
     const string PokeClipPath = "Assets/VRTemplateAssets/Audio/Button_22_click.wav";
 
     /// <summary>수조 배경음. 2D 로 깔아 어디를 봐도 같은 크기로 들리게 한다.</summary>
@@ -579,9 +585,28 @@ public static class DomeAquariumSceneBuilder
         src.clip = clip;
         src.loop = true;
         src.playOnAwake = true;
-        src.volume = 0.18f;          // 물속 웅웅거림 정도. 해설을 덮으면 안 된다
+        src.volume = 0.09f;          // 시작 화면 물속 환경음. BGM/해설을 덮지 않도록 낮게 유지
         src.spatialBlend = 0f;       // 2D — 머리를 돌려도 일정하게
         src.priority = 200;
+
+        var music = go.AddComponent<AudioSource>();
+        music.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(MusicClipPath);
+        music.loop = true;
+        music.playOnAwake = false;
+        music.volume = 0f;
+        music.spatialBlend = 0f;
+        music.priority = 180;
+
+        var director = go.AddComponent<AquariumAudioDirector>();
+        director.ambientSource = src;
+        director.musicSource = music;
+        director.introAmbientVolume = 0.09f;
+        director.activeAmbientVolume = 0.05f;
+        director.normalMusicVolume = 0.10f;
+        director.encyclopediaMusicVolume = 0.06f;
+        director.revealMusicVolume = 0.05f;
+        director.narrationMusicVolume = 0.025f;
+        director.fadeInSeconds = 2f;
         Debug.Log("[DomeAquarium] 배경음 배치 완료.");
     }
 
@@ -772,8 +797,11 @@ public static class DomeAquariumSceneBuilder
         // 수조 반지름이 12m 다. 14m 로 두면 물고기가 유리벽 바깥에서 스며 나온다.
         rev.spawnDistance = 9f;
         rev.approachTime = 2.2f;
-        rev.holdTime = 6f;
+        rev.holdTime = 8f;
         rev.exitTime = 2.0f;
+        rev.showcaseSideOffset = 0.20f;
+        rev.turntableDegreesPerSecond = 45f;
+        rev.maxShowcaseSize = 0.34f;
         return rev;
     }
 
@@ -806,6 +834,18 @@ public static class DomeAquariumSceneBuilder
         // 상자 자체의 콜라이더는 전부 끈다 — 판정은 부모의 트리거 하나가 담당한다.
         foreach (var c in visual.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
 
+        // 원본 프리팹의 별 파티클은 URP에서 흰 사각형으로 보인다.
+        // 아래에서 만드는 전용 거품 BurstFX로 대체하므로 렌더러와 방출을 모두 끈다.
+        foreach (var legacyParticles in visual.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            var emission = legacyParticles.emission;
+            emission.enabled = false;
+            legacyParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var legacyRenderer = legacyParticles.GetComponent<ParticleSystemRenderer>();
+            if (legacyRenderer != null) legacyRenderer.enabled = false;
+        }
+
         var fx = new GameObject("BurstFX");
         fx.transform.SetParent(root.transform, false);
         var ps = fx.AddComponent<ParticleSystem>();
@@ -836,13 +876,13 @@ public static class DomeAquariumSceneBuilder
             box.boxAnimator.runtimeAnimatorController = box.idleController;
         Debug.Log($"[DomeAquarium] 미스터리 박스 — Animator={(box.boxAnimator != null)}, idle={(box.idleController != null)}, crash={(box.crashController != null)}");
         box.player = cameraOffset != null ? cameraOffset.GetComponentInChildren<Camera>()?.transform : null;
-        box.summonDistance = 0.55f;
-        box.summonDrop = 0.25f;
+        box.summonDistance = 0.85f;
+        box.summonDrop = 0.10f;
         // 상자와 연출 무대를 같은 방향으로 함께 옮기게 한다.
         // 이 배선이 빠지면 물고기가 월드 +Z 쪽 — 최악의 경우 사용자 등 뒤 — 에서 나타난다.
         box.revealStage = stage;
-        box.stageDistance = 1.2f;
-        box.stageDrop = 0.15f;
+        box.stageDistance = 1.35f;
+        box.stageDrop = 0.02f;
 
         box.pool = AssetDatabase.FindAssets("t:FishData", new[] { Root + "/FishData" })
             .Select(g => AssetDatabase.LoadAssetAtPath<FishData>(AssetDatabase.GUIDToAssetPath(g)))
@@ -884,56 +924,7 @@ public static class DomeAquariumSceneBuilder
 
     static void ConfigureBurst(ParticleSystem ps)
     {
-        var main = ps.main;
-        main.duration = 1f;
-        main.loop = false;
-        main.playOnAwake = false;
-        main.startLifetime = 0.9f;
-        main.startSpeed = 1.6f;
-        main.startSize = 0.03f;
-        main.maxParticles = 60;
-        main.simulationSpace = ParticleSystemSimulationSpace.World;
-
-        var emission = ps.emission;
-        emission.enabled = true;
-        emission.rateOverTime = 0f;
-        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 40) });
-
-        var shape = ps.shape;
-        shape.enabled = true;
-        shape.shapeType = ParticleSystemShapeType.Sphere;
-        shape.radius = 0.08f;
-
-        var renderer = ps.GetComponent<ParticleSystemRenderer>();
-        if (renderer != null)
-        {
-            const string matPath = Root + "/Materials/Mat_BurstFX.mat";
-            var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-            if (mat == null)
-            {
-                var sh = Shader.Find("Universal Render Pipeline/Particles/Unlit");
-                if (sh != null)
-                {
-                    mat = new Material(sh) { name = "Mat_BurstFX" };
-                    AssetDatabase.CreateAsset(mat, matPath);
-                }
-            }
-            if (mat != null)
-            {
-                // 텍스처가 없으면 파티클이 흰 사각형으로 그려진다.
-                var dot = DomeAquariumParticleSetup.EnsureSoftDotTexture();
-                if (dot != null)
-                {
-                    if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", dot);
-                    if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", dot);
-                }
-                if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
-                if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", 1f);   // Additive
-                mat.renderQueue = 3000;
-                EditorUtility.SetDirty(mat);
-                renderer.sharedMaterial = mat;
-            }
-        }
+        DomeAquariumParticleSetup.ConfigureBubbleBurst(ps);
     }
 
     static FishInfoPanel BuildInfoPanel(Transform player)
@@ -1036,6 +1027,9 @@ public static class DomeAquariumSceneBuilder
             new Color(1.00f, 0.78f, 0.25f),   // Legendary
         };
         info.rarityNames = new[] { "일반", "고급", "희귀", "영웅", "전설" };
+
+        // 임포트되어 있는 VRTemplateAssets UI 스프라이트로 카드 스타일을 마감한다.
+        DomeAquariumInfoPanelSetup.StylePanel(info);
 
         return info;
     }

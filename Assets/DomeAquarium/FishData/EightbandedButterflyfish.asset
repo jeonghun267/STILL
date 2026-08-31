@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: EightbandedButterflyfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: EightbandedButterflyfish
-  koreanName: EightbandedButterflyfish
+  koreanName: "\uC5EC\uB35F\uB760\uB098\uBE44\uACE0\uAE30"
+  englishName: Eightbanded Butterflyfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 6510987939874402664, guid: 55bd5a58451fc96469ce4d4b8e66132e, type: 3}
   swimScale: 0.54427963
   revealScale: 0.66523063

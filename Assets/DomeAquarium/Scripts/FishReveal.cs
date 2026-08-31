@@ -13,17 +13,21 @@ public class FishReveal : MonoBehaviour
     [Header("타이밍")]
     public float spawnDistance = 14f;     // 플레이어로부터의 수평 등장 거리
     public float approachTime = 2.2f;
-    public float holdTime = 6f;
+    public float holdTime = 8f;
     public float exitTime = 2.0f;
+
+    [Header("관람 배치")]
+    public float showcaseSideOffset = 0.20f;
+    public float turntableDegreesPerSecond = 45f;
+    [Tooltip("참다랑어 같은 대형 어종이 설명 UI를 침범하지 않도록 전시 모델의 최대 외곽 크기를 제한합니다.")]
+    public float maxShowcaseSize = 0.34f;
 
     // --- 내부 튜닝 상수 (인스펙터 노출 안 함: 계약 시그니처 유지) ---
     const float SettleTime = 0.6f;        // 도착 후 플레이어를 향해 도는 시간
     const float BobAmplitude = 0.04f;     // 제자리 보빙 진폭 (m)
     const float BobFrequency = 1.15f;     // 보빙 속도
-    const float SwayAngle = 3.5f;         // 제자리 요동 각도
-    const float SwayFrequency = 0.75f;
     const float ApproachTurnLambda = 8f;  // 진행 방향 추종 강도
-    const float FaceTurnLambda = 3.5f;    // 플레이어 응시 회전 강도
+    const float FaceTurnLambda = 7f;      // 전시 회전 추종 강도
     const float MinSqrSpeed = 1e-6f;
     const float MinDelta = 0.0001f;
 
@@ -69,6 +73,16 @@ public class FishReveal : MonoBehaviour
             return;
         }
 
+        // 도감 미리보기 복제본이 참조 유실로 남아 있어도 새 뽑기 연출과 섞이지 않게 정리한다.
+        FishEncyclopediaPanel.RemoveAllPreviewObjects();
+
+        // 정상적으로 공개를 시작할 수 있을 때만 현재 탐험가의 도감에 기록한다.
+        // speciesId 기반 저장이라 같은 생물을 다시 뽑으면 발견 횟수만 증가한다.
+        FishCollectionStore.Instance?.RegisterDiscovery(data);
+
+        // 접근 연출 동안 설명을 미리 받아 패널이 열린 뒤 기다리는 시간을 줄인다.
+        if (infoPanel != null) infoPanel.PreloadDescription(data);
+
         busy = true;
         routine = StartCoroutine(RevealRoutine(data, viewer));
     }
@@ -105,6 +119,7 @@ public class FishReveal : MonoBehaviour
         instance = Instantiate(data.prefab, spawnPos, spawnRot);
         Transform fish = instance.transform;
         fish.localScale = Vector3.one * Mathf.Max(0.01f, data.revealScale);
+        LimitShowcaseSize(fish);
 
         // 연출 중 컨트롤러/손과 충돌하면 안 된다.
         Collider[] colliders = instance.GetComponentsInChildren<Collider>(true);
@@ -133,7 +148,7 @@ public class FishReveal : MonoBehaviour
             float k = Mathf.Clamp01(elapsed / duration);
             float eased = 1f - Mathf.Pow(1f - k, 3f);   // ease-out cubic
 
-            Vector3 target = stagePoint != null ? stagePoint.position : stagePos;
+            Vector3 target = stagePoint != null ? ShowcasePosition(stagePoint.position, viewer) : stagePos;
             Vector3 next = Vector3.Lerp(spawnPos, target, eased);
             Vector3 velocity = (next - prevPos) / Mathf.Max(dt, MinDelta);
 
@@ -219,10 +234,38 @@ public class FishReveal : MonoBehaviour
         busy = false;
     }
 
-    // 무대 위 제자리 유영: 아주 미세한 보빙 + 요동, 플레이어 응시
+    void LimitShowcaseSize(Transform fish)
+    {
+        if (fish == null || maxShowcaseSize <= 0f) return;
+
+        Renderer[] renderers = fish.GetComponentsInChildren<Renderer>(false);
+        Bounds bounds = default;
+        bool found = false;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null || !renderer.enabled || renderer is ParticleSystemRenderer
+                || renderer is TrailRenderer || renderer is LineRenderer)
+                continue;
+
+            if (!found)
+            {
+                bounds = renderer.bounds;
+                found = true;
+            }
+            else bounds.Encapsulate(renderer.bounds);
+        }
+
+        if (!found) return;
+        float largest = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+        if (largest > maxShowcaseSize && largest > 0.0001f)
+            fish.localScale *= maxShowcaseSize / largest;
+    }
+
+    // 무대 위 제자리 유영: 미세한 보빙 + 360도 전시 회전
     void Idle(Transform fish, Transform viewer, FishAnimatorSync sync, float phase, float dt, ref Vector3 prevPos)
     {
-        Vector3 stagePos = stagePoint != null ? stagePoint.position : fish.position;
+        Vector3 stagePos = stagePoint != null ? ShowcasePosition(stagePoint.position, viewer) : fish.position;
 
         Vector3 bob = new Vector3(
             Mathf.Sin(phase * BobFrequency * 0.55f) * BobAmplitude * 0.5f,
@@ -233,11 +276,14 @@ public class FishReveal : MonoBehaviour
         Vector3 velocity = (next - prevPos) / Mathf.Max(dt, MinDelta);
         fish.position = next;
 
-        Vector3 look = viewer.position - next;
-        if (look.sqrMagnitude > MinSqrSpeed)
+        Vector3 profile = -viewer.right;
+        profile.y = 0f;
+        if (profile.sqrMagnitude > MinSqrSpeed)
         {
-            Quaternion want = Quaternion.LookRotation(look.normalized, Vector3.up)
-                              * Quaternion.Euler(0f, Mathf.Sin(phase * SwayFrequency) * SwayAngle, 0f);
+            profile.Normalize();
+            // 8초 동안 한 바퀴 돌아 어느 축으로 제작된 모델도 몸 전체를 확인할 수 있다.
+            profile = Quaternion.AngleAxis(phase * turntableDegreesPerSecond, Vector3.up) * profile;
+            Quaternion want = Quaternion.LookRotation(profile, Vector3.up);
             fish.rotation = Quaternion.Slerp(fish.rotation, want, 1f - Mathf.Exp(-FaceTurnLambda * dt));
         }
 
@@ -245,20 +291,38 @@ public class FishReveal : MonoBehaviour
         prevPos = next;
     }
 
-    void OnDisable()
+    Vector3 ShowcasePosition(Vector3 center, Transform viewer)
     {
-        // 씬 전환/비활성 시 코루틴과 인스턴스를 남기지 않는다.
+        Vector3 right = viewer.right;
+        right.y = 0f;
+        if (right.sqrMagnitude < MinSqrSpeed) right = Vector3.right;
+        else right.Normalize();
+        return center + right * showcaseSideOffset;
+    }
+
+    /// <summary>도감 진입이나 씬 비활성화 때 진행 중인 전시 모델과 UI를 즉시 정리한다.</summary>
+    public void CancelCurrentReveal()
+    {
         if (routine != null)
         {
             StopCoroutine(routine);
             routine = null;
         }
+
         if (infoPanel != null) infoPanel.Hide();
         if (instance != null)
         {
+            // Destroy는 프레임 끝에 실행되므로 먼저 숨겨 한 프레임 잔상을 막는다.
+            instance.SetActive(false);
             Destroy(instance);
             instance = null;
         }
         busy = false;
+    }
+
+    void OnDisable()
+    {
+        // 씬 전환/비활성 시 코루틴과 인스턴스를 남기지 않는다.
+        CancelCurrentReveal();
     }
 }

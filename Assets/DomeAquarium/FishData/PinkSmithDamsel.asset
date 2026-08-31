@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: PinkSmithDamsel
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: PinkSmithDamsel
-  koreanName: PinkSmithDamsel
+  koreanName: "\uD551\uD06C\uC2A4\uBBF8\uC2A4\uB2F4\uC140"
+  englishName: Pink Smith Damsel
   scientificName: 
   description: 
   sizeTag: 

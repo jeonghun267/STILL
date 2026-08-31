@@ -24,6 +24,9 @@ public static class DomeAquariumSeabed
     // 수조 규격과 맞춰야 한다.
     const float TankRadius = 12f;
     const float FloorY = -8f;
+    // 바위 프리팹의 넓은 밑면도 FloorY 근처에 있다. 같은 높이에 두면 두 표면이
+    // 번갈아 그려지는 z-fighting이 생기므로, 바닥재는 프랍 아래로 살짝 묻는다.
+    public const float SeabedSurfaceY = FloorY - 0.12f;
 
     /// <summary>타일링되는 값잡음. 격자점 해시를 스무스스텝으로 보간한다.</summary>
     static float Noise(float x, float y, int period, int seed)
@@ -154,16 +157,14 @@ public static class DomeAquariumSeabed
     {
         var mat = EnsureSandMaterial();
 
-        var go = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        go.name = "Seabed";
-        go.transform.position = new Vector3(0f, FloorY, 0f);
-        // Unity Plane 은 10x10 이다. 원통 지름 24m 를 덮으려면 2.6 이면 충분하다.
-        go.transform.localScale = Vector3.one * 2.6f;
+        // 사각 Plane은 원형 수조 밖으로 모서리가 튀어나온다. 수조 안쪽만 덮는 원형 메시를 쓴다.
+        var go = new GameObject("Seabed");
+        go.transform.position = new Vector3(0f, SeabedSurfaceY, 0f);
+        go.transform.localScale = Vector3.one;
 
-        var col = go.GetComponent<Collider>();
-        if (col != null) Object.DestroyImmediate(col);   // 물고기·레이가 걸리면 안 된다
-
-        var mr = go.GetComponent<MeshRenderer>();
+        var filter = go.AddComponent<MeshFilter>();
+        filter.sharedMesh = DomeAquariumEnvironmentSetup.EnsureSeabedDiscMesh();
+        var mr = go.AddComponent<MeshRenderer>();
         mr.sharedMaterial = mat;
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         mr.receiveShadows = false;

@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: CommonThresherShark
   koreanName: "\uD658\uB3C4\uC0C1\uC5B4"
+  englishName: Common Thresher Shark
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 2479138079228362938, guid: e4aaa8abea0a2014dabb41126ebaf9f3, type: 3}
   swimScale: 0.66557384
   revealScale: 0.23572406

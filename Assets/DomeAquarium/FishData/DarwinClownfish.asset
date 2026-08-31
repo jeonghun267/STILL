@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: DarwinClownfish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: DarwinClownfish
-  koreanName: DarwinClownfish
+  koreanName: "\uB2E4\uC708\uD770\uB3D9\uAC00\uB9AC"
+  englishName: Darwin Clownfish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 6237361340787242356, guid: 664ffc98db62b0347b2eade930cf5ceb, type: 3}
   swimScale: 0.38400874
   revealScale: 0.7680175

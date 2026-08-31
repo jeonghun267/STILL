@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: BlacktipReefShark
   koreanName: "\uD751\uAE30\uD749\uC0C1\uC5B4"
+  englishName: Blacktip Reef Shark
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 3
   prefab: {fileID: 3525843560809575471, guid: 646caabf5c704364dbe43e46f2e91408, type: 3}
   swimScale: 0.4775841
   revealScale: 0.270631

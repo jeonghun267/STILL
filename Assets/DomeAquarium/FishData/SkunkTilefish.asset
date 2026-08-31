@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: SkunkTilefish
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: SkunkTilefish
-  koreanName: SkunkTilefish
+  koreanName: "\uC2A4\uCEF9\uD06C\uD0C0\uC77C\uD53C\uC26C"
+  englishName: Skunk Tilefish
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 7014117098473884635, guid: 33f4f97a7af132b459de168a25ffbf58, type: 3}
   swimScale: 1.0033704
   revealScale: 1.0033704

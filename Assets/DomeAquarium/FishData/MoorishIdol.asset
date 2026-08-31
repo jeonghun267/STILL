@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishData
   speciesId: MoorishIdol
   koreanName: "\uAE43\uB300\uB3D4"
+  englishName: Moorish Idol
   scientificName: 
   description: 
   sizeTag: 
   habitatTag: 
-  rarity: 0
+  rarity: 1
   prefab: {fileID: 6502596866369865551, guid: f57c478525fc69c469a15625c1f44097, type: 3}
   swimScale: 0.56899446
   revealScale: 0.56899446

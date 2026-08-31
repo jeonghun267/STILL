@@ -16,6 +16,9 @@ Assets/DomeAquarium/Resources/GeminiSettings.asset.meta
 [Uu]ser[Ss]ettings/
 [Mm]emoryCaptures/
 [Rr]ecordings/
+# Unity 비정상 종료 시 생성되는 임시 씬 복구본
+/Assets/_Recovery/
+/Assets/_Recovery.meta
 
 # Never commit macOS archive junk (arrives with Asset Store zips)
 __MACOSX/
