@@ -1,0 +1,55 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+# API 키가 들어가는 에셋 (메뉴 "DomeAquarium/8" 이 .env 에서 다시 만든다)
+Assets/DomeAquarium/Resources/GeminiSettings.asset
+Assets/DomeAquarium/Resources/GeminiSettings.asset.meta
+
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Never commit macOS archive junk (arrives with Asset Store zips)
+__MACOSX/
+.DS_Store
+._*
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity build artifacts
+*.apk
+*.aab
+*.unitypackage
+*.app
+sysinfo.txt
+crashlytics-build.properties
+
+# Addressables / Asset Store tools
+/[Aa]ssets/[Aa]ssetStoreTools*
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Unity build tool temp
+.utmp/

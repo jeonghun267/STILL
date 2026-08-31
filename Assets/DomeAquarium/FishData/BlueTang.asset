@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: BlueTang
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: BlueTang
+  koreanName: "\uBE14\uB8E8\uD0F1"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 9028077190568231609, guid: 29698e48dd79a2a4dacdab7e09a07dde, type: 3}
+  swimScale: 0.6804975
+  revealScale: 0.6804975
+  bandCenter: 0.5
+  bandWidth: 0.45
+  bodyLength: 0.26
+  swimSpeed: 0.52
+  schoolCount: 3

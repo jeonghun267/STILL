@@ -1,0 +1,156 @@
+fileFormatVersion: 2
+guid: f2fdae00728a5914bac8892b072a1335
+ModelImporter:
+  serializedVersion: 21300
+  internalIDToNameTable: []
+  externalObjects: {}
+  materials:
+    materialImportMode: 0
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 1
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 3
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importVisibility: 0
+    importBlendShapes: 0
+    importCameras: 0
+    importLights: 0
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 0
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton:
+    - name: SailfinTang(Clone)
+      parentName: 
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Bone
+      parentName: SailfinTang(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: SailfinTang_IDLE
+      parentName: Bone
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: -0.9777555, y: 0.0000005963368, z: -0.0000005963368, w: 0.20974824}
+      scale: {x: 100, y: 100, z: 100}
+    - name: SailfinTang_SPINE
+      parentName: SailfinTang_IDLE
+      position: {x: -7.1110084e-10, y: -0.00045790448, z: -0.000009780676}
+      rotation: {x: -0.000000029802322, y: -0.7071068, z: -0, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 0.99999976}
+    - name: SailfinTang_SPINE2
+      parentName: SailfinTang_SPINE
+      position: {x: -8.00936e-10, y: 0.00085031596, z: -1.3031195e-15}
+      rotation: {x: -0.60529363, y: 0.00000005960463, z: -0.00000084749263, w: -0.7960023}
+      scale: {x: 1.0000004, y: 1.0000004, z: 1.0000004}
+    - name: SailfinTang_TAIL
+      parentName: SailfinTang_SPINE2
+      position: {x: 1.8638303e-13, y: 0.0005080278, z: -8.528389e-16}
+      rotation: {x: 0.09827118, y: -0.000000018344718, z: 0.00000016318111, w: 0.99515975}
+      scale: {x: 1.0000004, y: 1.0000002, z: 1.0000002}
+    - name: SailfinTang_TAIL_end
+      parentName: SailfinTang_TAIL
+      position: {x: -0, y: 0.00050802797, z: 0}
+      rotation: {x: -0, y: -0, z: -0, w: 1}
+      scale: {x: 1.0000002, y: 1.0000004, z: 1.0000002}
+    - name: SailfinTang_HEAD
+      parentName: SailfinTang_SPINE
+      position: {x: -2.1684043e-21, y: -9.5367436e-11, z: -1.9326753e-16}
+      rotation: {x: 1, y: -0.000000021073424, z: 1.7763566e-15, w: -0.000000105367114}
+      scale: {x: 1.0000001, y: 1.0000001, z: 1.0000002}
+    - name: SailfinTang_HEAD_end
+      parentName: SailfinTang_HEAD
+      position: {x: -0, y: 0.0012967144, z: 0}
+      rotation: {x: -0, y: -2.1175821e-22, z: -0, w: 1}
+      scale: {x: 1.0000001, y: 1.0000001, z: 0.99999994}
+    - name: SailfinTang
+      parentName: SailfinTang(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

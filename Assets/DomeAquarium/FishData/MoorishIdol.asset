@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: MoorishIdol
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: MoorishIdol
+  koreanName: "\uAE43\uB300\uB3D4"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 6502596866369865551, guid: f57c478525fc69c469a15625c1f44097, type: 3}
+  swimScale: 0.56899446
+  revealScale: 0.56899446
+  bandCenter: 0.5
+  bandWidth: 0.45
+  bodyLength: 0.22
+  swimSpeed: 0.44
+  schoolCount: 3

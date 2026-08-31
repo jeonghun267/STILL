@@ -1,0 +1,156 @@
+fileFormatVersion: 2
+guid: a6300cdac99ca18469ad6a452f3d6a1f
+ModelImporter:
+  serializedVersion: 21300
+  internalIDToNameTable: []
+  externalObjects: {}
+  materials:
+    materialImportMode: 0
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 1
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 3
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importVisibility: 0
+    importBlendShapes: 0
+    importCameras: 0
+    importLights: 0
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 0
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton:
+    - name: CandyBasslet(Clone)
+      parentName: 
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CandyBasslet
+      parentName: CandyBasslet(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Bone
+      parentName: CandyBasslet(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CandyBasslet_IDLE
+      parentName: Bone
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: -0.9842111, y: 0.0000013936946, z: -0.0000013936943, w: 0.17699906}
+      scale: {x: 100, y: 100, z: 100}
+    - name: CandyBasslet_SPINE
+      parentName: CandyBasslet_IDLE
+      position: {x: -7.0314715e-10, y: -0.00020362742, z: -0.0000173376}
+      rotation: {x: -0, y: -0.7071068, z: 0, w: 0.7071068}
+      scale: {x: 1.0000002, y: 1.0000006, z: 1}
+    - name: CandyBasslet_SPINE2
+      parentName: CandyBasslet_SPINE
+      position: {x: 5.0931704e-13, y: 0.00084080506, z: -4.5201885e-12}
+      rotation: {x: -0.6052949, y: 0.00000017881392, z: -0.0000019371507, w: 0.7960013}
+      scale: {x: 0.99999994, y: 1.0000007, z: 1.000001}
+    - name: CandyBasslet_TAIL
+      parentName: CandyBasslet_SPINE2
+      position: {x: 1.1641532e-12, y: 0.00050234556, z: 9.523546e-12}
+      rotation: {x: -0.098271616, y: -0.000000025307694, z: -0.00000042749977, w: 0.9951597}
+      scale: {x: 1, y: 1.0000001, z: 1.0000001}
+    - name: CandyBasslet_TAIL_end
+      parentName: CandyBasslet_TAIL
+      position: {x: -0, y: 0.0005023455, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CandyBasslet_HEAD
+      parentName: CandyBasslet_SPINE
+      position: {x: -1.5540013e-13, y: -9.189381e-11, z: -1.984972e-12}
+      rotation: {x: 1, y: -0.000000087500524, z: -5.357862e-24, w: 6.123234e-17}
+      scale: {x: 1, y: 0.99999976, z: 0.9999998}
+    - name: CandyBasslet_HEAD_end
+      parentName: CandyBasslet_HEAD
+      position: {x: -0, y: 0.0012822106, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

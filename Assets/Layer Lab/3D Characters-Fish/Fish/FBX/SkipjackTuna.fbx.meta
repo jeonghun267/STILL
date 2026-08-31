@@ -1,0 +1,156 @@
+fileFormatVersion: 2
+guid: 17e852d2b053881448980ba014652faf
+ModelImporter:
+  serializedVersion: 21300
+  internalIDToNameTable: []
+  externalObjects: {}
+  materials:
+    materialImportMode: 0
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 1
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 3
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importVisibility: 0
+    importBlendShapes: 0
+    importCameras: 0
+    importLights: 0
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 0
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton:
+    - name: SkipjackTuna(Clone)
+      parentName: 
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Bone
+      parentName: SkipjackTuna(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: SkipjackTuna_IDLE
+      parentName: Bone
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: -0.9660921, y: 0.0000012247375, z: -0.0000012247373, w: 0.25819775}
+      scale: {x: 100, y: 100, z: 100}
+    - name: SkipjackTuna_SPINE
+      parentName: SkipjackTuna_IDLE
+      position: {x: -0.0000000014504323, y: -0.00041917266, z: 0.00003089628}
+      rotation: {x: -0, y: -0.7071068, z: 0, w: 0.7071068}
+      scale: {x: 1.0000004, y: 1.0000006, z: 1}
+    - name: SkipjackTuna_SPINE2
+      parentName: SkipjackTuna_SPINE
+      position: {x: -3.2014213e-12, y: 0.0017343893, z: 1.2369128e-12}
+      rotation: {x: -0.6052947, y: 0.000000059604645, z: -0.0000018179417, w: 0.7960015}
+      scale: {x: 0.999999, y: 1.0000004, z: 1.000001}
+    - name: SkipjackTuna_TAIL
+      parentName: SkipjackTuna_SPINE2
+      position: {x: 7.566996e-12, y: 0.0010362241, z: 3.7325663e-11}
+      rotation: {x: -0.09827114, y: 0.000000022575042, z: -0.00000022588642, w: 0.9951597}
+      scale: {x: 1, y: 1.0000001, z: 0.99999976}
+    - name: SkipjackTuna_TAIL_end
+      parentName: SkipjackTuna_TAIL
+      position: {x: -0, y: 0.0010362245, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: SkipjackTuna_HEAD
+      parentName: SkipjackTuna_SPINE
+      position: {x: -6.1098235e-13, y: -1.5852368e-10, z: -1.255529e-12}
+      rotation: {x: 1, y: -0.000000083863846, z: 1.1167146e-14, w: -0.00000013315805}
+      scale: {x: 1, y: 0.9999987, z: 0.9999986}
+    - name: SkipjackTuna_HEAD_end
+      parentName: SkipjackTuna_HEAD
+      position: {x: -0, y: 0.0026449077, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: SkipjackTuna
+      parentName: SkipjackTuna(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

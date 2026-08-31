@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: BlueLobster
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: BlueLobster
+  koreanName: "\uBE14\uB8E8\uB78D\uC2A4\uD130"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 3872595999642117609, guid: fbaa92a0456a05d47955a2f4dd984284, type: 3}
+  swimScale: 0.5549651
+  revealScale: 0.5549651
+  bandCenter: 0.15
+  bandWidth: 0.25
+  bodyLength: 0.35
+  swimSpeed: 0.7
+  schoolCount: 3

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: HalfBlackMimicTang
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: HalfBlackMimicTang
+  koreanName: HalfBlackMimicTang
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 5891226785194532487, guid: 46d47ace7bfb6c045b210bd3e8f0eecb, type: 3}
+  swimScale: 0.72168803
+  revealScale: 0.72168803
+  bandCenter: 0.5
+  bandWidth: 0.45
+  bodyLength: 0.26
+  swimSpeed: 0.52
+  schoolCount: 6
