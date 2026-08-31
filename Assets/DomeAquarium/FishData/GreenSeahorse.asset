@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: GreenSeahorse
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: GreenSeahorse
+  koreanName: "\uCD08\uB85D\uD574\uB9C8"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 4818896874322554446, guid: 00463c72a77b4894fa64e5ab52a04f2f, type: 3}
+  swimScale: 0.24663456
+  revealScale: 0.6028844
+  bandCenter: 0.15
+  bandWidth: 0.25
+  bodyLength: 0.09
+  swimSpeed: 0.35
+  schoolCount: 6

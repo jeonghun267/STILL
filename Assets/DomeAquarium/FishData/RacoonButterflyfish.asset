@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: RacoonButterflyfish
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: RacoonButterflyfish
+  koreanName: "\uB108\uAD6C\uB9AC\uB098\uBE44\uACE0\uAE30"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 4690542714588706172, guid: 84fcc8b542b8475448571dba29184037, type: 3}
+  swimScale: 0.49614942
+  revealScale: 0.60640484
+  bandCenter: 0.5
+  bandWidth: 0.45
+  bodyLength: 0.18
+  swimSpeed: 0.36
+  schoolCount: 6

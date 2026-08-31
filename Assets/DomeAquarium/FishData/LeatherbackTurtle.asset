@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: LeatherbackTurtle
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: LeatherbackTurtle
+  koreanName: "\uC7A5\uC218\uAC70\uBD81"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 5551360879698767066, guid: 85c454b5c2cce8d40984b51e005721a5, type: 3}
+  swimScale: 0.9681563
+  revealScale: 0.5486219
+  bandCenter: 0.6
+  bandWidth: 0.5
+  bodyLength: 1.5
+  swimSpeed: 2.2
+  schoolCount: 1

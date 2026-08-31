@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: SpottedEagleRay
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: SpottedEagleRay
+  koreanName: "\uC810\uBC15\uC774\uB9E4\uAC00\uC624\uB9AC"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 4074812338002093122, guid: 8c5f24858ad48f84186b6b7471a391cc, type: 3}
+  swimScale: 0.8232593
+  revealScale: 0.4373565
+  bandCenter: 0.55
+  bandWidth: 0.45
+  bodyLength: 1.6
+  swimSpeed: 2.2
+  schoolCount: 1

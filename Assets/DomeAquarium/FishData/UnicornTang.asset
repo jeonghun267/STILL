@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: UnicornTang
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: UnicornTang
+  koreanName: "\uC720\uB2C8\uCF58\uD0F1"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 4071820326859771619, guid: 4b2b9b0ced2039143aff5d841c174a6b, type: 3}
+  swimScale: 1.040901
+  revealScale: 1.040901
+  bandCenter: 0.5
+  bandWidth: 0.45
+  bodyLength: 0.45
+  swimSpeed: 0.9
+  schoolCount: 6

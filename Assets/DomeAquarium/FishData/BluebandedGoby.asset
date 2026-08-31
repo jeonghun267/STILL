@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: BluebandedGoby
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: BluebandedGoby
+  koreanName: "\uBE14\uB8E8\uBC34\uB4DC\uACE0\uBE44"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 184675847828092861, guid: 53e146deb8ee0a843b669e523584cfe6, type: 3}
+  swimScale: 0.13483118
+  revealScale: 0.5932572
+  bandCenter: 0.15
+  bandWidth: 0.25
+  bodyLength: 0.05
+  swimSpeed: 0.35
+  schoolCount: 6

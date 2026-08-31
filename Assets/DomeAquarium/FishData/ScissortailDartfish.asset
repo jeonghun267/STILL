@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: ScissortailDartfish
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: ScissortailDartfish
+  koreanName: "\uAC00\uC704\uAF2C\uB9AC\uB2E4\uD2B8\uD53C\uC26C"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 2538958510455607145, guid: 494193552f1ddcd4aa44af2989d8caad, type: 3}
+  swimScale: 0.30286992
+  revealScale: 0.6663138
+  bandCenter: 0.15
+  bandWidth: 0.25
+  bodyLength: 0.1
+  swimSpeed: 0.35
+  schoolCount: 5

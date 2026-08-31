@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: JewelDamsel
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: JewelDamsel
+  koreanName: "\uC8FC\uC5BC\uB2F4\uC140"
+  scientificName: 
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  prefab: {fileID: 4451164065479935291, guid: 55bb6a9156ca0ad4c97cf548c7c10323, type: 3}
+  swimScale: 0.26700863
+  revealScale: 0.6526877
+  bandCenter: 0.3
+  bandWidth: 0.35
+  bodyLength: 0.09
+  swimSpeed: 0.35
+  schoolCount: 16
