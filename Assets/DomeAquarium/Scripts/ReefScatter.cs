@@ -7,7 +7,7 @@ using UnityEditor.SceneManagement;
 // 수조 바닥 지형(산호/바위/해초/조개) 배치기.
 // 에디터에서 컨텍스트 메뉴로 실행하는 것이 기본이지만 런타임 호출도 안전하다.
 //
-// 좌표 규약: 수조는 반지름 tankRadius(12m), 바닥 y = floorY(-8). 플레이어는 (0,0,0) 고정.
+// 좌표 규약: 수조는 반지름 tankRadius(12m), 모래 표면 y = floorY(-8.12). 플레이어는 (0,0,0) 고정.
 // 생성물은 전부 자식 "Generated" 안에만 들어간다. ClearGenerated 는 그 자식만 지운다.
 public class ReefScatter : MonoBehaviour
 {
@@ -16,12 +16,13 @@ public class ReefScatter : MonoBehaviour
 
     [Header("수조 규격 (BoidManager 와 반드시 일치)")]
     public float tankRadius = 12f;
-    public float floorY = -8f;
+    public float floorY = -8.12f;
 
-    [Header("계단식 지형")]
+    [Header("방사형 배치")]
     public int terraceCount = 3;
     public float centerClearRadius = 2.5f;   // 플레이어 발밑 — 아무것도 두지 않는다
-    public float terraceRise = 0.35f;        // 링 하나당 올라오는 높이 (바깥쪽일수록 높다)
+    public float terraceRise = 0f;           // 실제 단차 메시가 있을 때만 사용. 평면 바닥에서는 반드시 0
+    [Min(0f)] public float groundEmbedDepth = 0.015f; // 접지 틈이 보이지 않도록 바닥에 살짝 묻는다
     public float wallMargin = 0.6f;          // 유리벽에 프랍이 박히지 않도록 남기는 여유
 
     [Header("난수")]
@@ -52,6 +53,25 @@ public class ReefScatter : MonoBehaviour
 
     // 카테고리 배열 캐시 (Generate 시작 시 한 번만 구성)
     private GameObject[][] categories;
+
+    void Awake()
+    {
+        // 에디터 씬 보정이 아직 저장되지 않았더라도 빌드/플레이에서는 절대 떠 보이지 않게 한다.
+        GroundGeneratedChildren();
+    }
+
+    public int GroundGeneratedChildren()
+    {
+        Transform generated = transform.Find(GeneratedRootName);
+        if (generated == null) return 0;
+
+        int adjusted = 0;
+        for (int i = 0; i < generated.childCount; i++)
+        {
+            if (AlignBottomToSurface(generated.GetChild(i).gameObject, floorY, groundEmbedDepth)) adjusted++;
+        }
+        return adjusted;
+    }
 
     [ContextMenu("지형 생성")]
     public void Generate()
@@ -113,7 +133,7 @@ public class ReefScatter : MonoBehaviour
                 float outer = (ring + 1) * ringWidth;
                 if (outer <= inner) { perRing += (ring == 0 ? "" : "/") + "0"; continue; }
 
-                // 바깥 링일수록 바닥에서 계단처럼 올라온다. 링 높이를 명시적으로 계산.
+                // 실제 단차 메시가 있는 경우에만 링별 높이를 올린다.
                 float terraceY = floorY + ring * terraceRise;
 
                 // 면적 비례 개수 — 안쪽 링에 몰리지 않게 한다.
@@ -134,7 +154,7 @@ public class ReefScatter : MonoBehaviour
 
                     Vector3 pos = new Vector3(
                         center.x + Mathf.Cos(theta) * r,
-                        terraceY + Random.Range(-0.04f, 0.04f),   // 완전한 평면을 피하는 미세 지터
+                        terraceY,
                         center.z + Mathf.Sin(theta) * r);
 
                     float yaw = Random.value * 360f;
@@ -154,6 +174,7 @@ public class ReefScatter : MonoBehaviour
 
                     go.transform.SetPositionAndRotation(pos, rot);
                     go.transform.localScale = Vector3.one * Random.Range(scaleMin, scaleMax);
+                    AlignBottomToSurface(go, terraceY, groundEmbedDepth);
                     go.name = "R" + ring + "_" + CategoryNames[categoryIndex] + "_" + i.ToString("00");
 
                     total++;
@@ -177,6 +198,43 @@ public class ReefScatter : MonoBehaviour
 #endif
 
         Debug.Log("[ReefScatter] 지형 생성 완료 — 총 " + total + "개 (링별 " + perRing + "), seed=" + seed, this);
+    }
+
+    /// <summary>
+    /// 프리팹 피벗 대신 실제 렌더러 외곽의 최하단을 기준으로 바닥에 접지한다.
+    /// 산호·바위·해초·조개의 서로 다른 피벗 위치를 한 방식으로 처리한다.
+    /// </summary>
+    public static bool AlignBottomToSurface(GameObject go, float surfaceY, float embedDepth = 0.015f)
+    {
+        if (go == null || !TryGetVisualBounds(go, out Bounds bounds)) return false;
+        float delta = surfaceY - Mathf.Max(0f, embedDepth) - bounds.min.y;
+        if (Mathf.Abs(delta) <= 0.0001f) return false;
+        go.transform.position += Vector3.up * delta;
+        return true;
+    }
+
+    public static bool TryGetVisualBounds(GameObject go, out Bounds bounds)
+    {
+        bounds = default;
+        if (go == null) return false;
+
+        Renderer[] renderers = go.GetComponentsInChildren<Renderer>(true);
+        bool found = false;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null || renderer is ParticleSystemRenderer || renderer is TrailRenderer
+                || renderer is LineRenderer)
+                continue;
+
+            if (!found)
+            {
+                bounds = renderer.bounds;
+                found = true;
+            }
+            else bounds.Encapsulate(renderer.bounds);
+        }
+        return found;
     }
 
     [ContextMenu("지형 삭제")]

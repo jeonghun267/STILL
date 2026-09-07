@@ -23,6 +23,15 @@ public static class DomeAquariumEnvironmentSetup
     static void ScheduleApply()
     {
         EditorApplication.delayCall += ApplyIfNeeded;
+        EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+    }
+
+    static void OnPlayModeStateChanged(PlayModeStateChange state)
+    {
+        // 플레이 중에는 씬 에셋을 건드리지 않는다. 편집 모드로 돌아온 직후 기존 배치도 접지한다.
+        if (state == PlayModeStateChange.EnteredEditMode)
+            EditorApplication.delayCall += ApplyIfNeeded;
     }
 
     static void ApplyIfNeeded()
@@ -35,6 +44,8 @@ public static class DomeAquariumEnvironmentSetup
         GameObject tank = GameObject.Find("WaterTank");
         var tod = Object.FindFirstObjectByType<TimeOfDayController>();
         Transform reef = GameObject.Find("ReefFloor")?.transform;
+        ReefScatter scatter = reef != null ? reef.GetComponent<ReefScatter>() : null;
+        Transform generated = reef != null ? reef.Find("Generated") : null;
         Transform accentRoot = reef != null ? reef.Find(AccentRootName) : null;
 
         bool floorReady = seabed != null &&
@@ -47,7 +58,12 @@ public static class DomeAquariumEnvironmentSetup
                            tod.coralAccentLights != null &&
                            tod.coralAccentLights.Length == accentRoot.childCount &&
                            accentRoot.childCount > 0;
-        if (floorReady && wallReady && lightsReady) return;
+        bool reefReady = scatter != null && generated != null &&
+                         Mathf.Abs(scatter.floorY - DomeAquariumSeabed.SeabedSurfaceY) < 0.001f &&
+                         Mathf.Abs(scatter.terraceRise) < 0.001f &&
+                         AreGeneratedPropsGrounded(generated, DomeAquariumSeabed.SeabedSurfaceY,
+                             scatter.groundEmbedDepth);
+        if (floorReady && wallReady && lightsReady && reefReady) return;
 
         Apply(saveScene: true);
     }
@@ -115,6 +131,28 @@ public static class DomeAquariumEnvironmentSetup
 
         Transform reef = GameObject.Find("ReefFloor")?.transform;
         Transform generated = reef != null ? reef.Find("Generated") : null;
+        ReefScatter scatter = reef != null ? reef.GetComponent<ReefScatter>() : null;
+        if (scatter != null)
+        {
+            scatter.floorY = DomeAquariumSeabed.SeabedSurfaceY;
+            scatter.terraceRise = 0f;
+            scatter.groundEmbedDepth = 0.015f;
+            EditorUtility.SetDirty(scatter);
+
+            if (generated != null)
+            {
+                for (int i = 0; i < generated.childCount; i++)
+                {
+                    GameObject prop = generated.GetChild(i).gameObject;
+                    if (!ReefScatter.AlignBottomToSurface(prop, DomeAquariumSeabed.SeabedSurfaceY,
+                            scatter.groundEmbedDepth))
+                        continue;
+                    EditorUtility.SetDirty(prop.transform);
+                    changed++;
+                }
+            }
+        }
+
         var tod = Object.FindFirstObjectByType<TimeOfDayController>();
         if (reef != null && generated != null && tod != null)
         {
@@ -131,6 +169,19 @@ public static class DomeAquariumEnvironmentSetup
         EditorSceneManager.MarkSceneDirty(scene);
         if (saveScene) EditorSceneManager.SaveScene(scene);
         Debug.Log($"[DomeAquarium] 바닥 겹침 보정 및 산호 군락 조명 {Mathf.Max(0, changed - 1)}개 적용.");
+    }
+
+    static bool AreGeneratedPropsGrounded(Transform generated, float surfaceY, float embedDepth)
+    {
+        if (generated == null) return false;
+        float expectedBottom = surfaceY - Mathf.Max(0f, embedDepth);
+        for (int i = 0; i < generated.childCount; i++)
+        {
+            GameObject prop = generated.GetChild(i).gameObject;
+            if (!ReefScatter.TryGetVisualBounds(prop, out Bounds bounds)) continue;
+            if (Mathf.Abs(bounds.min.y - expectedBottom) > 0.01f) return false;
+        }
+        return true;
     }
 
     /// <summary>수조 밖으로 모서리가 나오지 않는 반지름 11.88m 원형 바닥.</summary>

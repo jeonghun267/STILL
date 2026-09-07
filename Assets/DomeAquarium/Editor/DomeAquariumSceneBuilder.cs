@@ -631,8 +631,10 @@ public static class DomeAquariumSceneBuilder
         go.transform.position = Vector3.zero;
         var reef = go.AddComponent<ReefScatter>();
         reef.tankRadius = TankRadius;
-        reef.floorY = FloorY;
+        reef.floorY = DomeAquariumSeabed.SeabedSurfaceY;
         reef.terraceCount = 3;
+        reef.terraceRise = 0f;
+        reef.groundEmbedDepth = 0.015f;
         reef.centerClearRadius = 2.5f;
         reef.coralPrefabs = DomeAquariumSetup.LoadPropPrefabs("coral").ToArray();
         reef.rockPrefabs = DomeAquariumSetup.LoadPropPrefabs("rock").ToArray();
