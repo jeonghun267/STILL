@@ -10,6 +10,8 @@ using UnityEngine.UI;
 public sealed class FishEncyclopediaPanel : MonoBehaviour
 {
     const string PreviewObjectPrefix = "EncyclopediaPreview_";
+    // 상세 영역 부제 자리표시자. 설정 스크립트와 런타임이 같은 문구를 쓴다. 286px 한 줄에 들어가는 길이로.
+    public const string DefaultSubtitle = "기록한 생물을 3D로 다시 관찰할 수 있어요";
 
     [Header("루트")]
     public CanvasGroup canvasGroup;
@@ -44,6 +46,12 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
     public GameObject narrationButtonRoot;
     public float previewForwardOffset = 0.11f;
 
+    [Header("관찰 모델 가시성")]
+    [Tooltip("관찰창 모델은 낮에도 살짝 또렷하게 — 시간대와 무관하게 항상 더하는 발광(알베도 배수). 작게 유지")]
+    [Min(0f)] public float previewBaseGlow = 0.05f;
+    [Tooltip("밤에 관찰창 물고기가 검게 보이지 않도록 한밤 기준으로 더하는 발광(알베도 배수). 0.5 안팎이면 음영이 남는다")]
+    [Min(0f)] public float previewNightGlow = 0.5f;
+
     static readonly Color[] RarityColors =
     {
         new Color(0.60f, 0.69f, 0.76f, 1f),
@@ -52,7 +60,7 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         new Color(0.72f, 0.38f, 0.96f, 1f),
         new Color(1.00f, 0.72f, 0.18f, 1f)
     };
-    static readonly string[] RarityNames = { "일반", "고급", "희귀", "영웅", "전설" };
+    static readonly string[] RarityNames = ObservationTerms.Frequency;
 
     readonly List<FishData> filteredFish = new List<FishData>(128);
     FishCollectionStore store;
@@ -221,11 +229,11 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
 
         int total = allFish != null ? allFish.Length : 0;
         int found = store != null ? store.GetDiscoveredSpeciesCount() : 0;
-        if (progressText != null) progressText.text = $"해양생물 도감  ·  {found}/{total} 발견";
+        if (progressText != null) progressText.text = ObservationTerms.Progress(found, total);
         if (profileText != null) profileText.text = store != null ? store.ActiveProfile.displayName : "탐험가 1";
         if (filterStatusText != null)
-            filterStatusText.text = discoveredOnly ? "발견한 생물" :
-                (rarityFilter < 0 ? "전체 생물" : RarityNames[Mathf.Clamp(rarityFilter, 0, 4)] + " 등급");
+            filterStatusText.text = discoveredOnly ? ObservationTerms.RecordedOnly :
+                (rarityFilter < 0 ? "전체 생물" : ObservationTerms.FrequencyLabel + " · " + RarityNames[Mathf.Clamp(rarityFilter, 0, 4)]);
 
         page = Mathf.Clamp(page, 0, MaxPage());
         RefreshCards();
@@ -274,7 +282,7 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
                 cardNames[i].text = found ? fish.DisplayName : "???";
             if (cardRarities != null && i < cardRarities.Length && cardRarities[i] != null)
             {
-                cardRarities[i].text = found ? RarityNames[rarity] : "미발견";
+                cardRarities[i].text = found ? RarityNames[rarity] : ObservationTerms.Unobserved;
                 cardRarities[i].color = found ? RarityColors[rarity] : new Color(0.52f, 0.61f, 0.67f);
             }
             if (cardLockedMarks != null && i < cardLockedMarks.Length && cardLockedMarks[i] != null)
@@ -283,9 +291,10 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
                 cardLockedMarks[i].color = found ? RarityColors[rarity] : new Color(0.28f, 0.38f, 0.45f);
             }
             if (cardFrames != null && i < cardFrames.Length && cardFrames[i] != null)
+                // 카드 스프라이트가 흰 라운드(색이 그대로 보임)로 바뀌어 기본색을 설정 스크립트와 맞춘다.
                 cardFrames[i].color = found
-                    ? Color.Lerp(new Color(0.025f, 0.12f, 0.17f, 0.97f), RarityColors[rarity], 0.22f)
-                    : new Color(0.025f, 0.075f, 0.10f, 0.88f);
+                    ? Color.Lerp(new Color(0.06f, 0.22f, 0.29f, 0.97f), RarityColors[rarity], 0.22f)
+                    : new Color(0.035f, 0.13f, 0.18f, 0.90f);
             if (cardButtons != null && i < cardButtons.Length && cardButtons[i] != null)
                 cardButtons[i].interactable = true;
         }
@@ -331,10 +340,10 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         if (detailSubtitleText != null) detailSubtitleText.text = fish.SubtitleName;
         if (detailRarityText != null)
         {
-            detailRarityText.text = "발견 등급  ·  " + RarityNames[rarity];
+            detailRarityText.text = ObservationTerms.FrequencyLine(rarity);
             detailRarityText.color = RarityColors[rarity];
         }
-        if (detailCountText != null) detailCountText.text = $"발견 {store.GetDiscoveryCount(fish)}회";
+        if (detailCountText != null) detailCountText.text = $"관찰 {store.GetDiscoveryCount(fish)}회";
         if (narrationButtonRoot != null) narrationButtonRoot.SetActive(true);
 
         int token = ++detailRequestToken;
@@ -356,11 +365,11 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
     void ShowLockedDetail()
     {
         ClearDetail();
-        if (detailNameText != null) detailNameText.text = "미발견 생물";
+        if (detailNameText != null) detailNameText.text = ObservationTerms.UnobservedCreature;
         if (detailSubtitleText != null) detailSubtitleText.text = "???";
-        if (detailRarityText != null) detailRarityText.text = "상자에서 처음 만나면 기록됩니다";
+        if (detailRarityText != null) detailRarityText.text = "탐사에서 처음 만나면 기록됩니다";
         if (detailDescriptionText != null)
-            detailDescriptionText.text = "아직 관찰 기록이 없어요. 새로운 상자를 열어 이 생물의 모습을 확인해 보세요.";
+            detailDescriptionText.text = "아직 아무도 기록하지 않았어요. 다음 탐사에서 이 생물을 만날지도 몰라요.";
     }
 
     void ClearDetail()
@@ -371,7 +380,7 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         FishNarrationService.Instance?.Stop();
         DestroyPreview();
         if (detailNameText != null) detailNameText.text = "생물을 선택하세요";
-        if (detailSubtitleText != null) detailSubtitleText.text = "발견한 카드에서 3D 생물을 관찰할 수 있어요";
+        if (detailSubtitleText != null) detailSubtitleText.text = DefaultSubtitle;
         if (detailRarityText != null) detailRarityText.text = "";
         if (detailDescriptionText != null) detailDescriptionText.text = "카드를 선택하면 생김새와 설명이 여기에 표시됩니다.";
         if (detailCountText != null) detailCountText.text = "";
@@ -409,6 +418,11 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         for (int i = 0; i < animators.Length; i++) animators[i].enabled = false;
         Animation[] animations = previewModel.GetComponentsInChildren<Animation>(true);
         for (int i = 0; i < animations.Length; i++) animations[i].enabled = false;
+
+        // 관찰창은 늘 또렷해야 한다 — 낮에도 약간, 밤에는 충분히 자기 색으로 발광시킨다.
+        // (위에서 프리팹의 스크립트를 전부 껐으므로 반드시 그 뒤에 붙인다.)
+        if (previewNightGlow > 0f || previewBaseGlow > 0f)
+            ShowcaseGlow.Attach(previewModel, previewBaseGlow, previewNightGlow);
 
         previewModel.transform.localScale = Vector3.one * Mathf.Max(0.01f, fish.revealScale);
         previewRenderers = previewModel.GetComponentsInChildren<Renderer>(false);

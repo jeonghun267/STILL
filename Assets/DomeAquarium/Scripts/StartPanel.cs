@@ -6,6 +6,7 @@ using UnityEngine;
 // 시작 버튼(Button.onClick / PokeSelector.onPoked)이 BeginExperience() 를 호출하면
 // 물속으로 가라앉듯 아래로 내려가면서 알파가 0 이 된다.
 // 연출이 끝나면 MysteryBox.Summon() 으로 상자를 부르고, 손목 메뉴를 활성화한 뒤 자기 자신을 끈다.
+// 육지 로비(LobbySequence)가 있으면 "입장하기" 패널로 쓰인다 — 나레이션 뒤에 나타나고, 누르면 로비가 이어 받는다.
 public class StartPanel : MonoBehaviour
 {
     [Header("참조")]
@@ -15,6 +16,11 @@ public class StartPanel : MonoBehaviour
 
     public Transform revealStage;          // 물고기가 다가와 멈추는 지점. 박스와 같은 방향으로 맞춘다
     public WristMenu wristMenu;            // 시작 연출이 끝난 뒤에야 켠다
+
+    // 육지 로비에서 시작하는 경우. 비어 있으면 예전처럼 수조 안에서 바로 시작한다.
+    // 로비가 있으면: 나레이션이 끝나야 패널이 나타나고(RevealForLobby), "입장하기"를 누르면
+    // 걷기·엘리베이터·하강을 로비가 맡은 뒤 도착하면 CompleteFromLobby 로 상자를 부른다.
+    public LobbySequence lobby;
 
     [Header("배치")]
     public float distance = 1.35f;         // 플레이어로부터의 수평 거리
@@ -33,6 +39,9 @@ public class StartPanel : MonoBehaviour
     // --- 상태 (재진입 방지) ---
     private bool began;                    // BeginExperience 가 이미 호출됐는가
     private bool finished;                 // 마무리 처리가 이미 끝났는가
+    private bool revealed;                 // 로비 나레이션이 끝나 패널이 보이는가
+
+    bool UsesLobby => lobby != null && lobby.isActiveAndEnabled;
 
     // --- 캐시 (Update / 코루틴 안에서 GetComponent·Find 금지) ---
     private Transform tr;
@@ -54,11 +63,13 @@ public class StartPanel : MonoBehaviour
 
         PlaceInFrontOfPlayer();
 
+        // 로비에서는 나레이션을 듣는 동안 패널이 앞을 가리지 않게 숨겨 둔다.
+        revealed = !UsesLobby;
         if (canvasGroup != null)
         {
-            canvasGroup.alpha = 1f;
-            canvasGroup.interactable = true;
-            canvasGroup.blocksRaycasts = true;
+            canvasGroup.alpha = revealed ? 1f : 0f;
+            canvasGroup.interactable = revealed;
+            canvasGroup.blocksRaycasts = revealed;
         }
 
         // 시작 전에는 미스터리 박스를 숨겨 둔다.
@@ -129,11 +140,39 @@ public class StartPanel : MonoBehaviour
         tr.rotation = Quaternion.LookRotation(forward, Vector3.up);
     }
 
+    /// <summary>로비 나레이션이 끝나면 LobbySequence 가 부른다. "입장하기" 패널을 서서히 띄운다.</summary>
+    public void RevealForLobby()
+    {
+        if (revealed || began) return;
+        revealed = true;
+        if (isActiveAndEnabled) StartCoroutine(FadeCanvas(1f, 0.6f, true));
+        else if (canvasGroup != null) { canvasGroup.alpha = 1f; canvasGroup.interactable = true; canvasGroup.blocksRaycasts = true; }
+    }
+
+    /// <summary>엘리베이터가 수중 돔에 도착하면 LobbySequence 가 부른다. 배경음악·상자·손목 메뉴를 켠다.</summary>
+    public void CompleteFromLobby()
+    {
+        AquariumAudioDirector.Instance?.BeginExperience();
+        FinishSequence();
+    }
+
     // 시작 버튼이 호출한다. 두 번 눌려도 안전.
     public void BeginExperience()
     {
+        // 찌르기(PokeSelector)는 캔버스가 숨어 있어도 트리거로 들어온다 — 나레이션 중에는 무시한다.
+        if (!revealed) return;
         if (began) return;
         began = true;
+
+        if (UsesLobby)
+        {
+            // 로비에서는 물거품도, 배경음악도 아직 아니다. 패널만 조용히 사라지고 로비가 이어 받는다.
+            if (canvasGroup != null) { canvasGroup.interactable = false; canvasGroup.blocksRaycasts = false; }
+            if (isActiveAndEnabled) StartCoroutine(FadeCanvas(0f, 0.4f, false));
+            else if (canvasGroup != null) canvasGroup.alpha = 0f;
+            lobby.BeginEntry();
+            return;
+        }
 
         PlayStartBubbleBurst();
         AquariumAudioDirector.Instance?.BeginExperience();
@@ -212,6 +251,21 @@ public class StartPanel : MonoBehaviour
         }
 
         FinishSequence();
+    }
+
+    private IEnumerator FadeCanvas(float target, float seconds, bool interactiveAtEnd)
+    {
+        if (canvasGroup == null) yield break;
+        float from = canvasGroup.alpha;
+        for (float t = 0f; t < 1f;)
+        {
+            t += Time.deltaTime / Mathf.Max(0.01f, seconds);
+            canvasGroup.alpha = Mathf.Lerp(from, target, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t)));
+            yield return null;
+        }
+        canvasGroup.alpha = target;
+        canvasGroup.interactable = interactiveAtEnd;
+        canvasGroup.blocksRaycasts = interactiveAtEnd;
     }
 
     // 미스터리 박스를 켜고 패널을 끈다. 여러 번 불려도 한 번만 동작.

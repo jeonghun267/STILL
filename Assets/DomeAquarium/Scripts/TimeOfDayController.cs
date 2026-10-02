@@ -32,9 +32,18 @@ public class TimeOfDayController : MonoBehaviour
     public Material waterMaterial;      // Mat_WaterTankInner
     // 공유 머티리얼만 건드린다. 레퍼런스처럼 산호는 따뜻한 금빛, 해초는 차가운 청록으로 나눈다.
     public Material coralGlowMaterial;
-    public Color coralGlowTint = new Color(1.00f, 0.72f, 0.30f);
+    // 발광맵이 팔레트 텍스처라 색조는 팔레트가 내고, 틴트는 따뜻한/차가운 기운만 얹는다. 너무 진하면 팔레트 색이 눌린다.
+    public Color coralGlowTint = new Color(1.00f, 0.85f, 0.62f);
     public Material seaweedGlowMaterial;
-    public Color seaweedGlowTint = new Color(0.25f, 0.75f, 1.00f);
+    public Color seaweedGlowTint = new Color(0.55f, 0.90f, 1.00f);
+
+    [Header("산호·해초 발광 세기 (알베도 배수)")]
+    [Tooltip("낮 바탕값. 0 이면 낮에는 전혀 빛나지 않는다")]
+    [Min(0f)] public float coralEmissionDay = 0.10f;
+    [Tooltip("한밤 세기. XR 카메라는 포스트프로세싱(블룸)이 꺼져 있어 1 을 넘기면 하얗게 뭉개져 형태가 사라진다. 0.5~0.7 권장")]
+    [Min(0f)] public float coralEmissionNight = 0.60f;
+    [Min(0f)] public float seaweedEmissionDay = 0.06f;
+    [Min(0f)] public float seaweedEmissionNight = 0.50f;
 
     [Header("산호 군락 보조광")]
     [Tooltip("산호 자체 발광이 실제로 주변 바닥도 비추도록 배치한 저비용 포인트 라이트들")]
@@ -50,6 +59,12 @@ public class TimeOfDayController : MonoBehaviour
 
     [Header("시간대")]
     public Key[] keys;
+
+    /// <summary>씬에 하나뿐인 컨트롤러. ShowcaseGlow 처럼 시간대를 읽기만 하는 쪽이 쓴다.</summary>
+    public static TimeOfDayController Instance { get; private set; }
+
+    /// <summary>0=한낮, 1=한밤. 키의 coralGlow 를 보간한 값이라 "얼마나 밤 같은가"를 디자이너 의도대로 따른다.</summary>
+    public float NightFactor { get; private set; }
 
     static readonly int ShallowId = Shader.PropertyToID("_ShallowColor");
     static readonly int DeepId = Shader.PropertyToID("_DeepColor");
@@ -81,7 +96,13 @@ public class TimeOfDayController : MonoBehaviour
         Apply(CurrentHour());
     }
 
-    void OnDisable() { RestoreSnapshots(); }
+    void OnEnable() { Instance = this; }
+
+    void OnDisable()
+    {
+        if (Instance == this) Instance = null;
+        RestoreSnapshots();
+    }
 
     void TakeSnapshots()
     {
@@ -116,6 +137,16 @@ public class TimeOfDayController : MonoBehaviour
     {
         timer += Time.deltaTime;
         if (timer < Mathf.Max(0.25f, updateInterval)) return;
+        timer = 0f;
+        Apply(CurrentHour());
+    }
+
+    /// <summary>
+    /// 지금 시각을 즉시 적용한다. 육지 로비에서는 이 컨트롤러를 꺼 두었다가(안개·수중 조명이 로비를 덮지 않게)
+    /// 수중 돔에 도착하는 순간 켜는데, 다음 갱신 주기(2초)까지 기다리면 그동안 로비 조명이 남는다.
+    /// </summary>
+    public void ApplyNow()
+    {
         timer = 0f;
         Apply(CurrentHour());
     }
@@ -177,12 +208,14 @@ public class TimeOfDayController : MonoBehaviour
         }
 
         float glow = Mathf.Lerp(k.coralGlow, m.coralGlow, t);
-        // 발광은 HDR 이라 1을 넘겨야 블룸이 걸려 "빛난다"고 읽힌다.
-        // 한낮에는 아주 약한 바탕값만 남기고, 저녁부터 빠르게 살아나게 한다.
+        NightFactor = Mathf.Clamp01(glow);
+        // 예전에는 블룸을 기대하고 밤에 2.75 배까지 올렸지만, XR 카메라에 포스트프로세싱이 꺼져 있어
+        // 블룸 대신 그냥 클리핑된 노란 실루엣이 됐다. 1 아래로 묶어 두면 팔레트 색과 약한 태양 음영이
+        // 살아남아 "빛나면서도 형태가 보이는" 상태가 된다.
         if (coralGlowMaterial != null && coralGlowMaterial.HasProperty(EmissionId))
-            coralGlowMaterial.SetColor(EmissionId, coralGlowTint * (0.30f + glow * 2.45f));
+            coralGlowMaterial.SetColor(EmissionId, coralGlowTint * Mathf.Lerp(coralEmissionDay, coralEmissionNight, glow));
         if (seaweedGlowMaterial != null && seaweedGlowMaterial.HasProperty(EmissionId))
-            seaweedGlowMaterial.SetColor(EmissionId, seaweedGlowTint * (0.18f + glow * 2.05f));
+            seaweedGlowMaterial.SetColor(EmissionId, seaweedGlowTint * Mathf.Lerp(seaweedEmissionDay, seaweedEmissionNight, glow));
 
         // Emission은 표면만 밝게 보이고 주변 지형을 실제로 비추지는 않는다.
         // 겹침이 적도록 군락마다 하나씩만 둔 포인트 라이트를 같은 시간값으로 제어한다.

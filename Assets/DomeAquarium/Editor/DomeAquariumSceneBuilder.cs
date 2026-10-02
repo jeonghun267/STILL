@@ -99,6 +99,9 @@ public static class DomeAquariumSceneBuilder
         // 바닥 평면의 z-fighting을 없애고, 산호 자체 발광이 주변 바닥에도 닿게 한다.
         DomeAquariumEnvironmentSetup.Apply(saveScene: false);
 
+        // 체험은 땅에서 시작한다 — 시작 패널·손목 메뉴가 다 세워진 뒤에 로비를 붙여야 배선이 잡힌다.
+        DomeAquariumLobbyBuilder.Build(saveScene: false);
+
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         Debug.Log("[DomeAquarium] 씬 빌드 완료 및 저장.");
@@ -494,6 +497,10 @@ public static class DomeAquariumSceneBuilder
         glow.shader = Shader.Find("Universal Render Pipeline/Lit");
         glow.EnableKeyword("_EMISSION");
         glow.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+        // 발광맵 = 팔레트. 발광이 단색이면 밤에 산호가 형태 없는 노란 덩어리로 보인다.
+        // 팔레트를 물리면 면마다 제 색으로 빛나 실루엣 안에서도 형태가 읽힌다.
+        if (glow.HasProperty("_EmissionMap") && glow.HasProperty("_BaseMap"))
+            glow.SetTexture("_EmissionMap", glow.GetTexture("_BaseMap"));
         if (glow.HasProperty("_EmissionColor")) glow.SetColor("_EmissionColor", tint * 0.6f);
         glow.enableInstancing = true;
         EditorUtility.SetDirty(glow);
@@ -1028,7 +1035,6 @@ public static class DomeAquariumSceneBuilder
             new Color(0.72f, 0.45f, 0.95f),   // Epic
             new Color(1.00f, 0.78f, 0.25f),   // Legendary
         };
-        info.rarityNames = new[] { "일반", "고급", "희귀", "영웅", "전설" };
 
         // 임포트되어 있는 VRTemplateAssets UI 스프라이트로 카드 스타일을 마감한다.
         DomeAquariumInfoPanelSetup.StylePanel(info);
@@ -1071,12 +1077,12 @@ public static class DomeAquariumSceneBuilder
 
         var title = NewText("TitleText", panel, new Vector2(560f, 80f), 56f, font);
         title.rectTransform.anchoredPosition = new Vector2(0f, 110f);
-        title.text = "해양생물관";
+        title.text = "STILL";
         title.color = Color.white;
 
         var sub = NewText("SubText", panel, new Vector2(560f, 90f), 28f, font);
         sub.rectTransform.anchoredPosition = new Vector2(0f, 20f);
-        sub.text = "눈앞의 상자를 컨트롤러로 건드리면\n바다 친구가 찾아옵니다";
+        sub.text = "아직 아무도 보지 못한 바다를\n기록하러 갑니다";
         sub.color = new Color(0.78f, 0.86f, 0.93f);
 
         var button = NewUI("StartButton", panel, new Vector2(320f, 100f));
@@ -1085,7 +1091,7 @@ public static class DomeAquariumSceneBuilder
         SkinImage(btnImg, LoadUiSprite("UIButtonDefault.png"), new Color(0.13f, 0.45f, 0.80f, 0.95f));
 
         var label = NewText("Label", button, new Vector2(320f, 100f), 34f, font);
-        label.text = "시작하기";
+        label.text = ObservationTerms.Enter;
         label.color = Color.white;
 
         // 컨트롤러 레이로 누르는 정식 경로. 이게 없으면 레이가 맞아도 반응할 대상이 없다.
@@ -1201,7 +1207,7 @@ public static class DomeAquariumSceneBuilder
         SkinImage(img, LoadUiSprite("UIButtonDefault.png"), new Color(0.10f, 0.42f, 0.72f, 0.95f));
 
         var label = NewText("Label", btn, new Vector2(300f, 130f), 40f, font);
-        label.text = "다시 뽑기";
+        label.text = ObservationTerms.NextDive;
         label.color = Color.white;
 
         var uiBtn = btn.gameObject.AddComponent<Button>();

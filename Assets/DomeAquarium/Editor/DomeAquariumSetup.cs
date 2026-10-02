@@ -93,6 +93,7 @@ public static class DomeAquariumSetup
     {
         "Assets/Layer Lab/3D Characters-Fish/Fish",
         "Assets/RPG Pack",
+        "Assets/Barking_Dog",      // 육지 로비 모듈 키트 — 유리(투명)·네온(발광) 재질이 섞여 있다
     };
 
     [MenuItem("DomeAquarium/1. 에셋 준비 - 머티리얼 URP 변환", priority = 1)]
@@ -160,6 +161,14 @@ public static class DomeAquariumSetup
             Texture bump = mat.HasProperty("_BumpMap") ? mat.GetTexture("_BumpMap") : null;
             float smoothness = mat.HasProperty("_Glossiness") ? mat.GetFloat("_Glossiness") : 0.25f;
             float metallic = mat.HasProperty("_Metallic") ? mat.GetFloat("_Metallic") : 0f;
+            Texture metallicMap = mat.HasProperty("_MetallicGlossMap") ? mat.GetTexture("_MetallicGlossMap") : null;
+            float glossMapScale = mat.HasProperty("_GlossMapScale") ? mat.GetFloat("_GlossMapScale") : 1f;
+            Texture occlusion = mat.HasProperty("_OcclusionMap") ? mat.GetTexture("_OcclusionMap") : null;
+            float occlusionStrength = mat.HasProperty("_OcclusionStrength") ? mat.GetFloat("_OcclusionStrength") : 1f;
+            Texture emissionMap = mat.HasProperty("_EmissionMap") ? mat.GetTexture("_EmissionMap") : null;
+            Color emissionColor = mat.HasProperty("_EmissionColor") ? mat.GetColor("_EmissionColor") : Color.black;
+            // Standard 렌더링 모드: 0 Opaque, 1 Cutout, 2 Fade, 3 Transparent(프리멀티플라이)
+            int renderMode = mat.HasProperty("_Mode") ? Mathf.RoundToInt(mat.GetFloat("_Mode")) : 0;
 
             mat.shader = lit;
 
@@ -180,6 +189,58 @@ public static class DomeAquariumSetup
             }
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smoothness);
             if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", metallic);
+
+            // 메탈릭 맵이 있으면 Standard 는 _GlossMapScale 을, URP 는 _Smoothness 를 맵 알파의 배율로 쓴다.
+            if (metallicMap != null && mat.HasProperty("_MetallicGlossMap"))
+            {
+                mat.SetTexture("_MetallicGlossMap", metallicMap);
+                mat.EnableKeyword("_METALLICSPECGLOSSMAP");
+                if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", glossMapScale);
+            }
+            if (occlusion != null && mat.HasProperty("_OcclusionMap"))
+            {
+                mat.SetTexture("_OcclusionMap", occlusion);
+                mat.SetFloat("_OcclusionStrength", occlusionStrength);
+                mat.EnableKeyword("_OCCLUSIONMAP");
+            }
+
+            // 셰이더를 바꾸면 발광이 꺼진다 — 네온처럼 빛나야 하는 재질은 다시 켜 준다.
+            if (emissionColor.maxColorComponent > 0.01f && mat.HasProperty("_EmissionColor"))
+            {
+                mat.SetColor("_EmissionColor", emissionColor);
+                if (emissionMap != null) mat.SetTexture("_EmissionMap", emissionMap);
+                mat.EnableKeyword("_EMISSION");
+                mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            }
+            else
+            {
+                // Standard 에서 남은 _EMISSION 키워드는 검은 발광 셰이더 변형만 늘린다.
+                mat.DisableKeyword("_EMISSION");
+            }
+
+            if (renderMode == 1 && mat.HasProperty("_AlphaClip"))
+            {
+                mat.SetFloat("_AlphaClip", 1f);
+                mat.EnableKeyword("_ALPHATEST_ON");
+                mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            }
+            else if (renderMode >= 2 && mat.HasProperty("_Surface"))
+            {
+                // SetFloat 만으로는 블렌드 상태·키워드가 따라오지 않아 반투명이 불투명으로 나온다.
+                bool premultiply = renderMode == 3;
+                mat.SetFloat("_Surface", 1f);
+                mat.SetFloat("_Blend", premultiply ? 1f : 0f);
+                mat.SetFloat("_SrcBlend", (float)(premultiply ? UnityEngine.Rendering.BlendMode.One : UnityEngine.Rendering.BlendMode.SrcAlpha));
+                mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                if (mat.HasProperty("_SrcBlendAlpha")) mat.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
+                if (mat.HasProperty("_DstBlendAlpha")) mat.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                mat.SetFloat("_ZWrite", 0f);
+                mat.SetOverrideTag("RenderType", "Transparent");
+                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                if (premultiply) mat.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+                mat.SetShaderPassEnabled("ShadowCaster", false);
+                mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            }
 
             // 드로우콜 30 예산 — 물고기가 같은 머티리얼을 공유하므로 인스턴싱을 켠다.
             mat.enableInstancing = true;

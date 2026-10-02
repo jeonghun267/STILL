@@ -32,9 +32,8 @@ public class FishInfoPanel : MonoBehaviour
     [Header("음성 안내")]
     public bool narrate = true;
 
-    [Header("등급 테이블 (길이 5, FishRarity 순서)")]
+    [Header("관측 빈도 색 (길이 5, FishRarity 순서)")]
     public Color[] rarityColors;
-    public string[] rarityNames;
 
     // 인스펙터 배열이 비었거나 짧을 때의 안전 폴백 (인덱스 예외 금지)
     static readonly Color[] FallbackColors =
@@ -45,7 +44,6 @@ public class FishInfoPanel : MonoBehaviour
         new Color(0.72f, 0.45f, 0.92f, 1f),
         new Color(1.00f, 0.76f, 0.25f, 1f)
     };
-    static readonly string[] FallbackNames = { "일반", "고급", "희귀", "영웅", "전설" };
 
     const int RarityCount = 5;
     const float FollowLambda = 14f;
@@ -111,12 +109,10 @@ public class FishInfoPanel : MonoBehaviour
 
         if (rarityLabel != null)
         {
-            string label = (rarityNames != null && index < rarityNames.Length && !string.IsNullOrEmpty(rarityNames[index]))
-                ? rarityNames[index]
-                : FallbackNames[index];
             if (!rarityLabel.gameObject.activeSelf) rarityLabel.gameObject.SetActive(true);
-            // 현실의 멸종위기 등급이 아니라 뽑기 시스템의 게임 내 발견 등급임을 명확히 한다.
-            rarityLabel.text = $"발견 등급  ·  {label}";
+            // 현실의 멸종위기 등급이 아니다 — "사람이 얼마나 드물게 관측했나"로 읽히게 한다.
+            // 이름은 씬에 직렬화하지 않고 ObservationTerms 에서만 가져온다(옛 "일반/전설" 값이 남지 않게).
+            rarityLabel.text = ObservationTerms.FrequencyLine(index);
             rarityLabel.color = Color.Lerp(Color.white, tint, 0.48f);
         }
 

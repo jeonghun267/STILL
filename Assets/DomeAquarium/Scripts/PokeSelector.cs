@@ -9,15 +9,26 @@ public class PokeSelector : MonoBehaviour
     public string handTag = "Hand";
     public float inputCooldown = 1.5f;
 
+    // 이 트랜스폼(과 그 자식)의 콜라이더는 입력으로 받지 않는다.
+    // 손목 메뉴는 왼손에 붙어 다니는데, 왼손 자체의 손 콜라이더가 자기 손목 버튼과
+    // 항상 겹쳐 있어서 메뉴가 회전하거나 추적이 튈 때마다 OnTriggerEnter 가 헛발화했다.
+    [HideInInspector] public Transform[] ignoreRoots;
+
     // 나중에 컨트롤러 진동/사운드를 붙일 수 있게 항상 public UnityEvent
     public UnityEvent onPoked = new UnityEvent();
 
     private float lastFireTime = -999f;
     private bool tagCheckEnabled;          // 태그가 프로젝트에 없으면 false → 모든 접촉 허용
 
+    // 부모 CanvasGroup 들. 하나라도 interactable 이 꺼져 있으면(=패널이 숨겨진 상태) 찌르기도 무시한다.
+    // CanvasGroup 알파는 UI 레이캐스트만 막고 물리 트리거는 못 막아서,
+    // 안 보이는 손목 메뉴가 도감 위로 상자를 불러내는 문제가 있었다.
+    private CanvasGroup[] parentGroups;
+
     private void Start()
     {
         tagCheckEnabled = IsTagDefined(handTag);
+        parentGroups = GetComponentsInParent<CanvasGroup>(true);
 
         if (!tagCheckEnabled)
         {
@@ -52,6 +63,30 @@ public class PokeSelector : MonoBehaviour
         }
     }
 
+    /// <summary>숨겨진 패널 위의 버튼인지. 눈에 안 보이는 버튼은 손이 스쳐도 눌리면 안 된다.</summary>
+    private bool IsHiddenByCanvasGroup()
+    {
+        if (parentGroups == null) return false;
+        for (int i = 0; i < parentGroups.Length; i++)
+        {
+            CanvasGroup g = parentGroups[i];
+            if (g != null && !g.interactable) return true;
+        }
+        return false;
+    }
+
+    private bool IsIgnored(Transform t)
+    {
+        if (ignoreRoots == null || t == null) return false;
+        for (int i = 0; i < ignoreRoots.Length; i++)
+        {
+            Transform root = ignoreRoots[i];
+            if (root == null) continue;
+            if (t == root || t.IsChildOf(root)) return true;
+        }
+        return false;
+    }
+
 #if UNITY_EDITOR
     /// <summary>
     /// 에디터 게임뷰에서 마우스로 눌러 볼 수 있게 한다.
@@ -70,6 +105,7 @@ public class PokeSelector : MonoBehaviour
         if (!Physics.Raycast(ray, out RaycastHit hit, 50f, ~0, QueryTriggerInteraction.Collide)) return;
         if (hit.transform != transform && !hit.transform.IsChildOf(transform)) return;
 
+        if (IsHiddenByCanvasGroup()) return;
         Fire();
     }
 #endif
@@ -79,6 +115,8 @@ public class PokeSelector : MonoBehaviour
         if (other == null) return;
 
         if (tagCheckEnabled && !other.CompareTag(handTag)) return;
+        if (IsIgnored(other.transform)) return;
+        if (IsHiddenByCanvasGroup()) return;
 
         Fire();
     }

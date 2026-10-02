@@ -42,6 +42,11 @@ public class MysteryBox : MonoBehaviour
     public GameObject shatteredBox;                     // 터졌을 때만 보이는 조각 더미
     public float shardVisibleTime = 1.4f;               // 조각이 보이는 시간
 
+    [Header("밤 가시성")]
+    [Tooltip("밤에 상자가 어두운 물속에 묻히지 않도록 자기 텍스처 색으로 발광(알베도 배수, 한밤 기준). " +
+             "판도라 상자 나무 텍스처가 어두워서 1.3 은 줘야 밤 물빛보다 밝게 읽힌다. 0 이면 끈다")]
+    [Min(0f)] public float nightGlow = 1.3f;
+
     [Header("유휴 연출")]
     public float idleSpinSpeed = 25f;      // 초당 회전 각도. 상자 애니메이터가 있으면 자동으로 0 취급
     public float bobAmplitude = 0.06f;     // 위아래 진폭 (m)
@@ -101,7 +106,17 @@ public class MysteryBox : MonoBehaviour
         {
             boxBaseLocalPos = boxVisual.localPosition;
             boxBaseLocalRot = boxVisual.localRotation;
+            EnsureShowcaseGlow();
         }
+    }
+
+    // 밤에는 태양 0.28 + 앰비언트 0.05 수준이라 URP Lit 상자가 거의 검게 나온다.
+    // 씬을 다시 빌드하지 않아도 되도록 없으면 여기서 붙인다. 이미 있으면 인스펙터 값을 존중한다.
+    private void EnsureShowcaseGlow()
+    {
+        if (boxVisual == null || nightGlow <= 0f) return;
+        if (boxVisual.GetComponent<ShowcaseGlow>() != null) return;
+        ShowcaseGlow.Attach(boxVisual.gameObject, 0f, nightGlow);
     }
 
     private void DisableLegacyBoxParticles()
@@ -182,6 +197,11 @@ public class MysteryBox : MonoBehaviour
     {
         // 연출 중에 다시 부르면 물고기 앞에 상자가 끼어든다.
         if (reveal != null && reveal.IsBusy) return;
+
+        // 도감이 열려 있는 동안 손목 메뉴는 숨겨지므로 정상 경로로는 여기 올 수 없다.
+        // 그래도 숨겨진 버튼 콜라이더를 손이 스치는 등 헛입력이 들어오면 도감 위에 상자가 겹친다.
+        FishEncyclopediaPanel encyclopedia = FindFirstObjectByType<FishEncyclopediaPanel>();
+        if (encyclopedia != null && encyclopedia.IsOpen) return;
 
         // 다시 뽑기 화면에는 도감에서 생성한 관찰용 복제 모델이 절대 남지 않게 한다.
         FishEncyclopediaPanel.RemoveAllPreviewObjects();

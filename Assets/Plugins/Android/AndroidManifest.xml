@@ -1,11 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Android 11+에서 기본 TTS 서비스를 검색할 수 있도록 패키지 가시성을 선언한다. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
     </queries>
-    <!-- Unity의 unityLibrary manifest에 있는 Activity/설정이 여기에 병합된다. -->
-    <application />
+    <application>
+        <!-- Player Settings > Application Entry Point = GameActivity 기준.
+             커스텀 매니페스트가 있으면 Unity 기본 매니페스트를 통째로 대체하므로
+             메인 Activity를 반드시 여기서 선언해야 OpenXR(Meta)가 VR 카테고리를 붙일 수 있다. -->
+        <activity android:name="com.unity3d.player.UnityPlayerGameActivity"
+                  android:theme="@style/BaseUnityGameActivityTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data android:name="unityplayer.UnityActivity" android:value="true" />
+            <meta-data android:name="android.app.lib_name" android:value="game" />
+        </activity>
+    </application>
 </manifest>

@@ -27,6 +27,7 @@ public sealed class AquariumAudioDirector : MonoBehaviour
     FishEncyclopediaPanel encyclopedia;
     FishReveal reveal;
     bool experienceStarted;
+    bool ambientMuted;          // 육지 로비에서는 물속 환경음이 들리면 안 된다
     float eventDuckUntil;
     float musicFadeElapsed;
     bool musicFadeInActive;
@@ -76,7 +77,7 @@ public sealed class AquariumAudioDirector : MonoBehaviour
             else musicTarget = normalMusicVolume;
         }
 
-        float ambientTarget = experienceStarted ? activeAmbientVolume : introAmbientVolume;
+        float ambientTarget = ambientMuted ? 0f : experienceStarted ? activeAmbientVolume : introAmbientVolume;
         if (musicSource != null)
         {
             if (musicFadeInActive)
@@ -107,6 +108,16 @@ public sealed class AquariumAudioDirector : MonoBehaviour
         }
         musicFadeElapsed = 0f;
         musicFadeInActive = true;
+    }
+
+    /// <summary>
+    /// 물속 환경음을 끄거나 다시 켠다. 끌 때는 즉시(로비 첫 프레임에 물소리가 새지 않게),
+    /// 켤 때는 Update 의 감쇠를 따라 서서히 올라온다.
+    /// </summary>
+    public void SetAmbientMuted(bool muted)
+    {
+        ambientMuted = muted;
+        if (muted && ambientSource != null) ambientSource.volume = 0f;
     }
 
     public void PulseEventDuck(float seconds = 1.5f)

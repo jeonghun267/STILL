@@ -43,6 +43,34 @@ public class WristMenu : MonoBehaviour
         alpha = 0f;
     }
 
+    void Start()
+    {
+        RegisterOwnHandAsIgnored();
+    }
+
+    /// <summary>
+    /// 메뉴가 붙어 있는 손(왼손)은 자기 손목 버튼을 누를 수 없게 한다.
+    /// 손 콜라이더(반지름 6cm)와 손목 버튼 콜라이더가 항상 겹쳐 있어서, 메뉴가 사용자를 향해
+    /// 회전하거나 추적이 잠깐 튈 때마다 OnTriggerEnter 가 다시 들어와 "다시 뽑기" 가 헛발화했다.
+    /// 컨트롤러와 핸드 트래킹이 같이 있을 수 있으니 같은 쪽("Left "/"Right ") 형제도 함께 무시한다.
+    /// </summary>
+    void RegisterOwnHandAsIgnored()
+    {
+        if (anchor == null) return;
+
+        var roots = new System.Collections.Generic.List<Transform> { anchor };
+        string side = anchor.name.StartsWith("Left") ? "Left" : anchor.name.StartsWith("Right") ? "Right" : null;
+        if (side != null && anchor.parent != null)
+        {
+            foreach (Transform sibling in anchor.parent)
+                if (sibling != anchor && sibling.name.StartsWith(side)) roots.Add(sibling);
+        }
+
+        Transform[] arr = roots.ToArray();
+        foreach (var poke in GetComponentsInChildren<PokeSelector>(true))
+            poke.ignoreRoots = arr;
+    }
+
     void LateUpdate()
     {
         if (group == null) return;

@@ -22,6 +22,13 @@ public class FishReveal : MonoBehaviour
     [Tooltip("참다랑어 같은 대형 어종이 설명 UI를 침범하지 않도록 전시 모델의 최대 외곽 크기를 제한합니다.")]
     public float maxShowcaseSize = 0.34f;
 
+    [Header("밤 가시성")]
+    [Tooltip("밤에 뽑힌 물고기가 검은 실루엣으로만 보이지 않도록 자기 텍스처 색으로 발광(알베도 배수, 한밤 기준). " +
+             "물고기 팔레트가 밝아서 0.5 면 충분히 보이면서 태양 음영도 남는다. 더 올리면 평면 스티커처럼 보인다")]
+    [Min(0f)] public float nightGlow = 0.5f;
+    [Tooltip("시간대와 무관하게 항상 더하는 발광. 아주 작게 — 낮 모습이 바뀌면 안 된다")]
+    [Min(0f)] public float baseGlow = 0.03f;
+
     // --- 내부 튜닝 상수 (인스펙터 노출 안 함: 계약 시그니처 유지) ---
     const float SettleTime = 0.6f;        // 도착 후 플레이어를 향해 도는 시간
     const float BobAmplitude = 0.04f;     // 제자리 보빙 진폭 (m)
@@ -134,6 +141,10 @@ public class FishReveal : MonoBehaviour
         }
 
         FishAnimatorSync sync = instance.GetComponentInChildren<FishAnimatorSync>(true);
+
+        // 전시 모델은 우리가 만든 복제본이라 머티리얼 인스턴스를 만들어도 원본 프리팹/에셋은 안전하다.
+        if (nightGlow > 0f || baseGlow > 0f)
+            ShowcaseGlow.Attach(instance, baseGlow, nightGlow);
 
         Vector3 prevPos = spawnPos;
 

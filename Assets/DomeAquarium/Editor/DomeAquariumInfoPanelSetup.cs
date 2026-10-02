@@ -166,7 +166,7 @@ public static class DomeAquariumInfoPanelSetup
 
         TMP_Text collection = EnsureText(panel, "CollectionLabel", info.nameText != null ? info.nameText.font : null);
         SetRect(collection.rectTransform, new Vector2(260f, 28f), new Vector2(200f, 190f));
-        collection.text = "MARINE DISCOVERY";
+        collection.text = ObservationTerms.LogTitleEnglish;
         collection.fontSize = 18f;
         collection.fontStyle = FontStyles.Bold;
         collection.alignment = TextAlignmentOptions.Right;

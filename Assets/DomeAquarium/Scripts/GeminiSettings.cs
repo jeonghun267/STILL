@@ -53,6 +53,16 @@ public class GeminiSettings : ScriptableObject
     public string loadingText = "설명을 불러오는 중…";
     public string failureText = "";        // 비우면 실패 시 설명 줄을 그냥 숨긴다
 
+    [Header("음성 해설 (Gemini TTS)")]
+    // Quest(Horizon OS)에는 Android 시스템 TTS 엔진이 아예 없다 — `pm list packages` 에 TTS 패키지 0개,
+    // TextToSpeech 는 "not bound to TTS engine" 으로 끝난다. 그래서 해설 음성도 Gemini 로 만든다.
+    // 같은 API 키를 쓰고, 결과 오디오는 기기에 캐시해 같은 문장은 두 번 호출하지 않는다.
+    public bool enableNarration = true;
+    public string ttsModel = "gemini-2.5-flash-preview-tts";
+    // 사전 정의 음성 이름. Kore(차분한 여성), Puck, Charon, Fenrir, Aoede, Leda 등. 한국어도 같은 음성으로 읽는다.
+    public string ttsVoice = "Kore";
+    public int ttsTimeoutSeconds = 25;
+
     static GeminiSettings cached;
 
     public static GeminiSettings Load()
