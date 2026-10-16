@@ -126,17 +126,17 @@ public static class DomeAquariumEncyclopediaSetup
         controller.filterStatusText = null;
 
         // 프로필 전환: 텍스트 입력 없이 현장에서 빠르게 사용자만 바꾼다.
-        Button prevProfile = AddButton("PreviousProfile", header, 52f, 52f, "‹", 30f, font, Chip);
+        Button prevProfile = AddButton("PreviousProfile", header, 52f, 52f, "", 0f, font, DomeAquariumUiKit.Tone.Secondary, DomeAquariumUiKit.TemplateIcon("Scroll Left"), 30f).button;
         TMP_Text profile = NewText("ProfileText", header, 24f, font, FontStyles.Bold, new Color(0.70f, 0.92f, 0.96f));
         profile.text = "탐험가 1";
         SingleLine(profile, 19f, 24f);
         Fixed(profile.gameObject, 112f, 52f);
         controller.profileText = profile;
-        Button nextProfile = AddButton("NextProfile", header, 52f, 52f, "›", 30f, font, Chip);
+        Button nextProfile = AddButton("NextProfile", header, 52f, 52f, "", 0f, font, DomeAquariumUiKit.Tone.Secondary, DomeAquariumUiKit.TemplateIcon("Scroll Right"), 30f).button;
         Wire(prevProfile, controller.PreviousProfile);
         Wire(nextProfile, controller.NextProfile);
 
-        Button close = AddButton("CloseButton", header, 56f, 56f, "×", 36f, font, new Color(0.10f, 0.32f, 0.38f, 1f));
+        Button close = AddButton("CloseButton", header, 56f, 56f, "", 0f, font, DomeAquariumUiKit.Tone.Secondary, DomeAquariumUiKit.CloseIcon, 30f).button;
         Wire(close, controller.Close);
 
         // ── 본문: 카드 격자 | 상세 ──────────────────────────────
@@ -296,8 +296,8 @@ public static class DomeAquariumEncyclopediaSetup
         RectTransform detailBottom = NewRow(detail, "DetailBottom", 52f, 0f);
         detailBottom.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleRight;
         Element(NewUI("Spacer", detailBottom).gameObject).flexibleWidth = 1f;
-        Button narrate = AddButton("NarrationButton", detailBottom, 176f, 52f, "▶  " + ObservationTerms.Narration, 22f, font,
-            new Color(0.07f, 0.45f, 0.55f, 1f));
+        Button narrate = AddButton("NarrationButton", detailBottom, 176f, 52f, ObservationTerms.Narration, 22f, font,
+            DomeAquariumUiKit.Tone.Primary, DomeAquariumUiKit.TemplateIcon("Play"), 22f).button;
         Wire(narrate, controller.PlaySelectedNarration);
         controller.narrationButtonRoot = narrate.gameObject;
         narrate.gameObject.SetActive(false);
@@ -315,10 +315,10 @@ public static class DomeAquariumEncyclopediaSetup
         var chips = new Image[filterLabels.Length];
         for (int i = 0; i < filterLabels.Length; i++)
         {
-            Button b = AddButton("Filter_" + i, footer, filterWidths[i], 48f, filterLabels[i], 22f, font,
-                i == 0 ? ChipActive : Chip);
-            Wire(b, filterActions[i]);
-            chips[i] = b.GetComponent<Image>();
+            var chip = AddButton("Filter_" + i, footer, filterWidths[i], 48f, filterLabels[i], 22f, font, DomeAquariumUiKit.Tone.Secondary);
+            chip.front.color = i == 0 ? ChipActive : Chip;   // 고른 칩은 앞판 색으로 — FishEncyclopediaPanel 이 바꾼다
+            Wire(chip.button, filterActions[i]);
+            chips[i] = chip.front;
         }
         controller.filterChips = chips;
         controller.chipColor = Chip;
@@ -326,13 +326,13 @@ public static class DomeAquariumEncyclopediaSetup
 
         Element(NewUI("Spacer", footer).gameObject).flexibleWidth = 1f;
 
-        Button prevPage = AddButton("PreviousPage", footer, 56f, 48f, "‹", 32f, font, Chip);
+        Button prevPage = AddButton("PreviousPage", footer, 56f, 48f, "", 0f, font, DomeAquariumUiKit.Tone.Secondary, DomeAquariumUiKit.TemplateIcon("Scroll Left"), 28f).button;
         TMP_Text pageText = NewText("PageText", footer, 24f, font, FontStyles.Normal, Muted);
         pageText.text = "1 / 9";
         pageText.alignment = TextAlignmentOptions.Center;
         Fixed(pageText.gameObject, 84f, 48f);
         controller.pageText = pageText;
-        Button nextPage = AddButton("NextPage", footer, 56f, 48f, "›", 32f, font, Chip);
+        Button nextPage = AddButton("NextPage", footer, 56f, 48f, "", 0f, font, DomeAquariumUiKit.Tone.Secondary, DomeAquariumUiKit.TemplateIcon("Scroll Right"), 28f).button;
         Wire(prevPage, controller.PreviousPage);
         Wire(nextPage, controller.NextPage);
 
@@ -355,14 +355,18 @@ public static class DomeAquariumEncyclopediaSetup
             return;
         }
 
-        Transform old = wrist.transform.Find("EncyclopediaButton");
-        if (old != null) Object.DestroyImmediate(old.gameObject);
+        foreach (string child in new[] { "EncyclopediaButton", "WristPlate", "WristProgress" })
+        {
+            Transform old = wrist.transform.Find(child);
+            if (old != null) Object.DestroyImmediate(old.gameObject);
+        }
 
-        // 관찰기(상자 없는 흐름)에서는 "다시 뽑기" 버튼이 꺼져 있다 — 그때는 일지 버튼만 가운데 둔다.
+        // 관찰기 흐름(상자 없음): 손목시계처럼 작은 판 위에 "관찰 일지" 버튼과 기록 진행 막대를 둔다.
+        // 예전 상자 흐름에서는 "다시 뽑기" 버튼과 위아래로 나눈다.
         RectTransform wristRt = wrist.GetComponent<RectTransform>();
         RectTransform summon = wrist.transform.Find("SummonButton") as RectTransform;
         bool withSummon = summon != null && summon.gameObject.activeSelf;
-        if (wristRt != null) wristRt.sizeDelta = withSummon ? new Vector2(300f, 270f) : new Vector2(300f, 140f);
+        if (wristRt != null) wristRt.sizeDelta = withSummon ? new Vector2(300f, 270f) : WristSize;
         if (withSummon)
         {
             summon.sizeDelta = new Vector2(300f, 128f);
@@ -370,14 +374,80 @@ public static class DomeAquariumEncyclopediaSetup
             TMP_Text summonLabel = summon.GetComponentInChildren<TMP_Text>(true);
             if (summonLabel != null) summonLabel.rectTransform.sizeDelta = new Vector2(300f, 128f);
         }
+        else
+        {
+            RectTransform plate = NewUI("WristPlate", wrist.transform);
+            Stretch(plate);
+            DomeAquariumUiKit.TemplatePlate(plate, 24f, DomeAquariumUiKit.PlateFill, DomeAquariumUiKit.PlateLine);
+            plate.GetComponent<Image>().raycastTarget = false;
+            plate.SetAsFirstSibling();
+        }
 
-        Button button = AddButton("EncyclopediaButton", wrist.transform, 300f, 128f, ObservationTerms.OpenLog, 36f, font,
-            new Color(0.06f, 0.46f, 0.56f, 0.97f));
+        // 손목 버튼은 손에 붙어 작게 보인다 — 아이콘을 키우고 모서리·들뜸도 크게(0.0006m/px: 반경 12mm, 들뜸 8mm).
+        Vector2 buttonSize = withSummon ? new Vector2(300f, 128f) : WristButtonSize;
+        Button button = AddButton("EncyclopediaButton", wrist.transform, buttonSize.x, buttonSize.y, ObservationTerms.OpenLog, 36f, font,
+            DomeAquariumUiKit.Tone.Primary, DomeAquariumUiKit.JournalIcon, 56f, corner: 20f, lift: 14f).button;
         RectTransform buttonRt = button.GetComponent<RectTransform>();
-        buttonRt.anchoredPosition = withSummon ? new Vector2(0f, -70f) : Vector2.zero;
-        buttonRt.sizeDelta = new Vector2(300f, 128f);
+        buttonRt.anchoredPosition = withSummon ? new Vector2(0f, -70f) : WristButtonPosition;
         Wire(button, controller.Toggle);
+
+        WristMenu menu = wrist.GetComponent<WristMenu>();
+        if (menu == null) return;
+        menu.log = controller;
+        menu.progressText = null;
+        menu.progressFill = null;
+        if (withSummon) { EditorUtility.SetDirty(menu); return; }
+
+        // 아래줄: "21 / 98종 기록" + 진행 막대 (WristMenu 가 보이는 동안 0.5초마다 다시 센다)
+        RectTransform progress = NewUI("WristProgress", wrist.transform);
+        progress.sizeDelta = new Vector2(WristButtonSize.x, 44f);
+        progress.anchoredPosition = new Vector2(0f, -66f);
+
+        TMP_Text count = NewText("Count", progress, 22f, font, FontStyles.Bold, Muted);
+        count.rectTransform.anchorMin = new Vector2(0f, 1f);
+        count.rectTransform.anchorMax = new Vector2(1f, 1f);
+        count.rectTransform.pivot = new Vector2(0.5f, 1f);
+        count.rectTransform.sizeDelta = new Vector2(0f, 32f);
+        count.rectTransform.anchoredPosition = Vector2.zero;
+        count.alignment = TextAlignmentOptions.MidlineLeft;
+        count.text = ObservationTerms.WristProgress(0, controller.allFish.Length);
+
+        RectTransform track = NewUI("Track", progress);
+        track.anchorMin = new Vector2(0f, 0f);
+        track.anchorMax = new Vector2(1f, 0f);
+        track.pivot = new Vector2(0.5f, 0f);
+        track.sizeDelta = new Vector2(0f, 10f);
+        track.anchoredPosition = Vector2.zero;
+        Image trackImage = track.gameObject.AddComponent<Image>();
+        trackImage.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(DomeAquariumUiKit.TemplateRoundPath);
+        trackImage.type = Image.Type.Sliced;
+        trackImage.pixelsPerUnitMultiplier = 8f;          // 모서리 40px → 5px, 막대 높이의 절반
+        trackImage.color = new Color(0.45f, 0.88f, 1f, 0.14f);
+        trackImage.raycastTarget = false;
+
+        RectTransform fill = NewUI("Fill", track);
+        fill.anchorMin = new Vector2(0f, 0f);
+        fill.anchorMax = new Vector2(0f, 1f);
+        fill.pivot = new Vector2(0f, 0.5f);
+        fill.sizeDelta = Vector2.zero;
+        fill.anchoredPosition = Vector2.zero;
+        Image fillImage = fill.gameObject.AddComponent<Image>();
+        fillImage.sprite = trackImage.sprite;
+        fillImage.type = Image.Type.Sliced;
+        fillImage.pixelsPerUnitMultiplier = 8f;
+        fillImage.color = new Color(0.45f, 0.88f, 1f, 1f);
+        fillImage.raycastTarget = false;
+
+        menu.progressText = count;
+        menu.progressFill = fill;
+        menu.progressWidth = WristButtonSize.x;
+        EditorUtility.SetDirty(menu);
     }
+
+    // 손목 메뉴 (0.0006m/px): 판 19 × 12cm, 버튼 17 × 6cm — Meta 손목 메뉴 예시보다 약간 크게(장갑 낀 듯한 아이 손가락 기준)
+    public static readonly Vector2 WristSize = new Vector2(320f, 200f);
+    public static readonly Vector2 WristButtonSize = new Vector2(288f, 104f);
+    public static readonly Vector2 WristButtonPosition = new Vector2(0f, 30f);
 
     static FishData[] LoadAllFish()
     {
@@ -393,29 +463,20 @@ public static class DomeAquariumEncyclopediaSetup
     // 헬퍼
     // ─────────────────────────────────────────────────────────────
 
-    /// <summary>레이아웃 그룹 안에서는 크기를 LayoutElement 로 정한다. 그룹 밖(손목 메뉴)에서는 sizeDelta 를 따로 맞춘다.</summary>
-    static Button AddButton(string name, Transform parent, float width, float height, string label,
-        float fontSize, TMP_FontAsset font, Color color, string sprite = RoundSprite)
+    /// <summary>
+    /// VR 템플릿식 누르는 버튼 (DomeAquariumUiKit.PokeButton) — 손가락으로 누르면 앞판이 들어가고, 레이가 닿으면 테두리가 밝아진다.
+    /// 화살표·재생은 VR 템플릿 아이콘, 닫기·관찰 일지는 같은 규격으로 그린 아이콘을 쓴다 (예전에는 "‹ › × ▶" 글자라 줄 높이가 어긋났다).
+    /// 레이아웃 그룹 안에서는 크기를 LayoutElement 로 정한다.
+    /// </summary>
+    static DomeAquariumUiKit.ButtonParts AddButton(string name, Transform parent, float width, float height, string label,
+        float fontSize, TMP_FontAsset font, DomeAquariumUiKit.Tone tone, Sprite icon = null, float iconSize = 0f,
+        float corner = 12f, float lift = 10f)
     {
         RectTransform rt = NewUI(name, parent);
-        rt.sizeDelta = new Vector2(width, height);
         Fixed(rt.gameObject, width, height);
-        Image image = rt.gameObject.AddComponent<Image>();
-        Skin(image, sprite, color);
-        Button button = rt.gameObject.AddComponent<Button>();
-        button.targetGraphic = image;
-        ColorBlock colors = button.colors;
-        colors.highlightedColor = new Color(1.2f, 1.2f, 1.2f, 1f);
-        colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
-        colors.fadeDuration = 0.07f;
-        button.colors = colors;
-        TMP_Text text = NewText("Label", rt, fontSize, font, FontStyles.Bold, Color.white);
-        Stretch(text.rectTransform);
-        text.text = label;
-        text.alignment = TextAlignmentOptions.Center;
-        text.textWrappingMode = TextWrappingModes.NoWrap;
+        var parts = DomeAquariumUiKit.PokeButton(rt, new Vector2(width, height), label, icon, tone, fontSize, font, iconSize, corner, lift);
         AddPoke(rt.gameObject, new Vector3(width + 12f, height + 12f, 180f));
-        return button;
+        return parts;
     }
 
     static void Wire(Button button, UnityEngine.Events.UnityAction action)

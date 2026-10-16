@@ -282,9 +282,15 @@ public static class DomeAquariumObservationSetup
         var log = wrist.transform.Find("EncyclopediaButton") as RectTransform;
 
         // 위치 값은 DomeAquariumEncyclopediaSetup.AddWristButton 과 같다.
-        if (wristRt != null) wristRt.sizeDelta = withSummon ? new Vector2(300f, 270f) : new Vector2(300f, 140f);
+        // 판·진행 막대는 관찰기 흐름에서만 쓴다 — 상자 흐름으로 되돌리면 숨기고, 다시 오면 15번(도감 태블릿)이 새로 만든다.
+        if (wristRt != null) wristRt.sizeDelta = withSummon ? new Vector2(300f, 270f) : DomeAquariumEncyclopediaSetup.WristSize;
         if (summon != null) summon.gameObject.SetActive(withSummon);
-        if (log != null) log.anchoredPosition = withSummon ? new Vector2(0f, -70f) : Vector2.zero;
+        if (log != null) log.anchoredPosition = withSummon ? new Vector2(0f, -70f) : DomeAquariumEncyclopediaSetup.WristButtonPosition;
+        foreach (string child in new[] { "WristPlate", "WristProgress" })
+        {
+            Transform t = wrist.transform.Find(child);
+            if (t != null) t.gameObject.SetActive(!withSummon);
+        }
         EditorUtility.SetDirty(wrist.gameObject);
     }
 

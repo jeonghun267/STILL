@@ -30,7 +30,7 @@ public static class ObservationTerms
 
     // 관찰기(손에 든 기록 장치) 문구
     public const string AimHint = "헤엄치는 생물에 관찰기를 겨누세요";
-    public const string Unidentified = "누구일까?";
+    public const string Unidentified = "처음 보는 생물";      // "누구"는 사람에게 쓰는 말이라 관찰 장비 화면에는 맞지 않는다
     public const string Watching = "지켜보는 중";
     public const string Recorded = "기록됨";
     public const string LoggedToJournal = "관찰 일지에 기록됨";
@@ -49,4 +49,7 @@ public static class ObservationTerms
     public static string FrequencyLine(int index) => FrequencyName(index);
 
     public static string Progress(int recorded, int total) => $"{LogTitle}  ·  {recorded}/{total}종 기록";
+
+    /// <summary>손목 메뉴 아래줄 — 버튼에 "관찰 일지"가 이미 있으니 숫자만.</summary>
+    public static string WristProgress(int recorded, int total) => $"{recorded} / {total}종 기록";
 }

@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 /// <summary>
@@ -29,7 +30,14 @@ public class WristMenu : MonoBehaviour
     public bool armed;
     [HideInInspector] public bool suppressed;   // 큰 도감/설정 패널이 열려 있을 때 잠시 숨김
 
+    [Header("관찰 진행 (버튼 아래줄)")]
+    public FishEncyclopediaPanel log;
+    public TMP_Text progressText;
+    public RectTransform progressFill;    // 막대 — 너비를 기록 비율만큼
+    public float progressWidth = 288f;
+
     float alpha;
+    float nextProgressRefresh;
 
     void Awake()
     {
@@ -119,6 +127,19 @@ public class WristMenu : MonoBehaviour
         }
 
         SetVisible(visible);
+        if (alpha > 0.01f && Time.unscaledTime >= nextProgressRefresh) RefreshProgress();
+    }
+
+    /// <summary>보이는 동안 0.5초마다 기록 수를 다시 센다 — 기록하자마자 손목을 들어도 숫자가 맞는다.</summary>
+    void RefreshProgress()
+    {
+        nextProgressRefresh = Time.unscaledTime + 0.5f;
+        if (log == null) return;
+        int total = log.TotalCount;
+        int found = Mathf.Min(log.RecordedCount(), total);
+        if (progressText != null) progressText.text = ObservationTerms.WristProgress(found, total);
+        if (progressFill != null)
+            progressFill.sizeDelta = new Vector2(total > 0 ? progressWidth * found / total : 0f, progressFill.sizeDelta.y);
     }
 
     /// <summary>

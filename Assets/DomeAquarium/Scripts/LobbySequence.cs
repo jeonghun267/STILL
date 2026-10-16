@@ -73,6 +73,8 @@ public sealed class LobbySequence : MonoBehaviour
     public Vector3 sunEuler = new Vector3(32f, -35f, 0f);
     // 하강하며 칸 안이 서서히 물빛으로 물든다
     public Color descentAmbient = new Color(0.10f, 0.26f, 0.38f);
+    [Tooltip("로비에서만 카메라 원경을 늘린다 — 창밖 바다가 수평선까지 보이게. 수중 돔은 원래 값(60m)으로 돌아간다")]
+    public float lobbyFarClip = 1300f;
 
     [Header("로비 소리")]
     public AudioSource ambience;           // 파도·갈매기
@@ -128,10 +130,21 @@ public sealed class LobbySequence : MonoBehaviour
         public Quaternion sunRotation;
         public Texture sunCookie;
         public bool timeOfDayEnabled;
+        public float farClip;
     }
     EnvSnapshot dome;
 
     public bool InLobby => phase != Phase.Dome;
+
+    // --- 로비 활동(수심 벽 등)이 쓰는 것 ---
+    /// <summary>로비에서 자유 활동을 받아도 되는지. 엘리베이터에 오른 뒤로는 받지 않는다.</summary>
+    public bool AcceptsActivity => phase == Phase.Lobby;
+    public Light Sun => sun;
+    /// <summary>수중 돔의 햇빛 일렁임(코스틱) 쿠키. 로비에서는 꺼 두고, 수심 벽이 24m 를 보여 줄 때만 빌려 쓴다.</summary>
+    public Texture WaterCookie => dome.sunCookie;
+    /// <summary>로비 활동이 물속 소리를 낼 때 파도·갈매기와 음악을 줄이는 배율 (1 = 그대로).</summary>
+    [System.NonSerialized] public float ambienceDuck = 1f;
+    [System.NonSerialized] public float musicDuck = 1f;
 
     void Awake()
     {
@@ -476,9 +489,9 @@ public sealed class LobbySequence : MonoBehaviour
         if (!lobbyAudioOn) return;
         bool speaking = FishNarrationService.Instance != null && FishNarrationService.Instance.IsSpeaking;
         float k = 1f - Mathf.Exp(-2.5f * Time.deltaTime);
-        if (ambience != null) ambience.volume = Mathf.Lerp(ambience.volume, ambienceVolume * audioFade, k);
+        if (ambience != null) ambience.volume = Mathf.Lerp(ambience.volume, ambienceVolume * audioFade * ambienceDuck, k);
         if (music != null)
-            music.volume = Mathf.Lerp(music.volume, (speaking ? musicDuckedVolume : musicVolume) * audioFade, k);
+            music.volume = Mathf.Lerp(music.volume, (speaking ? musicDuckedVolume : musicVolume) * audioFade * musicDuck, k);
     }
 
     void LateUpdate()
@@ -521,7 +534,7 @@ public sealed class LobbySequence : MonoBehaviour
             ground = RenderSettings.ambientGroundColor,
             timeOfDayEnabled = timeOfDay != null && timeOfDay.enabled,
         };
-        if (viewCamera != null) { s.clearFlags = viewCamera.clearFlags; s.background = viewCamera.backgroundColor; }
+        if (viewCamera != null) { s.clearFlags = viewCamera.clearFlags; s.background = viewCamera.backgroundColor; s.farClip = viewCamera.farClipPlane; }
         if (sun != null)
         {
             s.sunColor = sun.color;
@@ -538,6 +551,7 @@ public sealed class LobbySequence : MonoBehaviour
         if (timeOfDay != null) timeOfDay.enabled = false;
 
         if (viewCamera != null && lobbySkybox != null) viewCamera.clearFlags = CameraClearFlags.Skybox;
+        if (viewCamera != null) viewCamera.farClipPlane = Mathf.Max(viewCamera.farClipPlane, lobbyFarClip);
         if (lobbySkybox != null) RenderSettings.skybox = lobbySkybox;
         RenderSettings.fog = false;
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
@@ -556,7 +570,12 @@ public sealed class LobbySequence : MonoBehaviour
 
     void RestoreEnvironment(EnvSnapshot s)
     {
-        if (viewCamera != null) { viewCamera.clearFlags = s.clearFlags; viewCamera.backgroundColor = s.background; }
+        if (viewCamera != null)
+        {
+            viewCamera.clearFlags = s.clearFlags;
+            viewCamera.backgroundColor = s.background;
+            if (s.farClip > 0f) viewCamera.farClipPlane = s.farClip;
+        }
         RenderSettings.skybox = s.skybox;
         RenderSettings.fog = s.fog;
         RenderSettings.fogMode = s.fogMode;

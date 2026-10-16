@@ -553,6 +553,15 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         return store != null && store.IsDiscovered(fish);
     }
 
+    /// <summary>손목 메뉴의 진행 막대용 — 일지를 한 번도 열지 않았어도 지금 탐험가의 기록 수를 센다.</summary>
+    public int RecordedCount()
+    {
+        EnsureStore();
+        return FoundCount();
+    }
+
+    public int TotalCount => allFish != null ? allFish.Length : 0;
+
     int FoundCount()
     {
 #if UNITY_EDITOR

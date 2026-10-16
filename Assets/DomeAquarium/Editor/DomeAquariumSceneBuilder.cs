@@ -1069,8 +1069,8 @@ public static class DomeAquariumSceneBuilder
         rootRt.localScale = Vector3.one * 0.0008f;
 
         var panel = NewUI("Panel", root.transform, new Vector2(600f, 400f));
-        SkinImage(panel.gameObject.AddComponent<Image>(), LoadUiSprite("UIPanel.png"),
-                  new Color(0.03f, 0.10f, 0.18f, 0.85f));
+        DomeAquariumUiKit.EnsureAll();
+        DomeAquariumUiKit.TemplatePlate(panel, 24f, DomeAquariumUiKit.PlateFill, DomeAquariumUiKit.PlateLine);
         var group = panel.gameObject.AddComponent<CanvasGroup>();
 
         var font = DomeAquariumSetup.LoadKoreanFont();
@@ -1087,21 +1087,11 @@ public static class DomeAquariumSceneBuilder
 
         var button = NewUI("StartButton", panel, new Vector2(320f, 100f));
         button.anchoredPosition = new Vector2(0f, -110f);
-        var btnImg = button.gameObject.AddComponent<Image>();
-        SkinImage(btnImg, LoadUiSprite("UIButtonDefault.png"), new Color(0.13f, 0.45f, 0.80f, 0.95f));
-
-        var label = NewText("Label", button, new Vector2(320f, 100f), 34f, font);
-        label.text = ObservationTerms.Enter;
-        label.color = Color.white;
 
         // 컨트롤러 레이로 누르는 정식 경로. 이게 없으면 레이가 맞아도 반응할 대상이 없다.
-        var btn = button.gameObject.AddComponent<Button>();
-        btn.targetGraphic = btnImg;
-        var colors = btn.colors;
-        colors.highlightedColor = new Color(0.30f, 0.62f, 0.95f, 1f);   // 레이가 올라가면 밝아진다
-        colors.pressedColor = new Color(0.08f, 0.30f, 0.58f, 1f);
-        colors.fadeDuration = 0.08f;
-        btn.colors = colors;
+        // 겉모습은 VR 템플릿식 누르는 버튼 — 손가락으로 누르면 앞판이 들어가고, 레이가 닿으면 테두리가 밝아진다.
+        var btn = DomeAquariumUiKit.PokeButton(button, new Vector2(320f, 100f), ObservationTerms.Enter, null,
+            DomeAquariumUiKit.Tone.Primary, 34f, font, corner: 18f, lift: 12f).button;
 
         // World Space Canvas 안의 버튼도 컨트롤러로 "찔러서" 누른다.
         // Canvas 스케일이 0.001 이므로 콜라이더는 로컬 단위(260x80)로 잡아야 실제 0.26m x 0.08m 가 된다.

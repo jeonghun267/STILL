@@ -41,10 +41,10 @@ Material:
     - _ShaftSpeed: 0.25
     - _ShaftStrength: 1.279344
     m_Colors:
-    - _DeepColor: {r: 0.02, g: 0.17293388, b: 0.32586825, a: 1}
+    - _DeepColor: {r: 0.02, g: 0.17293346, b: 0.3258678, a: 1}
     - _FresnelColor: {r: 0.54999995, g: 0.86, b: 1, a: 0.6}
     - _ScrollA: {r: 0.013, g: 0.03, b: 0, a: 0}
     - _ScrollB: {r: -0.021, g: 0.017, b: 0, a: 0}
-    - _ShallowColor: {r: 0.18586826, g: 0.55880314, b: 0.6988032, a: 1}
+    - _ShallowColor: {r: 0.18586785, g: 0.55880314, b: 0.6988032, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
