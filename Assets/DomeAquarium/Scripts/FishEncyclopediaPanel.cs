@@ -27,6 +27,9 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
     public TMP_Text profileText;
     public TMP_Text pageText;
     public TMP_Text filterStatusText;
+    public Image[] filterChips;              // 보기 칩 (전체 · 기록한 생물 · 아직 못 본 생물)
+    public Color chipColor = new Color(0.08f, 0.25f, 0.31f, 1f);
+    public Color chipActiveColor = new Color(0.08f, 0.48f, 0.60f, 1f);
 
     [Header("카드 슬롯")]
     public GameObject[] cardRoots;
@@ -72,6 +75,7 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
     int page;
     int rarityFilter = -1;
     bool discoveredOnly;
+    bool undiscoveredOnly;
     int detailRequestToken;
     bool isOpen;
 
@@ -201,6 +205,18 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
     public void FilterDiscovered()
     {
         discoveredOnly = true;
+        undiscoveredOnly = false;
+        rarityFilter = -1;
+        page = 0;
+        ClearDetail();
+        Refresh();
+    }
+
+    /// <summary>아직 못 본 생물만. 부스 관람객에게는 빈도별 필터보다 "남은 것"이 더 쓸모 있다.</summary>
+    public void FilterUndiscovered()
+    {
+        discoveredOnly = false;
+        undiscoveredOnly = true;
         rarityFilter = -1;
         page = 0;
         ClearDetail();
@@ -216,6 +232,7 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
     void SetRarityFilter(int value)
     {
         discoveredOnly = false;
+        undiscoveredOnly = false;
         rarityFilter = value;
         page = 0;
         ClearDetail();
@@ -228,12 +245,22 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         RebuildFilter();
 
         int total = allFish != null ? allFish.Length : 0;
-        int found = store != null ? store.GetDiscoveredSpeciesCount() : 0;
+        int found = FoundCount();
         if (progressText != null) progressText.text = ObservationTerms.Progress(found, total);
         if (profileText != null) profileText.text = store != null ? store.ActiveProfile.displayName : "탐험가 1";
+        // 지금 고른 보기 칩만 밝힌다 (0 전체 · 1 기록한 생물 · 2 아직 못 본 생물).
+        if (filterChips != null)
+        {
+            int active = discoveredOnly ? 1 : undiscoveredOnly ? 2 : 0;
+            for (int c = 0; c < filterChips.Length; c++)
+                if (filterChips[c] != null) filterChips[c].color = c == active ? chipActiveColor : chipColor;
+        }
+
         if (filterStatusText != null)
-            filterStatusText.text = discoveredOnly ? ObservationTerms.RecordedOnly :
-                (rarityFilter < 0 ? "전체 생물" : ObservationTerms.FrequencyLabel + " · " + RarityNames[Mathf.Clamp(rarityFilter, 0, 4)]);
+            filterStatusText.text = discoveredOnly ? ObservationTerms.RecordedOnly
+                : undiscoveredOnly ? ObservationTerms.NotYetRecorded
+                : rarityFilter < 0 ? ObservationTerms.AllCreatures
+                : RarityNames[Mathf.Clamp(rarityFilter, 0, 4)];
 
         page = Mathf.Clamp(page, 0, MaxPage());
         RefreshCards();
@@ -251,7 +278,8 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
             FishData fish = allFish[i];
             if (fish == null) continue;
             if (rarityFilter >= 0 && (int)fish.rarity != rarityFilter) continue;
-            if (discoveredOnly && (store == null || !store.IsDiscovered(fish))) continue;
+            if (discoveredOnly && !IsFound(fish)) continue;
+            if (undiscoveredOnly && IsFound(fish)) continue;
             filteredFish.Add(fish);
         }
 
@@ -275,26 +303,33 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
             if (!hasData) continue;
 
             FishData fish = filteredFish[dataIndex];
-            bool found = store != null && store.IsDiscovered(fish);
+            bool found = IsFound(fish);
             int rarity = Mathf.Clamp((int)fish.rarity, 0, 4);
 
+            // 기록한 칸: 이름(두 줄까지) + 얼마나 자주 보이는지. 미관찰 칸: 큰 물음표 + "못 봤어요".
+            // "?"·"???"·"미관찰"을 한 칸에 겹쳐 쓰던 것을 줄였다.
             if (cardNames != null && i < cardNames.Length && cardNames[i] != null)
-                cardNames[i].text = found ? fish.DisplayName : "???";
+            {
+                cardNames[i].text = found ? fish.DisplayName : "?";
+                cardNames[i].color = found ? Color.white : new Color(0.45f, 0.56f, 0.63f);
+            }
             if (cardRarities != null && i < cardRarities.Length && cardRarities[i] != null)
             {
-                cardRarities[i].text = found ? RarityNames[rarity] : ObservationTerms.Unobserved;
-                cardRarities[i].color = found ? RarityColors[rarity] : new Color(0.52f, 0.61f, 0.67f);
+                cardRarities[i].text = found ? RarityNames[rarity] : ObservationTerms.UnobservedShort;
+                cardRarities[i].color = found ? RarityColors[rarity] : new Color(0.55f, 0.64f, 0.70f);
             }
             if (cardLockedMarks != null && i < cardLockedMarks.Length && cardLockedMarks[i] != null)
             {
-                cardLockedMarks[i].text = found ? "◇" : "?";
-                cardLockedMarks[i].color = found ? RarityColors[rarity] : new Color(0.28f, 0.38f, 0.45f);
+                // 모서리의 작은 색 점 — 기록한 종만. 빈 마름모(◇)는 "아직 비어 있음"으로 읽혀 반대였다.
+                cardLockedMarks[i].text = found ? "●" : string.Empty;
+                cardLockedMarks[i].color = RarityColors[rarity];
             }
             if (cardFrames != null && i < cardFrames.Length && cardFrames[i] != null)
                 // 카드 스프라이트가 흰 라운드(색이 그대로 보임)로 바뀌어 기본색을 설정 스크립트와 맞춘다.
+                // 미관찰 칸도 가장 어두운 채널을 13/255 위로 둔다 — Quest 는 그 아래를 구분하지 못해 칸 경계가 사라진다.
                 cardFrames[i].color = found
-                    ? Color.Lerp(new Color(0.06f, 0.22f, 0.29f, 0.97f), RarityColors[rarity], 0.22f)
-                    : new Color(0.035f, 0.13f, 0.18f, 0.90f);
+                    ? Color.Lerp(new Color(0.08f, 0.22f, 0.29f, 0.97f), RarityColors[rarity], 0.18f)
+                    : new Color(0.07f, 0.15f, 0.20f, 0.92f);
             if (cardButtons != null && i < cardButtons.Length && cardButtons[i] != null)
                 cardButtons[i].interactable = true;
         }
@@ -509,6 +544,63 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
     {
         if (store == null) store = FishCollectionStore.Instance;
     }
+
+    bool IsFound(FishData fish)
+    {
+#if UNITY_EDITOR
+        if (store == null && previewFound != null) return previewFound.Contains(fish);
+#endif
+        return store != null && store.IsDiscovered(fish);
+    }
+
+    int FoundCount()
+    {
+#if UNITY_EDITOR
+        if (store == null && previewFound != null) return previewFound.Count;
+#endif
+        return store != null ? store.GetDiscoveredSpeciesCount() : 0;
+    }
+
+#if UNITY_EDITOR
+    // 에디터 미리보기(DomeAquariumCardPreview)용. 플레이 전에는 기록 저장소가 없어서 모든 칸이 "???"로만 보인다.
+    HashSet<FishData> previewFound;
+
+    /// <summary>기록 저장소 없이 일부 종을 기록한 것으로 보고 화면을 채운다. 한 종은 상세 칸에 띄운다.</summary>
+    public void PreviewInEditor(int foundCount, FishData detailFish)
+    {
+        previewFound = new HashSet<FishData>();
+        // 한 칸씩 건너 채워서 기록한 카드와 미관찰 카드가 섞인 모습을 본다.
+        for (int i = 0; allFish != null && i < allFish.Length && previewFound.Count < foundCount; i += 2)
+            if (allFish[i] != null) previewFound.Add(allFish[i]);
+        if (detailFish != null) previewFound.Add(detailFish);
+
+        store = null;
+        page = 0;
+        rarityFilter = -1;
+        discoveredOnly = false;
+        undiscoveredOnly = false;
+        Refresh();
+
+        if (detailFish == null) return;
+        int rarity = Mathf.Clamp((int)detailFish.rarity, 0, 4);
+        if (detailNameText != null) detailNameText.text = detailFish.DisplayName;
+        if (detailSubtitleText != null) detailSubtitleText.text = detailFish.SubtitleName;
+        if (detailRarityText != null)
+        {
+            detailRarityText.text = ObservationTerms.FrequencyLine(rarity);
+            detailRarityText.color = RarityColors[rarity];
+        }
+        if (detailDescriptionText != null) detailDescriptionText.text = detailFish.FallbackDescription;
+        if (detailCountText != null) detailCountText.text = "관찰 1회";
+        if (narrationButtonRoot != null) narrationButtonRoot.SetActive(true);
+    }
+
+    public void EndPreview()
+    {
+        previewFound = null;
+        ClearDetail();
+    }
+#endif
 
     void ResolveViewer()
     {

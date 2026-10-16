@@ -17,6 +17,10 @@ public class StartPanel : MonoBehaviour
     public Transform revealStage;          // 물고기가 다가와 멈추는 지점. 박스와 같은 방향으로 맞춘다
     public WristMenu wristMenu;            // 시작 연출이 끝난 뒤에야 켠다
 
+    // 관찰기(상자 대신 헤엄치는 생물을 겨눠 기록). 있으면 수중 돔 도착 시 켠다.
+    // 관찰기를 쓰는 씬은 mysteryBoxRoot 를 비워 상자를 부르지 않는다.
+    public ObservationAim observationAim;
+
     // 육지 로비에서 시작하는 경우. 비어 있으면 예전처럼 수조 안에서 바로 시작한다.
     // 로비가 있으면: 나레이션이 끝나야 패널이 나타나고(RevealForLobby), "입장하기"를 누르면
     // 걷기·엘리베이터·하강을 로비가 맡은 뒤 도착하면 CompleteFromLobby 로 상자를 부른다.
@@ -292,6 +296,7 @@ public class StartPanel : MonoBehaviour
 
         // 이제부터 손목 메뉴를 쓸 수 있다. 시작 전에 켜 두면 시작 패널과 겹치고 클릭까지 가로챈다.
         if (wristMenu != null) wristMenu.armed = true;
+        if (observationAim != null) observationAim.armed = true;
 
         // 마지막에 자기 자신을 끈다 (이 시점에 코루틴도 함께 멈춘다).
         gameObject.SetActive(false);

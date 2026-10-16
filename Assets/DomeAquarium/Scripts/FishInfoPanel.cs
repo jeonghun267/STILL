@@ -96,9 +96,28 @@ public class FishInfoPanel : MonoBehaviour
         StopDescriptionFallback();
         FishNarrationService.Instance?.Stop();
 
+        ApplyContent(data);
+        RequestDescription(data, token);
+
+        // 위치를 미리 한 번 맞춰서 알파가 오르는 동안 튀지 않게 한다.
+        UpdateFollow(true);
+        StartFade(1f);
+    }
+
+#if UNITY_EDITOR
+    /// <summary>에디터 미리보기(DomeAquariumCardPreview)용 — Show 와 같은 문구를 채우되 페이드·음성·Gemini 요청은 하지 않는다.</summary>
+    public void PreviewInEditor(FishData data, string description)
+    {
+        ApplyContent(data);
+        ApplyText(descriptionText, description);
+    }
+#endif
+
+    /// <summary>설명 줄을 뺀 카드 내용(이름·학명·태그·관측 빈도)을 채운다. Show 와 에디터 미리보기가 같이 쓴다.</summary>
+    void ApplyContent(FishData data)
+    {
         ApplyText(nameText, data.DisplayName);
         ApplyText(scientificText, data.SubtitleName);
-        RequestDescription(data, token);
         ApplyText(sizeTagText, data.sizeTag);
         ApplyText(habitatTagText, data.habitatTag);
 
@@ -124,10 +143,6 @@ public class FishInfoPanel : MonoBehaviour
             rarityGlow.color = tint;
             if (rarityGlow.gameObject.activeSelf != legendary) rarityGlow.gameObject.SetActive(legendary);
         }
-
-        // 위치를 미리 한 번 맞춰서 알파가 오르는 동안 튀지 않게 한다.
-        UpdateFollow(true);
-        StartFade(1f);
     }
 
     /// <summary>
@@ -209,6 +224,11 @@ public class FishInfoPanel : MonoBehaviour
         bool has = !string.IsNullOrWhiteSpace(value);
         if (field.gameObject.activeSelf != has) field.gameObject.SetActive(has);
         if (has) field.text = value;
+
+        // 카드는 레이아웃 그룹으로 높이를 정한다. Gemini 설명이 늦게 와서 3줄이 4줄로 늘어나도
+        // 판이 따라 커지게 바로 다시 잰다 — 놓치면 마지막 줄이 아래 "음성 해설"과 겹쳤다.
+        if (canvasGroup != null && canvasGroup.transform is RectTransform panel)
+            LayoutRebuilder.MarkLayoutForRebuild(panel);
     }
 
     void StartFade(float targetAlpha)

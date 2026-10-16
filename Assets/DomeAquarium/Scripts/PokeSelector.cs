@@ -114,6 +114,13 @@ public class PokeSelector : MonoBehaviour
     {
         if (other == null) return;
 
+#if UNITY_EDITOR
+        // 헤드셋 없이 재생하면 양손 컨트롤러가 추적되지 않아 같은 원점에 겹쳐 있다.
+        // 그 자리에 손목 메뉴 버튼이 오면 오른손이 "찌른" 것으로 잡혀 관찰 일지가 저절로 열렸다.
+        // 에디터에서는 위의 마우스 입력으로 누른다.
+        if (!UnityEngine.XR.XRSettings.isDeviceActive) return;
+#endif
+
         if (tagCheckEnabled && !other.CompareTag(handTag)) return;
         if (IsIgnored(other.transform)) return;
         if (IsHiddenByCanvasGroup()) return;

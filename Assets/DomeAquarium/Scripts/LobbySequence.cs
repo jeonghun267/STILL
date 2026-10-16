@@ -60,6 +60,9 @@ public sealed class LobbySequence : MonoBehaviour
     [Header("시작 패널")]
     public StartPanel startPanel;
 
+    [Header("준비 단계 (있으면 자동 걷기 대신 직접 다닌다)")]
+    public LobbyTutorial tutorial;
+
     [Header("로비 환경")]
     public Material lobbySkybox;
     public Color ambientSky = new Color(0.62f, 0.66f, 0.72f);
@@ -94,7 +97,7 @@ public sealed class LobbySequence : MonoBehaviour
     [TextArea(2, 4)]
     public string descentLine = "햇빛은 수심 200m까지만 닿습니다. 그 아래는, 우리가 거의 모르는 세계입니다.";
     [TextArea(2, 4)]
-    public string arrivalLine = "눈앞의 상자를 건드려 보세요. 아직 기록되지 않은 생물이 기다리고 있습니다.";
+    public string arrivalLine = "여기가 수심 24m 산호초예요. 헤엄치는 생물에 관찰기를 겨누고 지켜보세요.";
 
     // --- 상태 ---
     Phase phase = Phase.Lobby;
@@ -204,16 +207,59 @@ public sealed class LobbySequence : MonoBehaviour
         HideCaption();
         yield return new WaitForSeconds(0.4f);
 
-        if (startPanel != null) startPanel.RevealForLobby();
+        // 준비 단계가 있으면 직접 다니며 관찰기를 집고 연습 수조에서 첫 기록을 한다 — 개찰구는 그 뒤에 열린다.
+        if (tutorial != null && tutorial.isActiveAndEnabled) tutorial.Begin();
+        else if (startPanel != null) startPanel.RevealForLobby();
         else BeginEntry();                       // 시작 패널이 없는 씬에서도 멈추지 않게
     }
 
-    /// <summary>"입장하기"를 누르면 StartPanel 이 부른다.</summary>
+    /// <summary>"입장하기"를 누르면 StartPanel 이 부른다. (준비 단계가 없는 예전 흐름 — 자동 걷기)</summary>
     public void BeginEntry()
     {
         if (phase != Phase.Lobby) return;
         phase = Phase.Entering;
         StartCoroutine(EntryRoutine());
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 준비 단계(LobbyTutorial)가 부르는 것들
+    // ─────────────────────────────────────────────────────────────
+
+    /// <summary>안내 한 줄을 자막(과 음성)으로 띄우고, 읽을 시간이 지나면 끝난다.</summary>
+    public IEnumerator SayLine(string line)
+    {
+        yield return Say(line);
+        HideCaption();
+    }
+
+    /// <summary>첫 기록을 마치면 개찰구와 엘리베이터 문을 연다. 걸어 들어가는 건 관람객이 직접 한다.</summary>
+    public void OpenGateAndDoors()
+    {
+        if (gateDoors != null && gateClip != null) StartCoroutine(Scrub(gateDoors, 0f, gateClip.length, gatePlaySeconds));
+        if (elevatorDoors != null) StartCoroutine(Scrub(elevatorDoors, 0f, doorOpenEnd, doorOpenEnd));
+    }
+
+    /// <summary>관람객이 엘리베이터 칸에 들어서면 준비 단계가 부른다. 문이 닫히고 내려간다.</summary>
+    public void Ride()
+    {
+        if (phase != Phase.Lobby) return;
+        phase = Phase.Entering;
+        StartCoroutine(RideRoutine());
+    }
+
+    IEnumerator RideRoutine()
+    {
+        HideCaption();
+        FishNarrationService.Instance?.Stop();
+
+        // 텔레포트로 들어온 자리·방향이 제각각이다. 화면을 잠깐 가린 채 칸 한가운데에서 계기판(+Z)을 보게 맞춘다.
+        if (fader != null) yield return fader.FadeTo(1f, 0.25f);
+        if (cabinPoint != null) AlignRig(cabinPoint.position, Vector3.forward);
+        yield return new WaitForSeconds(0.1f);
+        if (fader != null) yield return fader.FadeTo(0f, 0.35f);
+        yield return new WaitForSeconds(0.4f);
+
+        yield return CloseAndDescend();
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -243,6 +289,12 @@ public sealed class LobbySequence : MonoBehaviour
         fader?.SetVignette(0f);
         yield return new WaitForSeconds(0.5f);
 
+        yield return CloseAndDescend();
+    }
+
+    /// <summary>4) 문이 닫히고 5) 내려가 6) 수중 돔에 도착한다. 자동 걷기와 직접 타기가 같이 쓴다.</summary>
+    IEnumerator CloseAndDescend()
+    {
         // 4) 문이 닫힌다
         if (elevatorDoors != null)
             yield return Scrub(elevatorDoors, doorCloseStart, elevatorClip.length, elevatorClip.length - doorCloseStart);

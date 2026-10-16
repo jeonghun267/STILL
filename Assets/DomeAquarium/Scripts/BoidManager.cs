@@ -34,7 +34,7 @@ public enum BoidShape
 ///  켜져 있어야 한다. 런타임에 material 프로퍼티를 건드리면(예: renderer.material) 머티리얼이 복제되어
 ///  인스턴싱 배치가 깨지므로, 색 변화가 필요하면 MaterialPropertyBlock 을 쓸 것.
 /// </summary>
-public class BoidManager : MonoBehaviour
+public class BoidManager : MonoBehaviour, IObservationTargets
 {
     const string ContainerName = "_Agents";
 
@@ -124,6 +124,60 @@ public class BoidManager : MonoBehaviour
     Vector3 playerPos;
 
     public int AgentCount { get { return agentCount; } }
+
+    // ---------------------------------------------------------------- 조회 (관찰기 조준용)
+
+    /// <summary>개체 하나의 현재 위치와 종. 개체에는 콜라이더가 없으므로 조준은 레이캐스트 대신 이 값으로 판정한다.</summary>
+    public bool TryGetAgent(int index, out Vector3 position, out FishData fish)
+    {
+        position = Vector3.zero;
+        fish = null;
+        if (agents == null || index < 0 || index >= agentCount) return false;
+
+        position = agents[index].pos;
+        fish = SpeciesOf(index);
+        return fish != null;
+    }
+
+    /// <summary>
+    /// 조준선(origin → direction) 기준 coneDegrees 안에 들어온 개체 중 조준선과 각도가 가장 작은 것. 없으면 -1.
+    /// 큰 생물은 몸 중심이 조준선에서 벗어나도 몸 어딘가를 겨누고 있으면 잡히도록, 체장의 절반이 차지하는 각도만큼 원뿔을 넓힌다.
+    /// 200개체를 내적 몇 번으로 한 번 훑는 비용이라 그리드를 쓰지 않는다.
+    /// </summary>
+    public int FindAgentInCone(Vector3 origin, Vector3 direction, float maxDistance, float coneDegrees)
+    {
+        if (agents == null || agentCount == 0) return -1;
+        if (direction.sqrMagnitude < 1e-8f) return -1;
+        direction.Normalize();
+
+        int best = -1;
+        float bestAngle = float.MaxValue;
+        for (int i = 0; i < agentCount; i++)
+        {
+            float angle;
+            if (!AngleInCone(i, origin, direction, maxDistance, coneDegrees, out angle)) continue;
+            if (angle < bestAngle) { bestAngle = angle; best = i; }
+        }
+        return best;
+    }
+
+    /// <summary>이미 잡고 있는 개체가 여전히 원뿔 안에 있는가. 무리 속에서 대상이 이웃으로 깜빡이며 바뀌지 않게 쓴다.</summary>
+    public bool IsAgentInCone(int index, Vector3 origin, Vector3 direction, float maxDistance, float coneDegrees)
+    {
+        if (agents == null || index < 0 || index >= agentCount) return false;
+        if (direction.sqrMagnitude < 1e-8f) return false;
+        float angle;
+        return AngleInCone(index, origin, direction.normalized, maxDistance, coneDegrees, out angle);
+    }
+
+    bool AngleInCone(int i, Vector3 origin, Vector3 dirNormalized, float maxDistance, float coneDegrees, out float angle)
+        => ObservationCone.Contains(origin, dirNormalized, agents[i].pos, SpeciesOf(i), maxDistance, coneDegrees, out angle);
+
+    FishData SpeciesOf(int index)
+    {
+        int s = agents[index].species;
+        return (species != null && s >= 0 && s < species.Length) ? species[s] : null;
+    }
 
     // ---------------------------------------------------------------- 라이프사이클
 

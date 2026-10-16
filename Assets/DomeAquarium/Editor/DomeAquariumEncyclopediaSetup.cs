@@ -1,5 +1,4 @@
 #if UNITY_EDITOR
-using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEditor;
@@ -8,24 +7,42 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>현재 설명 카드와 같은 청록색 디자인으로 월드 스페이스 도감 태블릿을 만든다. (v2)</summary>
+/// <summary>
+/// 관찰 일지 태블릿 (v3) — 정보 카드와 같은 청록 판 위에 레이아웃 그룹으로 쌓는다.
+///
+/// v2 에서 고친 것:
+///  - 크기: 0.95m 앞에 폭 1.05m(시야 57°)라 고개를 돌려야 다 보였다. 1.1m 앞에 폭 0.78m(시야 39°)로 줄여
+///    시야 중앙 41° 안에 넣는다 (Android XR 공간 UI). 눈높이보다 약 6° 아래 (Android 5°, MS 10~20°).
+///  - 배치: 요소마다 좌표를 박아 상세 설명이 오른쪽에서 잘리고 줄마다 여백이 달랐다. 이제 머리줄·본문·아래줄을
+///    레이아웃 그룹으로 쌓아 칸이 내용에 맞춰 정렬된다. 필터를 아래줄 칩으로 옮겨 상세 칸을 넓혔다.
+///  - 글자: 1.1m 에서 1° ≈ 25.6px. 제목 36px(1.4°), 본문 26px(1.0°), 이름표 22px(0.86°), 최소 19px(0.74°).
+///    10~15세 대상이라 MS 권장 0.6~0.75° 보다 크게. 기울임꼴·영문 머리말은 뺐다.
+///  - 색: 판과 칸의 가장 어두운 채널을 13/255 위로 (Meta 디스플레이 — 그 아래는 구분되지 않는다).
+/// </summary>
 public static class DomeAquariumEncyclopediaSetup
 {
     const string RootName = "FishEncyclopediaRoot";
     const string HandTag = "Hand";
-    const string UiSamples = "Assets/Unity UI Samples/Textures and Sprites/Rounded UI";
-    // 패널은 정보 카드(DomeAquariumInfoPanelSetup)와 같은 흰 라운드 스프라이트를 쓴다.
-    // UIPanel.png 는 회색(약 35%) 스프라이트라 Image.color 에 곱해지면서 아래 청록 색들이 전부
-    // 거의 검정으로 나왔고, 밤에는 어두운 물빛에 그대로 묻혀 "도감이 까맣게 안 보이는" 원인이 됐다.
-    const string RoundSprite = "Assets/VRTemplateAssets/Sprites/UI/Round Radius 10.png";
-    const string OutlineSprite = "Assets/VRTemplateAssets/Sprites/UI/Round Radius 10 Outline.png";
+    // 정보 카드와 같은 STILL 전용 UI 키트(반경 10px, 외곽선 1.5px) — DomeAquariumUiKit 참고.
+    const string RoundSprite = DomeAquariumUiKit.PanelPath;
+    const string OutlineSprite = DomeAquariumUiKit.OutlinePath;
 
-    // 밤 배경(안개 sRGB 0.02/0.07/0.15)보다는 확실히 밝게, 그래도 어두운 청록으로.
-    static readonly Color Deep = new Color(0.03f, 0.12f, 0.17f, 0.96f);
-    static readonly Color Panel = new Color(0.04f, 0.17f, 0.23f, 0.97f);
-    static readonly Color Outline = new Color(0.25f, 0.83f, 1f, 0.55f);   // 정보 카드 테두리와 같은 계열
-    static readonly Color Cyan = new Color(0.08f, 0.72f, 0.88f, 1f);
-    static readonly Color Muted = new Color(0.62f, 0.76f, 0.82f, 1f);
+    const float Width = 1040f;
+    const float Height = 680f;
+    const float Scale = 0.00075f;             // 0.78m × 0.51m
+    const float OpenDistance = 1.1f;
+    const float OpenDrop = 0.12f;             // ≈ 6° 아래
+    const float CornerMultiplier = 2f;        // 라운드 스프라이트 모서리 40px → 20px, 외곽선도 얇게
+    const int SlotCount = 12;                 // 3열 × 4줄
+
+    static readonly Color Plate = new Color(0.06f, 0.15f, 0.20f, 0.97f);
+    static readonly Color Well = new Color(0.07f, 0.18f, 0.24f, 0.97f);      // 판보다 한 단계 밝은 칸
+    static readonly Color OutlineTint = new Color(0.30f, 0.82f, 1f, 0.18f);
+    static readonly Color Chip = new Color(0.08f, 0.25f, 0.31f, 1f);
+    static readonly Color ChipActive = new Color(0.08f, 0.48f, 0.60f, 1f);
+    static readonly Color Ink = new Color(0.94f, 0.97f, 1f);
+    static readonly Color Body = new Color(0.88f, 0.94f, 0.98f);
+    static readonly Color Muted = new Color(0.58f, 0.80f, 0.90f);
 
     [MenuItem("DomeAquarium/15. 도감 태블릿 적용", priority = 15)]
     public static void ApplyMenu() { Apply(true); }
@@ -48,6 +65,7 @@ public static class DomeAquariumEncyclopediaSetup
         GameObject old = GameObject.Find(RootName);
         if (old != null) Object.DestroyImmediate(old);
 
+        DomeAquariumUiKit.EnsureAll();
         TMP_FontAsset font = DomeAquariumSetup.LoadKoreanFont();
         Transform parent = camera.transform.parent;
 
@@ -61,10 +79,9 @@ public static class DomeAquariumEncyclopediaSetup
         root.AddComponent<UnityEngine.XR.Interaction.Toolkit.UI.TrackedDeviceGraphicRaycaster>();
 
         RectTransform rootRt = root.GetComponent<RectTransform>();
-        rootRt.sizeDelta = new Vector2(1100f, 700f);
-        // VR에서 작은 글자를 몸을 숙여 읽지 않아도 되도록 기존보다 약 19% 크게 표시한다.
-        rootRt.localScale = Vector3.one * 0.00095f;
-        rootRt.localPosition = new Vector3(0f, 1.25f, 1.05f);
+        rootRt.sizeDelta = new Vector2(Width, Height);
+        rootRt.localScale = Vector3.one * Scale;
+        rootRt.localPosition = new Vector3(0f, 1.25f, OpenDistance);
 
         CanvasGroup group = root.AddComponent<CanvasGroup>();
         group.alpha = 0f;
@@ -74,83 +91,75 @@ public static class DomeAquariumEncyclopediaSetup
         FishEncyclopediaPanel controller = root.AddComponent<FishEncyclopediaPanel>();
         controller.canvasGroup = group;
         controller.viewer = camera.transform;
-        controller.openDistance = 0.95f;
+        controller.openDistance = OpenDistance;
+        controller.openDrop = OpenDrop;
         controller.allFish = LoadAllFish();
 
-        RectTransform background = NewUI("TabletFrame", root.transform, new Vector2(1100f, 700f));
-        Skin(background.gameObject.AddComponent<Image>(), RoundSprite, Deep);
+        // ── 판 ─────────────────────────────────────────────
+        RectTransform frame = NewUI("TabletFrame", root.transform);
+        Stretch(frame);
+        Skin(frame.gameObject.AddComponent<Image>(), RoundSprite, Plate);
+        Image outline = NewUI("TabletOutline", frame).gameObject.AddComponent<Image>();
+        Stretch(outline.rectTransform);
+        Ignore(outline.gameObject);
+        Skin(outline, OutlineSprite, OutlineTint);
 
-        // 정보 카드처럼 청록 윤곽선을 두른다. 밤에는 짙은 패널 몸체가 배경에 묻히므로
-        // 윤곽선이 태블릿의 실루엣을 지켜 준다.
-        RectTransform outlineRt = NewUI("TabletOutline", background, new Vector2(1100f, 700f));
-        Image outline = outlineRt.gameObject.AddComponent<Image>();
-        Skin(outline, OutlineSprite, Outline);
-        outline.raycastTarget = false;
+        VerticalLayoutGroup stack = frame.gameObject.AddComponent<VerticalLayoutGroup>();
+        stack.padding = new RectOffset(28, 28, 24, 24);
+        stack.spacing = 16f;
+        stack.childControlWidth = true;
+        stack.childControlHeight = true;
+        stack.childForceExpandWidth = true;
+        stack.childForceExpandHeight = false;
 
-        RectTransform inner = NewUI("InnerPanel", background, new Vector2(1060f, 660f));
-        Skin(inner.gameObject.AddComponent<Image>(), RoundSprite, new Color(0.035f, 0.14f, 0.19f, 0.96f));
+        // ── 머리줄: 진행도 · 현재 보기 · 탐험가 · 닫기 ─────────────
+        RectTransform header = NewRow(frame, "Header", 56f, 16f);
 
-        // 상단 헤더
-        RectTransform header = NewUI("Header", inner, new Vector2(1020f, 82f));
-        header.anchoredPosition = new Vector2(0f, 270f);
-        Skin(header.gameObject.AddComponent<Image>(), RoundSprite, new Color(0.035f, 0.22f, 0.28f, 0.96f));
-
-        TMP_Text title = NewText("ProgressText", header, new Vector2(520f, 60f), 34f, font);
-        title.rectTransform.anchoredPosition = new Vector2(-232f, 0f);
-        title.alignment = TextAlignmentOptions.Left;
-        title.fontStyle = FontStyles.Bold;
-        title.text = ObservationTerms.Progress(0, 98);
+        TMP_Text title = NewText("ProgressText", header, 36f, font, FontStyles.Bold, Ink);
+        title.text = ObservationTerms.Progress(0, controller.allFish.Length);
+        SingleLine(title, 28f, 36f);
+        Fixed(title.gameObject, -1f, 56f);
+        Element(title.gameObject).flexibleWidth = 1f;
         controller.progressText = title;
 
-        TMP_Text marine = NewText("MarineDiscovery", header, new Vector2(220f, 30f), 15f, font);
-        marine.rectTransform.anchoredPosition = new Vector2(264f, 20f);
-        marine.text = ObservationTerms.LogTitleEnglish;
-        marine.color = new Color(0.48f, 0.88f, 0.96f);
+        // 지금 보기는 아래줄 칩 색으로 보여 준다 — 머리줄에 같은 말을 또 쓰지 않는다.
+        controller.filterStatusText = null;
 
-        Button close = AddButton("CloseButton", header, new Vector2(68f, 56f), new Vector2(466f, 0f), "×", 38f, font,
-            new Color(0.08f, 0.34f, 0.40f, 1f));
+        // 프로필 전환: 텍스트 입력 없이 현장에서 빠르게 사용자만 바꾼다.
+        Button prevProfile = AddButton("PreviousProfile", header, 52f, 52f, "‹", 30f, font, Chip);
+        TMP_Text profile = NewText("ProfileText", header, 24f, font, FontStyles.Bold, new Color(0.70f, 0.92f, 0.96f));
+        profile.text = "탐험가 1";
+        SingleLine(profile, 19f, 24f);
+        Fixed(profile.gameObject, 112f, 52f);
+        controller.profileText = profile;
+        Button nextProfile = AddButton("NextProfile", header, 52f, 52f, "›", 30f, font, Chip);
+        Wire(prevProfile, controller.PreviousProfile);
+        Wire(nextProfile, controller.NextProfile);
+
+        Button close = AddButton("CloseButton", header, 56f, 56f, "×", 36f, font, new Color(0.10f, 0.32f, 0.38f, 1f));
         Wire(close, controller.Close);
 
-        // 왼쪽 필터
-        // 세 패널은 헤더 아래 232 에서 -252 까지. 그 아래 78 은 프로필 전환·페이지 넘김 전용 줄이다.
-        // (예전엔 패널이 -308 까지 내려와 프로필 바와 페이지 버튼이 서로 겹쳤다.)
-        RectTransform filterPanel = NewUI("FilterPanel", inner, new Vector2(180f, 484f));
-        filterPanel.anchoredPosition = new Vector2(-420f, -10f);
-        Skin(filterPanel.gameObject.AddComponent<Image>(), RoundSprite, Panel);
+        // ── 본문: 카드 격자 | 상세 ──────────────────────────────
+        RectTransform body = NewUI("Body", frame);
+        HorizontalLayoutGroup bodyRow = body.gameObject.AddComponent<HorizontalLayoutGroup>();
+        bodyRow.spacing = 20f;
+        bodyRow.childControlWidth = true;
+        bodyRow.childControlHeight = true;
+        bodyRow.childForceExpandWidth = false;
+        bodyRow.childForceExpandHeight = true;
+        Element(body.gameObject).flexibleHeight = 1f;
 
-        TMP_Text filterTitle = NewText("FilterTitle", filterPanel, new Vector2(150f, 40f), 23f, font);
-        filterTitle.rectTransform.anchoredPosition = new Vector2(0f, 205f);
-        filterTitle.text = ObservationTerms.FrequencyLabel;
-        filterTitle.fontStyle = FontStyles.Bold;
+        RectTransform gridPanel = NewUI("CardGridPanel", body);
+        Skin(gridPanel.gameObject.AddComponent<Image>(), RoundSprite, new Color(0.05f, 0.13f, 0.18f, 0.9f));
+        Fixed(gridPanel.gameObject, 500f, -1f);
+        GridLayoutGroup grid = gridPanel.gameObject.AddComponent<GridLayoutGroup>();
+        grid.padding = new RectOffset(12, 12, 12, 12);
+        grid.cellSize = new Vector2(152f, 104f);
+        grid.spacing = new Vector2(10f, 10f);
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 3;
+        grid.childAlignment = TextAnchor.UpperLeft;
 
-        string[] filterLabels = { "전체", "기록만", ObservationTerms.Frequency[0], ObservationTerms.Frequency[1],
-            ObservationTerms.Frequency[2], ObservationTerms.Frequency[3], ObservationTerms.Frequency[4] };
-        UnityEngine.Events.UnityAction[] filterActions =
-        {
-            controller.FilterAll, controller.FilterDiscovered, controller.FilterCommon, controller.FilterUncommon,
-            controller.FilterRare, controller.FilterEpic, controller.FilterLegendary
-        };
-        for (int i = 0; i < filterLabels.Length; i++)
-        {
-            Button b = AddButton("Filter_" + i, filterPanel, new Vector2(148f, 48f),
-                new Vector2(0f, 150f - i * 54f), filterLabels[i], 21f, font,
-                i == 0 ? new Color(0.08f, 0.48f, 0.60f, 1f) : new Color(0.035f, 0.23f, 0.29f, 1f));
-            Wire(b, filterActions[i]);
-        }
-
-        TMP_Text filterStatus = NewText("FilterStatus", filterPanel, new Vector2(150f, 32f), 17f, font);
-        filterStatus.rectTransform.anchoredPosition = new Vector2(0f, -218f);
-        filterStatus.text = "전체 생물";
-        filterStatus.color = new Color(0.45f, 0.84f, 0.92f);
-        controller.filterStatusText = filterStatus;
-
-        // 중앙 카드 그리드
-        RectTransform gridPanel = NewUI("CardGridPanel", inner, new Vector2(520f, 484f));
-        gridPanel.anchoredPosition = new Vector2(-60f, -10f);
-        // 그리드는 바탕보다 살짝 어둡게 파고, 카드는 그보다 밝게 띄워 카드가 도드라지게 한다.
-        Skin(gridPanel.gameObject.AddComponent<Image>(), RoundSprite, new Color(0.025f, 0.10f, 0.145f, 0.85f));
-
-        const int SlotCount = 12;
         var cardRoots = new GameObject[SlotCount];
         var cardButtons = new Button[SlotCount];
         var cardFrames = new Image[SlotCount];
@@ -160,46 +169,48 @@ public static class DomeAquariumEncyclopediaSetup
 
         for (int i = 0; i < SlotCount; i++)
         {
-            int col = i % 3;
-            int row = i / 3;
-            Vector2 pos = new Vector2(-168f + col * 168f, 170f - row * 116f);
-            RectTransform card = NewUI("Card_" + i, gridPanel, new Vector2(154f, 104f));
-            card.anchoredPosition = pos;
-            Image frame = card.gameObject.AddComponent<Image>();
-            Skin(frame, RoundSprite, new Color(0.06f, 0.22f, 0.29f, 0.97f));
+            RectTransform card = NewUI("Card_" + i, gridPanel);
+            Image cardFrame = card.gameObject.AddComponent<Image>();
+            Skin(cardFrame, RoundSprite, Well);
 
             Button button = card.gameObject.AddComponent<Button>();
-            button.targetGraphic = frame;
+            button.targetGraphic = cardFrame;
             ColorBlock colors = button.colors;
-            colors.highlightedColor = new Color(0.08f, 0.36f, 0.44f, 1f);
-            colors.pressedColor = new Color(0.04f, 0.52f, 0.62f, 1f);
+            colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);   // 칸 색(관측 빈도 색)을 유지한 채 밝게
+            colors.pressedColor = new Color(0.85f, 0.85f, 0.85f, 1f);
             colors.fadeDuration = 0.07f;
             button.colors = colors;
-            AddPoke(card.gameObject, new Vector3(160f, 112f, 180f));
+            AddPoke(card.gameObject, new Vector3(164f, 116f, 180f));
 
-            TMP_Text mark = NewText("Silhouette", card, new Vector2(48f, 48f), 38f, font);
-            mark.rectTransform.anchoredPosition = new Vector2(0f, 19f);
-            mark.text = "?";
-            mark.color = new Color(0.28f, 0.38f, 0.45f);
+            VerticalLayoutGroup cardStack = card.gameObject.AddComponent<VerticalLayoutGroup>();
+            cardStack.padding = new RectOffset(8, 8, 10, 8);
+            cardStack.spacing = 0f;
+            cardStack.childAlignment = TextAnchor.MiddleCenter;
+            cardStack.childControlWidth = true;
+            cardStack.childControlHeight = true;
+            cardStack.childForceExpandWidth = true;
+            cardStack.childForceExpandHeight = false;
 
-            TMP_Text name = NewText("KoreanName", card, new Vector2(140f, 28f), 19f, font);
-            name.rectTransform.anchoredPosition = new Vector2(0f, -17f);
-            name.fontStyle = FontStyles.Bold;
-            name.text = "???";
-            // "골드네온피그미고비"처럼 긴 이름이 두 줄로 꺾여 등급 글자를 덮지 않도록 한 줄 고정 + 자동 축소.
-            SingleLine(name, 12f, 19f);
+            // 이름은 한 줄. 한국어는 글자 단위로 줄이 꺾여 "가위꼬리다트피 / 쉬"처럼 끊기므로 감싸지 않는다.
+            // 98종 중 92종이 8글자 이하라 칸 안쪽 136px 에 17px 이상으로 들어간다. 10글자 넘는 3종만 말줄임표 —
+            // 전체 이름은 상세 칸에 나온다. 칸 높이는 글자 크기 × 1.45 이상 (낮으면 TMP 가 줄을 숨긴다).
+            TMP_Text name = NewText("KoreanName", card, 22f, font, FontStyles.Bold, Ink);
+            name.text = "?";
+            name.alignment = TextAlignmentOptions.Center;
+            SingleLine(name, 14f, 22f);
+            Fixed(name.gameObject, -1f, 36f);
 
-            TMP_Text rarity = NewText("Rarity", card, new Vector2(140f, 22f), 15f, font);
-            rarity.rectTransform.anchoredPosition = new Vector2(0f, -38f);
-            rarity.text = ObservationTerms.Unobserved;
-            rarity.color = Muted;
+            TMP_Text rarity = NewText("Rarity", card, 19f, font, FontStyles.Normal, Muted);
+            rarity.alignment = TextAlignmentOptions.Center;
+            SingleLine(rarity, 16f, 19f);
+            Fixed(rarity.gameObject, -1f, 28f);
 
             cardRoots[i] = card.gameObject;
             cardButtons[i] = button;
-            cardFrames[i] = frame;
+            cardFrames[i] = cardFrame;
             cardNames[i] = name;
             cardRarities[i] = rarity;
-            cardMarks[i] = mark;
+            cardMarks[i] = null;   // 모서리 색 점은 뺐다 — 두 줄 이름을 가리고, 색은 빈도 문구가 이미 전한다
         }
 
         controller.cardRoots = cardRoots;
@@ -209,104 +220,129 @@ public static class DomeAquariumEncyclopediaSetup
         controller.cardRarities = cardRarities;
         controller.cardLockedMarks = cardMarks;
 
-        // 페이지 넘김은 그리드 아래 전용 줄(y=-291)에 둔다. 그리드 안에 넣으면 넷째 줄 카드와 붙는다.
-        Button prevPage = AddButton("PreviousPage", inner, new Vector2(64f, 42f), new Vector2(-180f, -291f), "‹", 34f, font,
-            new Color(0.035f, 0.29f, 0.36f, 1f));
-        Button nextPage = AddButton("NextPage", inner, new Vector2(64f, 42f), new Vector2(60f, -291f), "›", 34f, font,
-            new Color(0.035f, 0.29f, 0.36f, 1f));
-        Wire(prevPage, controller.PreviousPage);
-        Wire(nextPage, controller.NextPage);
-        TMP_Text pageText = NewText("PageText", inner, new Vector2(120f, 40f), 19f, font);
-        pageText.rectTransform.anchoredPosition = new Vector2(-60f, -291f);
-        pageText.text = "1 / 9";
-        pageText.color = Muted;
-        controller.pageText = pageText;
+        // 상세: [3D 관찰 칸 | 이름·학명·관측 빈도·횟수] / 설명 / 음성 해설 버튼
+        RectTransform detail = NewUI("DetailPanel", body);
+        Skin(detail.gameObject.AddComponent<Image>(), RoundSprite, Well);
+        Element(detail.gameObject).flexibleWidth = 1f;
+        VerticalLayoutGroup detailStack = detail.gameObject.AddComponent<VerticalLayoutGroup>();
+        detailStack.padding = new RectOffset(18, 18, 18, 16);
+        detailStack.spacing = 12f;
+        detailStack.childControlWidth = true;
+        detailStack.childControlHeight = true;
+        detailStack.childForceExpandWidth = true;
+        detailStack.childForceExpandHeight = false;
 
-        // 오른쪽 상세 관찰 영역
-        RectTransform detail = NewUI("DetailPanel", inner, new Vector2(320f, 484f));
-        detail.anchoredPosition = new Vector2(370f, -10f);
-        Skin(detail.gameObject.AddComponent<Image>(), RoundSprite, Panel);
+        RectTransform top = NewRow(detail, "DetailTop", 200f, 16f);
+        top.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.UpperLeft;
 
-        RectTransform previewWell = NewUI("PreviewWell", detail, new Vector2(286f, 196f));
-        previewWell.anchoredPosition = new Vector2(0f, 132f);
+        RectTransform previewWell = NewUI("PreviewWell", top);
         // 검정 구멍처럼 보이지 않도록 패널과 이어지는 밝은 청록 관찰 영역을 사용한다.
-        Skin(previewWell.gameObject.AddComponent<Image>(), RoundSprite, new Color(0.06f, 0.25f, 0.32f, 0.90f));
-        TMP_Text orbitHint = NewText("OrbitHint", previewWell, new Vector2(250f, 25f), 14f, font);
-        orbitHint.rectTransform.anchoredPosition = new Vector2(0f, -80f);
+        Skin(previewWell.gameObject.AddComponent<Image>(), RoundSprite, new Color(0.10f, 0.27f, 0.34f, 0.95f));
+        Fixed(previewWell.gameObject, 200f, 200f);
+        TMP_Text orbitHint = NewText("OrbitHint", previewWell, 19f, font, FontStyles.Normal, new Color(0.55f, 0.78f, 0.84f));
         orbitHint.text = "360° 자동 관찰";
-        orbitHint.color = new Color(0.38f, 0.66f, 0.72f);
-
-        RectTransform previewAnchor = NewUI("PreviewAnchor", previewWell, new Vector2(1f, 1f));
-        previewAnchor.anchoredPosition = new Vector2(0f, 8f);
+        orbitHint.alignment = TextAlignmentOptions.Bottom;
+        Stretch(orbitHint.rectTransform);
+        orbitHint.rectTransform.offsetMin = new Vector2(0f, 8f);
+        RectTransform previewAnchor = NewUI("PreviewAnchor", previewWell);
+        previewAnchor.anchorMin = previewAnchor.anchorMax = new Vector2(0.5f, 0.5f);
+        previewAnchor.sizeDelta = Vector2.one;
         // 화면 중심점은 패널 표면에 유지하고, 사용자 쪽 깊이 이동은 런타임에
         // 관찰점-눈 사이의 직선 방향으로 계산해 원근에 의한 좌우 밀림을 막는다.
-        previewAnchor.localPosition = new Vector3(0f, 8f, 0f);
+        previewAnchor.localPosition = new Vector3(0f, 10f, 0f);
         controller.previewAnchor = previewAnchor;
 
-        TMP_Text detailName = NewText("DetailName", detail, new Vector2(286f, 40f), 29f, font);
-        detailName.rectTransform.anchoredPosition = new Vector2(0f, 8f);
-        detailName.alignment = TextAlignmentOptions.Left;
-        detailName.fontStyle = FontStyles.Bold;
+        RectTransform info = NewUI("DetailInfo", top);
+        Element(info.gameObject).flexibleWidth = 1f;
+        VerticalLayoutGroup infoStack = info.gameObject.AddComponent<VerticalLayoutGroup>();
+        infoStack.spacing = 4f;
+        infoStack.childControlWidth = true;
+        infoStack.childControlHeight = true;
+        infoStack.childForceExpandWidth = true;
+        infoStack.childForceExpandHeight = false;
+
+        TMP_Text detailName = NewText("DetailName", info, 34f, font, FontStyles.Bold, Ink);
         detailName.text = "생물을 선택하세요";
-        SingleLine(detailName, 20f, 29f);
+        SingleLine(detailName, 24f, 34f);
+        Fixed(detailName.gameObject, -1f, 50f);
         controller.detailNameText = detailName;
 
-        TMP_Text detailSubtitle = NewText("DetailSubtitle", detail, new Vector2(286f, 40f), 16f, font);
-        detailSubtitle.rectTransform.anchoredPosition = new Vector2(0f, -30f);
-        detailSubtitle.alignment = TextAlignmentOptions.Left;
-        detailSubtitle.fontStyle = FontStyles.Italic;
-        detailSubtitle.color = new Color(0.48f, 0.76f, 0.82f);
+        TMP_Text detailSubtitle = NewText("DetailSubtitle", info, 22f, font, FontStyles.Normal, Muted);
         detailSubtitle.text = FishEncyclopediaPanel.DefaultSubtitle;
-        // 학명이 길어도 한 글자만 다음 줄로 떨어지는 일이 없도록 한 줄로 맞춘다.
-        SingleLine(detailSubtitle, 12f, 16f);
+        detailSubtitle.textWrappingMode = TextWrappingModes.Normal;
+        Fixed(detailSubtitle.gameObject, -1f, 64f);
+        detailSubtitle.alignment = TextAlignmentOptions.TopLeft;
         controller.detailSubtitleText = detailSubtitle;
 
-        TMP_Text detailRarity = NewText("DetailRarity", detail, new Vector2(286f, 25f), 16f, font);
-        detailRarity.rectTransform.anchoredPosition = new Vector2(0f, -62f);
-        detailRarity.alignment = TextAlignmentOptions.Left;
+        TMP_Text detailRarity = NewText("DetailRarity", info, 22f, font, FontStyles.Bold, Muted);
+        SingleLine(detailRarity, 19f, 22f);
+        Fixed(detailRarity.gameObject, -1f, 34f);
         controller.detailRarityText = detailRarity;
 
-        TMP_Text detailDescription = NewText("DetailDescription", detail, new Vector2(286f, 118f), 19f, font);
-        detailDescription.rectTransform.anchoredPosition = new Vector2(0f, -140f);
-        detailDescription.alignment = TextAlignmentOptions.TopLeft;
-        detailDescription.text = "카드를 선택하면 생김새와 설명이 여기에 표시됩니다.";
-        detailDescription.color = new Color(0.86f, 0.93f, 0.96f);
-        controller.detailDescriptionText = detailDescription;
-
-        TMP_Text count = NewText("DiscoveryCount", detail, new Vector2(120f, 28f), 16f, font);
-        count.rectTransform.anchoredPosition = new Vector2(-78f, -218f);
-        count.alignment = TextAlignmentOptions.Left;
-        count.color = Muted;
+        TMP_Text count = NewText("DiscoveryCount", info, 20f, font, FontStyles.Normal, Muted);
+        SingleLine(count, 19f, 20f);
+        Fixed(count.gameObject, -1f, 32f);
         controller.detailCountText = count;
 
-        Button narrate = AddButton("NarrationButton", detail, new Vector2(150f, 46f), new Vector2(68f, -218f), "▶  음성 해설", 17f, font,
-            new Color(0.055f, 0.43f, 0.53f, 1f));
+        TMP_Text detailDescription = NewText("DetailDescription", detail, 26f, font, FontStyles.Normal, Body);
+        detailDescription.text = "카드를 선택하면 생김새와 설명이 여기에 표시됩니다.";
+        detailDescription.textWrappingMode = TextWrappingModes.Normal;
+        detailDescription.overflowMode = TextOverflowModes.Ellipsis;
+        detailDescription.lineSpacing = 6f;
+        detailDescription.alignment = TextAlignmentOptions.TopLeft;
+        Element(detailDescription.gameObject).flexibleHeight = 1f;
+        controller.detailDescriptionText = detailDescription;
+
+        RectTransform detailBottom = NewRow(detail, "DetailBottom", 52f, 0f);
+        detailBottom.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleRight;
+        Element(NewUI("Spacer", detailBottom).gameObject).flexibleWidth = 1f;
+        Button narrate = AddButton("NarrationButton", detailBottom, 176f, 52f, "▶  " + ObservationTerms.Narration, 22f, font,
+            new Color(0.07f, 0.45f, 0.55f, 1f));
         Wire(narrate, controller.PlaySelectedNarration);
         controller.narrationButtonRoot = narrate.gameObject;
         narrate.gameObject.SetActive(false);
 
-        // 프로필 전환: 텍스트 입력 없이 현장에서 빠르게 사용자만 바꾼다.
-        // 필터 패널 바로 아래 줄, 필터 패널 폭 안에만 둔다. 오른쪽으로 삐져나오면 페이지 버튼과 겹친다.
-        RectTransform profileBar = NewUI("ProfileBar", inner, new Vector2(180f, 48f));
-        profileBar.anchoredPosition = new Vector2(-420f, -291f);
-        Button prevProfile = AddButton("PreviousProfile", profileBar, new Vector2(40f, 40f), new Vector2(-68f, 0f), "‹", 26f, font,
-            new Color(0.035f, 0.29f, 0.36f, 1f));
-        Button nextProfile = AddButton("NextProfile", profileBar, new Vector2(40f, 40f), new Vector2(68f, 0f), "›", 26f, font,
-            new Color(0.035f, 0.29f, 0.36f, 1f));
-        Wire(prevProfile, controller.PreviousProfile);
-        Wire(nextProfile, controller.NextProfile);
-        TMP_Text profile = NewText("ProfileText", profileBar, new Vector2(92f, 40f), 17f, font);
-        SingleLine(profile, 12f, 17f);
-        profile.text = "탐험가 1";
-        profile.fontStyle = FontStyles.Bold;
-        profile.color = new Color(0.66f, 0.90f, 0.94f);
-        controller.profileText = profile;
+        // ── 아래줄: 보기 필터 칩 · 페이지 ────────────────────────
+        // 빈도별 필터 다섯 개(흔함~극히 드묾)는 아이들에게 어렵고 쓸 일도 드물다. "남은 생물"을 찾는 세 가지만 둔다.
+        RectTransform footer = NewRow(frame, "Footer", 52f, 8f);
+
+        string[] filterLabels = { "전체", ObservationTerms.RecordedOnly, ObservationTerms.NotYetRecorded };
+        float[] filterWidths = { 88f, 160f, 196f };
+        UnityEngine.Events.UnityAction[] filterActions =
+        {
+            controller.FilterAll, controller.FilterDiscovered, controller.FilterUndiscovered
+        };
+        var chips = new Image[filterLabels.Length];
+        for (int i = 0; i < filterLabels.Length; i++)
+        {
+            Button b = AddButton("Filter_" + i, footer, filterWidths[i], 48f, filterLabels[i], 22f, font,
+                i == 0 ? ChipActive : Chip);
+            Wire(b, filterActions[i]);
+            chips[i] = b.GetComponent<Image>();
+        }
+        controller.filterChips = chips;
+        controller.chipColor = Chip;
+        controller.chipActiveColor = ChipActive;
+
+        Element(NewUI("Spacer", footer).gameObject).flexibleWidth = 1f;
+
+        Button prevPage = AddButton("PreviousPage", footer, 56f, 48f, "‹", 32f, font, Chip);
+        TMP_Text pageText = NewText("PageText", footer, 24f, font, FontStyles.Normal, Muted);
+        pageText.text = "1 / 9";
+        pageText.alignment = TextAlignmentOptions.Center;
+        Fixed(pageText.gameObject, 84f, 48f);
+        controller.pageText = pageText;
+        Button nextPage = AddButton("NextPage", footer, 56f, 48f, "›", 32f, font, Chip);
+        Wire(prevPage, controller.PreviousPage);
+        Wire(nextPage, controller.NextPage);
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(frame);
 
         AddWristButton(controller, font);
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         if (saveScene) EditorSceneManager.SaveOpenScenes();
-        Debug.Log($"[도감] 수중 탐사 태블릿 적용 완료 ({controller.allFish.Length}종, 로컬 탐험가 3명).");
+        Debug.Log($"[도감] 관찰 일지 태블릿 적용 완료 ({controller.allFish.Length}종, 로컬 탐험가 3명).");
         return controller;
     }
 
@@ -322,10 +358,12 @@ public static class DomeAquariumEncyclopediaSetup
         Transform old = wrist.transform.Find("EncyclopediaButton");
         if (old != null) Object.DestroyImmediate(old.gameObject);
 
+        // 관찰기(상자 없는 흐름)에서는 "다시 뽑기" 버튼이 꺼져 있다 — 그때는 일지 버튼만 가운데 둔다.
         RectTransform wristRt = wrist.GetComponent<RectTransform>();
-        if (wristRt != null) wristRt.sizeDelta = new Vector2(300f, 270f);
         RectTransform summon = wrist.transform.Find("SummonButton") as RectTransform;
-        if (summon != null)
+        bool withSummon = summon != null && summon.gameObject.activeSelf;
+        if (wristRt != null) wristRt.sizeDelta = withSummon ? new Vector2(300f, 270f) : new Vector2(300f, 140f);
+        if (withSummon)
         {
             summon.sizeDelta = new Vector2(300f, 128f);
             summon.anchoredPosition = new Vector2(0f, 70f);
@@ -333,9 +371,11 @@ public static class DomeAquariumEncyclopediaSetup
             if (summonLabel != null) summonLabel.rectTransform.sizeDelta = new Vector2(300f, 128f);
         }
 
-        // 옆의 "다시 뽑기"(SummonButton)와 같은 스프라이트를 써야 손목 메뉴 안에서 톤이 맞는다.
-        Button button = AddButton("EncyclopediaButton", wrist.transform, new Vector2(300f, 128f), new Vector2(0f, -70f),
-            ObservationTerms.OpenLog, 36f, font, new Color(0.04f, 0.50f, 0.58f, 0.97f), "UIButtonDefault.png");
+        Button button = AddButton("EncyclopediaButton", wrist.transform, 300f, 128f, ObservationTerms.OpenLog, 36f, font,
+            new Color(0.06f, 0.46f, 0.56f, 0.97f));
+        RectTransform buttonRt = button.GetComponent<RectTransform>();
+        buttonRt.anchoredPosition = withSummon ? new Vector2(0f, -70f) : Vector2.zero;
+        buttonRt.sizeDelta = new Vector2(300f, 128f);
         Wire(button, controller.Toggle);
     }
 
@@ -349,24 +389,32 @@ public static class DomeAquariumEncyclopediaSetup
             .ToArray();
     }
 
-    static Button AddButton(string name, Transform parent, Vector2 size, Vector2 position, string label,
+    // ─────────────────────────────────────────────────────────────
+    // 헬퍼
+    // ─────────────────────────────────────────────────────────────
+
+    /// <summary>레이아웃 그룹 안에서는 크기를 LayoutElement 로 정한다. 그룹 밖(손목 메뉴)에서는 sizeDelta 를 따로 맞춘다.</summary>
+    static Button AddButton(string name, Transform parent, float width, float height, string label,
         float fontSize, TMP_FontAsset font, Color color, string sprite = RoundSprite)
     {
-        RectTransform rt = NewUI(name, parent, size);
-        rt.anchoredPosition = position;
+        RectTransform rt = NewUI(name, parent);
+        rt.sizeDelta = new Vector2(width, height);
+        Fixed(rt.gameObject, width, height);
         Image image = rt.gameObject.AddComponent<Image>();
         Skin(image, sprite, color);
         Button button = rt.gameObject.AddComponent<Button>();
         button.targetGraphic = image;
         ColorBlock colors = button.colors;
-        colors.highlightedColor = Color.Lerp(color, Color.white, 0.22f);
-        colors.pressedColor = Color.Lerp(color, Color.black, 0.20f);
+        colors.highlightedColor = new Color(1.2f, 1.2f, 1.2f, 1f);
+        colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
         colors.fadeDuration = 0.07f;
         button.colors = colors;
-        TMP_Text text = NewText("Label", rt, size, fontSize, font);
+        TMP_Text text = NewText("Label", rt, fontSize, font, FontStyles.Bold, Color.white);
+        Stretch(text.rectTransform);
         text.text = label;
-        text.color = Color.white;
-        AddPoke(rt.gameObject, new Vector3(size.x + 12f, size.y + 12f, 180f));
+        text.alignment = TextAlignmentOptions.Center;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
+        AddPoke(rt.gameObject, new Vector3(width + 12f, height + 12f, 180f));
         return button;
     }
 
@@ -383,28 +431,54 @@ public static class DomeAquariumEncyclopediaSetup
         BoxCollider collider = target.AddComponent<BoxCollider>();
         collider.isTrigger = true;
         collider.size = size;
-        Rigidbody body = target.AddComponent<Rigidbody>();
-        body.isKinematic = true;
-        body.useGravity = false;
+        Rigidbody rb = target.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity = false;
         PokeSelector poke = target.AddComponent<PokeSelector>();
         poke.mysteryBox = null;
         poke.handTag = HandTag;
         poke.inputCooldown = 0.45f;
     }
 
-    static RectTransform NewUI(string name, Transform parent, Vector2 size)
+    static RectTransform NewUI(string name, Transform parent)
     {
         var go = new GameObject(name, typeof(RectTransform));
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.SetParent(parent, false);
         rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = size;
         rt.anchoredPosition = Vector2.zero;
         rt.localScale = Vector3.one;
         return rt;
     }
 
-    /// <summary>한 줄 고정. 넘치면 글자를 줄이고, 그래도 안 되면 말줄임표.</summary>
+    static RectTransform NewRow(Transform parent, string name, float height, float spacing)
+    {
+        RectTransform rt = NewUI(name, parent);
+        HorizontalLayoutGroup row = rt.gameObject.AddComponent<HorizontalLayoutGroup>();
+        row.spacing = spacing;
+        row.childAlignment = TextAnchor.MiddleLeft;
+        row.childControlWidth = true;
+        row.childControlHeight = true;
+        row.childForceExpandWidth = false;
+        row.childForceExpandHeight = false;
+        Fixed(rt.gameObject, -1f, height);
+        return rt;
+    }
+
+    static TextMeshProUGUI NewText(string name, Transform parent, float fontSize, TMP_FontAsset font, FontStyles style, Color color)
+    {
+        RectTransform rt = NewUI(name, parent);
+        TextMeshProUGUI text = rt.gameObject.AddComponent<TextMeshProUGUI>();
+        text.fontSize = fontSize;
+        text.fontStyle = style;
+        text.color = color;
+        text.alignment = TextAlignmentOptions.MidlineLeft;
+        text.raycastTarget = false;
+        if (font != null) text.font = font;
+        return text;
+    }
+
+    /// <summary>한 줄 고정. 넘치면 글자를 줄이고, 그래도 안 되면 말줄임표. 칸 높이는 글자 크기의 1.45배 이상으로 둔다.</summary>
     static void SingleLine(TMP_Text text, float minSize, float maxSize)
     {
         text.textWrappingMode = TextWrappingModes.NoWrap;
@@ -414,28 +488,41 @@ public static class DomeAquariumEncyclopediaSetup
         text.fontSizeMax = maxSize;
     }
 
-    static TextMeshProUGUI NewText(string name, Transform parent, Vector2 size, float fontSize, TMP_FontAsset font)
+    static LayoutElement Element(GameObject go)
     {
-        RectTransform rt = NewUI(name, parent, size);
-        TextMeshProUGUI text = rt.gameObject.AddComponent<TextMeshProUGUI>();
-        text.fontSize = fontSize;
-        text.alignment = TextAlignmentOptions.Center;
-        text.raycastTarget = false;
-        if (font != null) text.font = font;
-        return text;
+        var le = go.GetComponent<LayoutElement>();
+        return le != null ? le : go.AddComponent<LayoutElement>();
     }
 
-    /// <param name="spriteName">"Assets/..." 전체 경로, 또는 UiSamples 폴더 안의 파일 이름</param>
-    static void Skin(Image image, string spriteName, Color color)
+    /// <summary>음수는 "정하지 않음".</summary>
+    static void Fixed(GameObject go, float width, float height)
+    {
+        var le = Element(go);
+        if (width >= 0f) le.minWidth = le.preferredWidth = width;
+        if (height >= 0f) le.minHeight = le.preferredHeight = height;
+    }
+
+    static void Ignore(GameObject go) => Element(go).ignoreLayout = true;
+
+    static void Stretch(RectTransform rt)
+    {
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+    }
+
+    static void Skin(Image image, string spritePath, Color color)
     {
         image.color = color;
-        string path = spriteName.StartsWith("Assets/", System.StringComparison.Ordinal)
-            ? spriteName
-            : UiSamples + "/" + spriteName;
-        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        image.raycastTarget = true;
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
         if (sprite == null) return;
         image.sprite = sprite;
-        image.type = sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
+        bool sliced = sprite.border.sqrMagnitude > 0f;
+        image.type = sliced ? Image.Type.Sliced : Image.Type.Simple;
+        if (sliced && spritePath.StartsWith("Assets/VRTemplateAssets", System.StringComparison.Ordinal))
+            image.pixelsPerUnitMultiplier = CornerMultiplier;
     }
 }
 #endif
