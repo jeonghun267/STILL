@@ -144,6 +144,9 @@ public sealed class LobbyTutorial : MonoBehaviour
 
     // ─────────────────────────────────────────────────────────────
 
+    /// <summary>엔딩의 밤 로비에서 다시 걸어 다니게 한다 (텔레포트·스냅 회전).</summary>
+    public void EnableLocomotion(bool on) => SetLocomotion(on);
+
     void SetLocomotion(bool on)
     {
         if (locomotionRoot != null && locomotionRoot.activeSelf != on) locomotionRoot.SetActive(on);

@@ -95,6 +95,18 @@ public sealed class ObservationAim : MonoBehaviour
 
     public event Action<FishData> Recorded;
 
+    /// <summary>
+    /// "이미 기록한 종"을 무엇으로 볼지. 비면 관찰 일지(탐험가 프로필에 쌓인 기록)를 따른다.
+    /// DiveDirector 는 "이번 잠수에서 기록한 종"으로 바꾼다 — 부스에서 프로필 3개를 여러 관람객이 돌려 쓰므로,
+    /// 일지 기준이면 앞사람이 기록한 종을 다음 사람이 기록할 수 없어 층 할 일이 막힌다.
+    /// </summary>
+    [NonSerialized] public Predicate<FishData> knownOverride;
+
+    /// <summary>
+    /// 층이 정한 겨눌 대상. 비면 돔 무리(swarm). 200m 처럼 큰 생물이 따로 지나가는 층은 무리 + 지나가는 생물을 묶어 넘긴다 (DiveDirector).
+    /// </summary>
+    [NonSerialized] public IObservationTargets layerTargets;
+
 #if UNITY_EDITOR
     // 헤드셋 없이 플레이 모드에서 기록 흐름을 끝까지 돌려 보기 위한 도구(에디터 메뉴가 켠다).
     // 켜면 아직 기록하지 않은 가장 가까운 생물을 카메라째 바라본다.
@@ -118,6 +130,14 @@ public sealed class ObservationAim : MonoBehaviour
     FishData cardFish;
     float cardShownAt;
     Transform cardAnchor;
+
+    // --- 알림 줄 (큰 생물 예고처럼 잠깐 띄우는 말)
+    string noticeText;
+    float noticeUntil = -1f;
+    bool noticeShown;
+    Color statusColor = Color.white;
+    bool statusColorRead;
+    static readonly Color NoticeColor = new Color(1f, 0.82f, 0.45f, 1f);
 
     // --- 표시 캐시 (문자열은 상태가 바뀔 때만 만든다)
     FishData labelFish;
@@ -154,6 +174,7 @@ public sealed class ObservationAim : MonoBehaviour
         Transform view = ResolveViewer();
         bool logOpen = logPanel != null && logPanel.IsOpen;
         IObservationTargets targets = ResolveTargets();
+        HasAim = false;
         if (!armed || targets == null || view == null || logOpen)
         {
             target = -1;
@@ -169,6 +190,9 @@ public sealed class ObservationAim : MonoBehaviour
             return;
         }
         SetVisualsActive(true);
+        HasAim = true;
+        AimOrigin = origin;
+        AimDirection = dir.normalized;
 
         // 1) 대상 고르기 — 잡고 있던 개체가 넓은 원뿔 안에 남아 있으면 바꾸지 않는다.
         if (target < 0 || !targets.IsAgentInCone(target, origin, dir, maxDistance, holdConeDegrees))
@@ -222,7 +246,7 @@ public sealed class ObservationAim : MonoBehaviour
         if (store != null) isNew = store.RegisterDiscovery(fish);
         else isNew = recordedWithoutStore.Add(fish);
 
-        if (isNew) sessionCount++;
+        if (isNew || knownOverride != null) sessionCount++;   // 덮어쓴 기준에서는 여기까지 온 것 자체가 이번 탐사의 새 종이다
         lastRecordedName = fish.DisplayName;
         recordVersion++;
 
@@ -306,8 +330,41 @@ public sealed class ObservationAim : MonoBehaviour
         return Mathf.Max(0.1f, mediumSeconds);
     }
 
+    /// <summary>이번 프레임에 관찰기가 겨누고 있는 조준선 (조명 빔·신호 세기가 따른다). 들고 있지 않으면 HasAim = false.</summary>
+    public bool HasAim { get; private set; }
+    public Vector3 AimOrigin { get; private set; }
+    public Vector3 AimDirection { get; private set; }
+
+    /// <summary>방금 기록한 생물 카드가 떠 있는가. 층 진행(DiveDirector)이 그 위에 대사 자막을 겹쳐 띄우지 않게 기다린다.</summary>
+    public bool IsCardShowing => cardFish != null;
+
+    /// <summary>
+    /// 관찰기 화면에 잠깐 알림을 띄운다 (예: "무언가 다가와요 · 오른쪽 뒤"). 기획 문서: 예고는 관찰기 알림과 방향 소리로.
+    /// 짧고 약한 진동을 같이 준다 — 고개를 돌리기 전에 손이 먼저 안다.
+    /// </summary>
+    public void ShowNotice(string text, float seconds)
+    {
+        noticeText = text;
+        noticeUntil = Time.time + Mathf.Max(0.5f, seconds);
+        recordVersion++;
+        if (haptics != null) haptics.SendHapticImpulse(0.2f, 0.06f);
+    }
+
+    /// <summary>잡고 있던 대상과 진행 링을 놓는다. 층이 바뀌어 무리를 다시 만들면 개체 번호가 다른 생물을 가리킨다.</summary>
+    public void ResetAim()
+    {
+        target = -1;
+        progress = 0f;
+        progressFish = null;
+        hoverFish = null;
+        hoverTime = 0f;
+        lastRecordedName = null;              // 새 층에서는 "무엇을 하라"는 안내부터 — 연습 수조의 마지막 기록이 남아 있었다
+        recordVersion++;
+    }
+
     bool IsKnown(FishData fish)
     {
+        if (knownOverride != null) return knownOverride(fish);
         FishCollectionStore store = FishCollectionStore.Instance;
         if (store == null) return recordedWithoutStore.Contains(fish);
 
@@ -429,6 +486,7 @@ public sealed class ObservationAim : MonoBehaviour
         // Unity 오브젝트의 null 비교는 인터페이스로 바꾸면 깨지므로 구체 타입에서 먼저 가린다.
         IObservationTargets current = null;
         if (practiceTank != null && practiceTank.isActiveAndEnabled) current = practiceTank;
+        else if (layerTargets != null) current = layerTargets;
         else if (swarm != null) current = swarm;
 
         if (!ReferenceEquals(current, lastTargets))
@@ -546,18 +604,38 @@ public sealed class ObservationAim : MonoBehaviour
     {
         if (statusRoot == null) return;
 
-        // 손 위에 띄운 작은 화면. 손이 안 잡히면 시야 아래쪽에 둔다.
+        // 손 위에 띄운 작은 화면. 손이 안 잡히면 오른손이 있을 법한 자리(오른쪽 아래)에 둔다 —
+        // 정면 아래는 엘리베이터 판·자막·생물 카드가 뜨는 자리라, 예전처럼 한가운데 두면 서로 겹쳤다.
         if (fromHand && currentSource != null)
             statusRoot.position = currentSource.position + Vector3.up * statusLift;
         else
-            statusRoot.position = view.position + view.forward * 0.7f - view.up * 0.3f;
+        {
+            Vector3 f = new Vector3(view.forward.x, 0f, view.forward.z);
+            // 똑바로 위·아래를 보면 눕힌 forward 가 0 이 된다 — 머리 위쪽 축으로 몸이 향한 쪽을 대신 잡는다.
+            if (f.sqrMagnitude < 0.04f) f = new Vector3(view.up.x, 0f, view.up.z) * (view.forward.y > 0f ? -1f : 1f);
+            f = f.sqrMagnitude > 1e-6f ? f.normalized : Vector3.forward;
+            Vector3 r = Vector3.Cross(Vector3.up, f);
+            statusRoot.position = view.position + f * 0.55f + r * 0.26f - Vector3.up * 0.33f;   // 약 25° 오른쪽, 31° 아래
+        }
 
         Vector3 away = statusRoot.position - view.position;
         if (away.sqrMagnitude > 1e-6f) statusRoot.rotation = Billboard(away.normalized, view);
 
         // 기록이 하나라도 일어나면 다시 쓴다 — 연습 수조에서 이미 기록한 종을 다시 기록해도(새 종 수는 그대로) 화면이 바뀐다.
-        if (shownRecordVersion == recordVersion) return;
+        bool notice = Time.time < noticeUntil && !string.IsNullOrEmpty(noticeText);
+        if (shownRecordVersion == recordVersion && notice == noticeShown) return;
         shownRecordVersion = recordVersion;
+        noticeShown = notice;
+        if (statusText != null && !statusColorRead) { statusColor = statusText.color; statusColorRead = true; }
+
+        if (notice && statusText != null)
+        {
+            statusText.text = noticeText;
+            statusText.color = NoticeColor;
+            if (countText != null) countText.text = ObservationTerms.SessionCount(sessionCount);
+            return;
+        }
+        if (statusText != null) statusText.color = statusColor;
 
         // 첫 기록 전에는 무엇을 하라는지만 알려 준다. 그 뒤로는 방금 기록한 생물을 남긴다.
         if (statusText != null)

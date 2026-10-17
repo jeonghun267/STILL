@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: Unknown_SignalOwner
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: unknown-signal-1000
+  koreanName: "\uC774\uB984 \uC5C6\uB294 \uC0DD\uBB3C"
+  englishName: 
+  scientificName: 
+  description: "\uAD00\uCC30\uAE30\uAC00 \uAD00\uCC30 \uC77C\uC9C0\uC640 \uB300\uC870\uD588\uC9C0\uB9CC
+    \uC77C\uCE58\uD558\uB294 \uAE30\uB85D\uC774 \uC5C6\uC5B4\uC694. \uBC18\uD22C\uBA85\uD55C
+    \uBAB8\uC744 \uB530\uB77C \uBB34\uC9C0\uAC2F\uBE5B \uB760\uAC00 \uD750\uB974\uACE0,
+    \uC2A4\uC2A4\uB85C \uD478\uB978\uBE5B\uC744 \uB0B4\uC694. \uC774 \uAE30\uB85D\uC774
+    \uCCAB \uBC88\uC9F8 \uAD00\uCE21\uC774\uC5D0\uC694."
+  sizeTag: "\uBAB8\uAE38\uC774 \uC57D 1.4m"
+  habitatTag: "\uC218\uC2EC 1,000m"
+  rarity: 4
+  habitat: 2
+  freshwater: 0
+  unnamed: 1
+  prefab: {fileID: 0}
+  swimScale: 0.25
+  revealScale: 0.4
+  bandCenter: 0.5
+  bandWidth: 0.6
+  bodyLength: 1.4
+  swimSpeed: 0.9
+  schoolCount: 6

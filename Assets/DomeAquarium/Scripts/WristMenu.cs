@@ -38,6 +38,8 @@ public class WristMenu : MonoBehaviour
 
     float alpha;
     float nextProgressRefresh;
+    FishInfoPanel card;
+    bool cardSearched;
 
     void Awake()
     {
@@ -115,15 +117,19 @@ public class WristMenu : MonoBehaviour
         else if (viewer != null)
         {
             // 폴백 — 컨트롤러가 없거나 추적이 안 될 때. 에디터 게임뷰 테스트가 이 경로를 탄다.
-            // 시야 정중앙과 왼쪽 정보 카드를 피해 오른쪽 아래에 둔다.
+            // 왼손 손목 메뉴이니 왼쪽 아래(약 29° 왼쪽, 13° 아래)에 둔다. 오른쪽 아래는 관찰기 화면(오른손),
+            // 가운데 아래는 자막·엘리베이터 판 자리라 예전처럼 오른쪽에 두면 관찰기 화면과 겹쳤다.
             Vector3 right = viewer.right; right.y = 0f;
             if (right.sqrMagnitude < 0.0001f) right = Vector3.right; else right.Normalize();
+            Vector3 forward = Vector3.Cross(right, Vector3.up);
 
-            transform.position = viewer.position + viewer.forward * 0.90f
-                               + Vector3.down * 0.24f + right * 0.38f;
+            transform.position = viewer.position + forward * 0.80f
+                               + Vector3.down * 0.18f - right * 0.45f;
             transform.rotation = Quaternion.LookRotation(transform.position - viewer.position, Vector3.up);
             SetWorldScale(scale);
-            visible = true;
+            // 머리에 붙은 폴백 자리라 생물 카드(생물 쪽에 뜬다)와 겹칠 수 있다 — 카드가 떠 있는 동안은 비켜 준다.
+            if (!cardSearched) { card = FindFirstObjectByType<FishInfoPanel>(); cardSearched = true; }
+            visible = card == null || !card.IsShowing;
         }
 
         SetVisible(visible);

@@ -116,6 +116,7 @@ public class FishInfoPanel : MonoBehaviour
     /// <summary>설명 줄을 뺀 카드 내용(이름·학명·태그·관측 빈도)을 채운다. Show 와 에디터 미리보기가 같이 쓴다.</summary>
     void ApplyContent(FishData data)
     {
+        if (data.unnamed) { ApplyUnnamed(data); return; }
         ApplyText(nameText, data.DisplayName);
         ApplyText(scientificText, data.SubtitleName);
         ApplyText(sizeTagText, data.sizeTag);
@@ -142,6 +143,34 @@ public class FishInfoPanel : MonoBehaviour
             bool legendary = index == (int)FishRarity.Legendary;
             rarityGlow.color = tint;
             if (rarityGlow.gameObject.activeSelf != legendary) rarityGlow.gameObject.SetActive(legendary);
+        }
+    }
+
+    /// <summary>
+    /// 일지와 일치하는 기록이 없는 생물 (3막). 이름 칸 대신 "일치하는 기록 없음", 학명 자리에 최초 관측자(지금 탐험가)와 날짜.
+    /// 관측 빈도 대신 "처음 관측된 생물". 색은 가장 귀한 등급의 빛을 쓴다.
+    /// </summary>
+    void ApplyUnnamed(FishData data)
+    {
+        ApplyText(nameText, ObservationTerms.NoMatch);
+        var store = FishCollectionStore.Instance;
+        string observer = store != null && store.ActiveProfile != null ? store.ActiveProfile.displayName : ObservationTerms.YouObserver;
+        ApplyText(scientificText, ObservationTerms.FirstObserver(observer, System.DateTime.Now));
+        ApplyText(sizeTagText, data.sizeTag);
+        ApplyText(habitatTagText, data.habitatTag);
+
+        Color tint = new Color(0.45f, 0.85f, 1f, 1f);
+        if (rarityLabel != null)
+        {
+            if (!rarityLabel.gameObject.activeSelf) rarityLabel.gameObject.SetActive(true);
+            rarityLabel.text = ObservationTerms.FirstSighting;
+            rarityLabel.color = Color.Lerp(Color.white, tint, 0.5f);
+        }
+        if (rarityBadge != null) rarityBadge.color = tint;
+        if (rarityGlow != null)
+        {
+            rarityGlow.color = tint;
+            if (!rarityGlow.gameObject.activeSelf) rarityGlow.gameObject.SetActive(true);
         }
     }
 
@@ -204,9 +233,13 @@ public class FishInfoPanel : MonoBehaviour
         if (narrate && narratedPresentationId != token)
         {
             narratedPresentationId = token;
-            FishNarrationService.Instance?.Speak(data.DisplayName, text);
+            // 이름 칸이 빈 생물은 이름을 읽지 않는다 — 대본만.
+            FishNarrationService.Instance?.Speak(data.unnamed ? string.Empty : data.DisplayName, text);
         }
     }
+
+    /// <summary>카드를 띄우고 있는가 (사라지는 중이면 아니다). 손목 메뉴 폴백·층 진행이 카드와 겹치지 않게 본다.</summary>
+    public bool IsShowing => pendingData != null;
 
     public void Hide()
     {

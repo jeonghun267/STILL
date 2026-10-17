@@ -702,7 +702,7 @@ public static class DomeAquariumSceneBuilder
     }
 
     /// <summary>습성 그룹별 목표 마릿수. 무리 어종은 많이, 대형 단독 어종은 적게.</summary>
-    static int SchoolSizeFor(string name)
+    internal static int SchoolSizeFor(string name)
     {
         string s = name.ToLowerInvariant();
 

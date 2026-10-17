@@ -5,6 +5,7 @@ using System.Linq;
 using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
@@ -91,7 +92,10 @@ public static class DomeAquariumLobbyBuilder
         var mats = new Mats();
         BuildShell(set, mats);
         BuildWindowWall(set, mats);
-        BuildFarWall(set, mats, out Animator elevatorAnimator, out AnimationClip elevatorClip, out TMP_Text depthText);
+        // 엘리베이터 칸은 로비 건물(LobbySet)과 따로 둔다. 수중 돔에서 다음 층으로 갈 때 로비는 끈 채 칸만 다시 켠다.
+        var cabinSet = Group("ElevatorCabin", root.transform);
+        BuildFarWall(set, cabinSet, mats, out Animator elevatorAnimator, out AnimationClip elevatorClip, out TMP_Text depthText);
+        BuildElevatorConsole(cabinSet, mats);
         BuildGateLine(set, mats, out Animator gateAnimator, out AnimationClip gateClip);
         BuildExhibit(set, mats);
         BuildFurniture(set);
@@ -110,6 +114,8 @@ public static class DomeAquariumLobbyBuilder
         seq.rig = origin != null ? origin.transform : null;
         seq.viewCamera = FindMainCamera();
         seq.lobbySet = set.gameObject;
+        seq.cabinSet = cabinSet.gameObject;
+        seq.director = Object.FindFirstObjectByType<DiveDirector>(FindObjectsInactive.Include);
         seq.spawnPoint = spawn;
         seq.cabinPoint = cabin;
         seq.gatePoint = gate;
@@ -147,6 +153,8 @@ public static class DomeAquariumLobbyBuilder
         }
         SeaSurface sea = BuildSea(set, mats);
         BuildSeaLife(set, seq, depthWall, sea);
+        if (depthWall != null) depthWall.skyProbes = set.GetComponentsInChildren<ReflectionProbe>(true);   // 창밖 하늘 반사도 깊이에 맞춰 어둡게
+        BuildNight(root.transform, set, seq, depthWall);
 
         ApplyObservationTerms();
 
@@ -213,7 +221,7 @@ public static class DomeAquariumLobbyBuilder
             Box($"Mullion_{z:0.0}", win, new Vector3(x, H * 0.5f, z), new Vector3(0.09f, H, 0.09f), mats.frame);
     }
 
-    static void BuildFarWall(Transform set, Mats mats, out Animator animator, out AnimationClip clip, out TMP_Text depthText)
+    static void BuildFarWall(Transform set, Transform cabin, Mats mats, out Animator animator, out AnimationClip clip, out TMP_Text depthText)
     {
         var far = Group("FarWall", set);
         const float W = HallHalfWidth, L = HallLength, H = CeilingHeight;
@@ -235,7 +243,7 @@ public static class DomeAquariumLobbyBuilder
         Place($"{Kit}/Floor_Small_01.prefab", far, new Vector3(1.5f, 0f, L), 0f);
 
         // 엘리베이터: 문이 원본 +Z 에 있으므로 180° 돌려 홀을 보게 한다. 문 앞면이 z=13 에 온다.
-        GameObject elevator = Place($"{Sketchfab}/Elevator_LowPoly.glb", far, CabinLocal, 180f, ElevatorScale);
+        GameObject elevator = Place($"{Sketchfab}/Elevator_LowPoly.glb", cabin, CabinLocal, 180f, ElevatorScale);
         animator = elevator != null ? elevator.GetComponentInChildren<Animator>(true) : null;
         clip = AssetDatabase.LoadAllAssetsAtPath($"{Sketchfab}/Elevator_LowPoly.glb").OfType<AnimationClip>().FirstOrDefault();
 
@@ -244,9 +252,9 @@ public static class DomeAquariumLobbyBuilder
         float shaftBack = CabinLocal.z + 2f * ElevatorScale + 0.3f;
         float shaftMid = (cabinFront + shaftBack) * 0.5f, shaftLen = shaftBack - cabinFront;
         foreach (float side in new[] { -1.65f, 1.65f })
-            Box("ShaftSide", far, new Vector3(side, 1.875f, shaftMid), new Vector3(0.1f, 3.75f, shaftLen), mats.frame);
-        Box("ShaftBack", far, new Vector3(0f, 1.875f, shaftBack), new Vector3(3.4f, 3.75f, 0.1f), mats.frame);
-        Box("ShaftTop", far, new Vector3(0f, 3.8f, shaftMid), new Vector3(3.4f, 0.1f, shaftLen), mats.frame);
+            Box("ShaftSide", cabin, new Vector3(side, 1.875f, shaftMid), new Vector3(0.1f, 3.75f, shaftLen), mats.frame);
+        Box("ShaftBack", cabin, new Vector3(0f, 1.875f, shaftBack), new Vector3(3.4f, 3.75f, 0.1f), mats.frame);
+        Box("ShaftTop", cabin, new Vector3(0f, 3.8f, shaftMid), new Vector3(3.4f, 0.1f, shaftLen), mats.frame);
 
         // 아치(3.75m)가 엘리베이터(3m)보다 높아 생기는 틈을 안내판으로 막는다.
         Box("ElevatorHeader", far, new Vector3(0f, 3.375f, cabinFront + 0.1f), new Vector3(3.0f, 0.75f, 0.2f), mats.frame);
@@ -255,9 +263,258 @@ public static class DomeAquariumLobbyBuilder
 
         // 칸 안쪽 벽(문 맞은편)의 수심 계기판. 들어서면 정면에 보인다.
         float backWall = CabinLocal.z + 2f * ElevatorScale;
-        Box("DepthPanel", far, new Vector3(0f, 1.75f, backWall - 0.06f), new Vector3(1.1f, 0.5f, 0.04f), mats.screen);
-        depthText = Label("DepthText", far, new Vector3(0f, 1.75f, backWall - 0.085f), 0f, new Vector2(1.0f, 0.42f),
+        Box("DepthPanel", cabin, new Vector3(0f, 1.75f, backWall - 0.06f), new Vector3(1.1f, 0.5f, 0.04f), mats.screen);
+        depthText = Label("DepthText", cabin, new Vector3(0f, 1.75f, backWall - 0.085f), 0f, new Vector2(1.0f, 0.42f),
                           "수심  0 m", 0.16f, new Color(0.55f, 0.95f, 1f), TextAlignmentOptions.Center);
+    }
+
+    // 깊이 버튼 콘솔: 칸 한가운데(서는 자리) 0.55m 앞의 낮은 기둥 위 비스듬한 판. 칸이 3m 라 벽 버튼은 팔이 닿지 않는다.
+    // 버튼은 위에서부터 얕은 층 — 24m · 200m · 1,000m. 층 할 일을 마쳐야 다음 버튼이 열린다(ElevatorConsole).
+    static readonly string[] ConsoleDepths = { "24m", "200m", "1,000m" };
+    const float ConsoleAhead = 0.55f;
+    const float ConsoleHeight = 0.98f;
+    const float ConsoleTilt = 45f;           // 판이 위로 45° 누워 내려다보는 눈과 마주한다
+    const float ConsoleScale = 0.0008f;      // 캔버스 1 = 0.8mm
+
+    static void BuildElevatorConsole(Transform cabin, Mats mats)
+    {
+        var group = Group("DepthConsole", cabin);
+        group.localPosition = CabinLocal + new Vector3(0f, 0f, ConsoleAhead);
+
+        Box("ConsolePost", group, new Vector3(0f, (ConsoleHeight - 0.06f) * 0.5f, 0.04f), new Vector3(0.14f, ConsoleHeight - 0.06f, 0.10f), mats.frame);
+        var top = Box("ConsoleTop", group, new Vector3(0f, ConsoleHeight, 0f), new Vector3(0.34f, 0.025f, 0.36f), mats.frame);
+        top.transform.localRotation = Quaternion.Euler(-ConsoleTilt, 0f, 0f);
+
+        var canvasGo = new GameObject("ConsoleCanvas", typeof(RectTransform));
+        canvasGo.transform.SetParent(group, false);
+        // 판 윗면에서 1.7cm 띄운다 — 버튼 앞판이 눌려 들어갈 깊이(lift)가 판에 묻히지 않게.
+        Vector3 normal = Quaternion.Euler(-ConsoleTilt, 0f, 0f) * Vector3.up;
+        canvasGo.transform.localPosition = new Vector3(0f, ConsoleHeight, 0f) + normal * 0.03f;
+        canvasGo.transform.localRotation = Quaternion.Euler(90f - ConsoleTilt, 0f, 0f);
+        var canvas = canvasGo.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        canvas.worldCamera = FindMainCamera();   // 비워 두면 레이캐스터 등록·해제 때 카메라가 달라져 예외가 난다 (시작 패널과 같은 이유)
+        canvasGo.AddComponent<UnityEngine.UI.CanvasScaler>();
+        canvasGo.AddComponent<UnityEngine.XR.Interaction.Toolkit.UI.TrackedDeviceGraphicRaycaster>();
+        var crt = (RectTransform)canvasGo.transform;
+        crt.sizeDelta = new Vector2(380f, 400f);
+        crt.localScale = Vector3.one * ConsoleScale;
+
+        DomeAquariumUiKit.EnsureAll();
+        var font = DomeAquariumSetup.LoadKoreanFont();
+        var plate = NewUI("Plate", canvasGo.transform, new Vector2(380f, 400f));
+        DomeAquariumUiKit.TemplatePlate(plate, 24f, DomeAquariumUiKit.PlateFill, DomeAquariumUiKit.PlateLine);
+
+        var title = NewUI("Title", canvasGo.transform, new Vector2(340f, 50f)).gameObject.AddComponent<TextMeshProUGUI>();
+        title.rectTransform.anchoredPosition = new Vector2(0f, 160f);
+        title.font = font;
+        title.fontSize = 28f;
+        title.alignment = TextAlignmentOptions.Center;
+        title.color = new Color(0.55f, 0.95f, 1f);
+        title.raycastTarget = false;
+        title.text = "내려갈 깊이";
+
+        var console = canvasGo.AddComponent<ElevatorConsole>();
+        var slots = new ElevatorConsole.Slot[ConsoleDepths.Length];
+        var buttonSize = new Vector2(320f, 84f);
+        for (int i = 0; i < ConsoleDepths.Length; i++)
+        {
+            var rect = NewUI($"Depth_{ConsoleDepths[i]}", canvasGo.transform, buttonSize);
+            rect.anchoredPosition = new Vector2(0f, 82f - i * 96f);
+            var parts = DomeAquariumUiKit.PokeButton(rect, buttonSize, ConsoleDepths[i], null,
+                DomeAquariumUiKit.Tone.Secondary, 40f, font, corner: 16f, lift: 12f);
+
+            // 버튼 오른쪽 작은 글씨 — 갈 차례 / 지금 여기 / 기록 완료 / 잠김
+            var state = new GameObject("State", typeof(RectTransform)).AddComponent<TextMeshProUGUI>();
+            state.rectTransform.SetParent(parts.label.rectTransform.parent, false);
+            state.font = font;
+            state.fontSize = 24f;
+            state.alignment = TextAlignmentOptions.Center;
+            state.textWrappingMode = TextWrappingModes.NoWrap;
+            state.raycastTarget = false;
+            state.text = ObservationTerms.FloorLocked;
+
+            // 손가락으로 찌르기 — 버튼 간격(96)보다 낮은 상자라 이웃 버튼까지 같이 눌리지 않는다.
+            var col = rect.gameObject.AddComponent<BoxCollider>();
+            col.isTrigger = true;
+            col.size = new Vector3(330f, 88f, 200f);
+            var rb = rect.gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            var poke = rect.gameObject.AddComponent<PokeSelector>();
+            poke.mysteryBox = null;
+            poke.handTag = "Hand";
+            poke.inputCooldown = 1.2f;
+            UnityEventTools.AddIntPersistentListener(poke.onPoked, console.Press, i);
+            UnityEventTools.AddIntPersistentListener(parts.button.onClick, console.Press, i);
+
+            slots[i] = new ElevatorConsole.Slot { button = parts.button, front = parts.front, depth = parts.label, state = state };
+        }
+        console.slots = slots;
+        console.nextTint = DomeAquariumUiKit.PrimaryTint;
+        console.openTint = DomeAquariumUiKit.SecondaryTint;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 엔딩 — 밤이 된 로비
+    // ─────────────────────────────────────────────────────────────
+
+    // 올라와서 서는 자리: 개찰구를 지나 엘리베이터 앞(방금 타고 올라온 칸이 왼쪽 뒤로 열려 있다).
+    // 데이터 월(오른쪽 나무색 벽)이 3.2m 앞 정면 — 새 줄 제목 약 2.7°, 아랫줄 약 1.9°.
+    // 처음에는 개찰구 앞(z 9.2)에 세웠더니 개찰구 기계와 칸막이 난간이 시야 아래를 가로질렀다.
+    static readonly Vector3 NightSpotLocal = new Vector3(1.6f, 0f, 12.6f);
+    const float NightSpotYaw = 42f;
+
+    static void BuildNight(Transform root, Transform set, LobbySequence seq, DepthWallPreview wall)
+    {
+        Transform spot = NewPoint("NightSpot", root, NightSpotLocal);
+        spot.localRotation = Quaternion.Euler(0f, NightSpotYaw, 0f);
+        seq.nightSpot = spot;
+
+        var night = root.gameObject.AddComponent<LobbyNight>();
+        night.lobby = seq;
+        night.wall = wall;
+        night.sky = BuildNightSky(set);
+        BuildNewRecordLine(set, night);
+        seq.night = night;
+    }
+
+    /// <summary>별 500개(위쪽 반구, 800m)와 바다 쪽 하늘의 달(빛무리 + 밝은 속). 낮에는 꺼 둔다.</summary>
+    static GameObject BuildNightSky(Transform set)
+    {
+        var sky = Group("NightSky", set);
+        sky.localPosition = new Vector3(0f, 0f, HallLength * 0.5f);
+
+        var starsGo = new GameObject("Stars");
+        starsGo.transform.SetParent(sky, false);
+        var ps = starsGo.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.playOnAwake = true;
+        main.loop = false;
+        main.duration = 1f;
+        main.maxParticles = 500;
+        main.startLifetime = 1000000f;
+        main.startSpeed = 0f;
+        main.startSize = new ParticleSystem.MinMaxCurve(2f, 4.5f);
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.75f, 0.82f, 1f, 0.55f), new Color(1f, 1f, 1f, 1f));
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        var emission = ps.emission;
+        emission.rateOverTime = 0f;
+        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)500) });
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Hemisphere;
+        shape.radius = 800f;
+        shape.radiusThickness = 0f;            // 껍질에만 — 별이 전부 같은 먼 거리에
+        shape.rotation = new Vector3(-90f, 0f, 0f);   // 반구가 위를 보게
+        var starMat = AdditiveMaterial("Mat_LobbyStar", "Universal Render Pipeline/Particles/Unlit");
+        starMat.SetTexture("_BaseMap", DomeAquariumParticleSetup.EnsureSoftDotTexture());
+        EditorUtility.SetDirty(starMat);
+        var r = starsGo.GetComponent<ParticleSystemRenderer>();
+        r.sharedMaterial = starMat;
+        r.renderMode = ParticleSystemRenderMode.Billboard;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        r.receiveShadows = false;
+        r.maxParticleSize = 0.05f;
+
+        // 달 — 바다(창, +X) 쪽 하늘 18° 높이. 창가에서 고개를 돌리면 보인다.
+        var moonMat = AdditiveMaterial("Mat_LobbyMoon", "Universal Render Pipeline/Particles/Unlit");
+        moonMat.SetTexture("_BaseMap", DomeAquariumParticleSetup.EnsureSoftDotTexture());
+        if (moonMat.HasProperty("_Cull")) moonMat.SetFloat("_Cull", 0f);
+        EditorUtility.SetDirty(moonMat);
+        Vector3 dir = Quaternion.Euler(-18f, 70f, 0f) * Vector3.forward;
+        foreach (var (name, size, color) in new[]
+                 {
+                     ("MoonGlow", 90f, new Color(0.45f, 0.55f, 0.85f, 0.35f)),
+                     ("Moon", 26f, new Color(0.95f, 0.96f, 1f, 1f)),
+                 })
+        {
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            q.name = name;
+            Object.DestroyImmediate(q.GetComponent<Collider>());
+            q.transform.SetParent(sky, false);
+            q.transform.localPosition = dir * 700f;
+            q.transform.localRotation = Quaternion.LookRotation(dir, Vector3.up);
+            q.transform.localScale = Vector3.one * size;
+            var mr = q.GetComponent<MeshRenderer>();
+            mr.sharedMaterial = moonMat;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            var mpb = new MaterialPropertyBlock();
+            mpb.SetColor("_BaseColor", color);
+            mr.SetPropertyBlock(mpb);
+        }
+        sky.gameObject.SetActive(false);
+        return sky.gameObject;
+    }
+
+    /// <summary>
+    /// 데이터 월(앞벽 오른쪽 나무색 벽 — 71% · 80%+ 아래)의 새 줄. 평소에는 투명하고 엔딩에서 새겨진다.
+    /// "+1 처음 관측된 생물" / "수심 1,000m · 최초 관측자 탐험가 N · 날짜". 6m 밖에서 제목 약 1.4°, 아랫줄 약 1°.
+    /// </summary>
+    static void BuildNewRecordLine(Transform set, LobbyNight night)
+    {
+        Transform signs = set.Find("Signs");
+        Transform parent = signs != null ? signs : set;
+        float rightCenter = 1.5f + (HallHalfWidth - 1.5f) * 0.5f;
+        const float unitsPerMeter = 1000f;
+
+        var go = new GameObject("NewRecordLine", typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = new Vector3(rightCenter, 0.92f, HallLength - 0.035f);
+        var canvas = go.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        var rt = (RectTransform)go.transform;
+        rt.sizeDelta = new Vector2(4200f, 640f);
+        rt.localScale = Vector3.one / unitsPerMeter;
+        var group = go.AddComponent<CanvasGroup>();
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
+        // 표의 새 행처럼 — 위에 가는 빛줄
+        var rule = NewUI("Rule", go.transform, new Vector2(3400f, 8f));
+        rule.anchoredPosition = new Vector2(0f, 250f);
+        var ruleImg = rule.gameObject.AddComponent<Image>();
+        ruleImg.color = new Color(0.55f, 0.95f, 1f, 0.55f);
+        ruleImg.raycastTarget = false;
+
+        var font = DomeAquariumSetup.LoadKoreanFont();
+        var title = NewUI("Title", go.transform, new Vector2(4000f, 200f)).gameObject.AddComponent<TextMeshProUGUI>();
+        title.rectTransform.anchoredPosition = new Vector2(0f, 110f);
+        title.font = font;
+        title.fontSize = 150f;
+        title.fontStyle = FontStyles.Bold;
+        title.alignment = TextAlignmentOptions.Center;
+        title.color = new Color(0.55f, 0.95f, 1f);
+        title.textWrappingMode = TextWrappingModes.NoWrap;
+        title.raycastTarget = false;
+        title.text = ObservationTerms.NewRecordTitle;
+
+        var detail = NewUI("Detail", go.transform, new Vector2(4000f, 160f)).gameObject.AddComponent<TextMeshProUGUI>();
+        detail.rectTransform.anchoredPosition = new Vector2(0f, -110f);
+        detail.font = font;
+        detail.fontSize = 108f;
+        detail.alignment = TextAlignmentOptions.Center;
+        detail.color = new Color(0.95f, 0.92f, 0.86f);
+        detail.textWrappingMode = TextWrappingModes.NoWrap;
+        detail.raycastTarget = false;
+        detail.text = ObservationTerms.NewRecordDetail("1,000m", "탐험가", System.DateTime.Now);
+
+        var chimeGo = new GameObject("Chime");
+        chimeGo.transform.SetParent(go.transform, false);
+        var chime = chimeGo.AddComponent<AudioSource>();
+        chime.playOnAwake = false;
+        chime.spatialBlend = 0.6f;             // 벽 쪽에서 들리되 멀어도 잘 들리게 반쯤만 3D
+        chime.minDistance = 3f;
+        chime.maxDistance = 20f;
+        chime.volume = 0.7f;
+
+        night.record = group;
+        night.recordTitle = title;
+        night.recordDetail = detail;
+        night.chime = chime;
+        night.chimeClip = DomeAquariumDepthSounds.EnsureChime();
     }
 
     static void BuildGateLine(Transform set, Mats mats, out Animator animator, out AnimationClip clip)
@@ -385,7 +642,7 @@ public static class DomeAquariumLobbyBuilder
                 sunColor = new Color(0.70f, 0.93f, 1f), sunIntensity = 1.0f, caustics = true,
                 fogColor = new Color(0.16f, 0.45f, 0.58f), fogDensity = 0.035f,
                 skyTint = new Color(0.30f, 0.55f, 0.62f, 0.5f), skyExposure = 0.55f,
-                lampLevel = 0.55f, scanTint = new Color(0.55f, 0.85f, 1f),
+                lampLevel = 0.55f, scanTint = new Color(0.55f, 0.85f, 1f), reflectionLevel = 0.6f,
             },
             new DepthWallPreview.Band
             {
@@ -395,7 +652,7 @@ public static class DomeAquariumLobbyBuilder
                 sunColor = new Color(0.35f, 0.55f, 1f), sunIntensity = 0.18f,
                 fogColor = new Color(0.03f, 0.10f, 0.20f), fogDensity = 0.07f,
                 skyTint = new Color(0.20f, 0.35f, 0.50f, 0.5f), skyExposure = 0.12f,
-                lampLevel = 0.15f, scanTint = new Color(0.16f, 0.26f, 0.42f),
+                lampLevel = 0.15f, scanTint = new Color(0.16f, 0.26f, 0.42f), reflectionLevel = 0.1f,
             },
             new DepthWallPreview.Band
             {
@@ -405,7 +662,7 @@ public static class DomeAquariumLobbyBuilder
                 sunColor = new Color(0.2f, 0.3f, 0.6f), sunIntensity = 0f,
                 fogColor = new Color(0.02f, 0.04f, 0.07f), fogDensity = 0.12f,
                 skyTint = new Color(0.15f, 0.25f, 0.4f, 0.5f), skyExposure = 0.02f,
-                lampLevel = 0.03f, scanTint = new Color(0.05f, 0.08f, 0.13f),
+                lampLevel = 0.03f, scanTint = new Color(0.05f, 0.08f, 0.13f), reflectionLevel = 0.02f,
             },
         };
         var bands = new (string label, string note, Color fill)[]
@@ -580,7 +837,7 @@ public static class DomeAquariumLobbyBuilder
     /// URP 반투명 파티클·고리용. additive 면 가산(어두운 곳에서 빛나 보이고 겹쳐도 정렬 문제가 없다),
     /// 아니면 보통 알파 섞기(밝은 하늘·물 위의 흰 물보라처럼 빛나면 안 되는 것).
     /// </summary>
-    static Material AdditiveMaterial(string name, string shaderName, bool additive = true)
+    internal static Material AdditiveMaterial(string name, string shaderName, bool additive = true)
     {
         string path = $"{MatDir}/{name}.mat";
         var shader = Shader.Find(shaderName);
@@ -850,8 +1107,6 @@ public static class DomeAquariumLobbyBuilder
                 height = new Vector2(1.6f, 2.6f), reach = new Vector2(4.5f, 6.5f), spinChance = 0.2f, splashSize = 1f },
             new SeaJumpShow.Performer { fish = Load("RightWhaleDolphin"), weight = 1.2f, pod = new Vector2Int(2, 4),
                 height = new Vector2(1.4f, 2.2f), reach = new Vector2(4f, 6f), spinChance = 0.1f, splashSize = 0.9f },
-            new SeaJumpShow.Performer { fish = Load("TucuxiDophin"), weight = 1f, pod = new Vector2Int(1, 2),
-                height = new Vector2(1.8f, 2.8f), reach = new Vector2(4f, 6f), spinChance = 0.3f, splashSize = 1f },
             // 쥐가오리는 혼자 높이 솟았다가 납작하게 떨어진다 — 물보라가 크다
             new SeaJumpShow.Performer { fish = Load("MantaRay"), weight = 0.9f, pod = new Vector2Int(1, 1),
                 height = new Vector2(1.8f, 3f), reach = new Vector2(1.6f, 2.6f), sizeMultiplier = 1.4f,

@@ -20,6 +20,8 @@ MonoBehaviour:
   sizeTag: 
   habitatTag: 
   rarity: 1
+  habitat: 1
+  freshwater: 0
   prefab: {fileID: 6894118194348484911, guid: 0d13f52eb2dabc340a12eaf4a1293a21, type: 3}
   swimScale: 1.2016195
   revealScale: 1.0213766

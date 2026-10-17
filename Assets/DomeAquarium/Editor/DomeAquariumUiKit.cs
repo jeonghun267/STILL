@@ -52,7 +52,6 @@ public static class DomeAquariumUiKit
             float d = RoundedRectDistance(x, y, 96, 24f);
             return Fill(d) * Mathf.Clamp01(0.5f + d + 2f);
         }, 28);
-        DrawIcons(force);
     }
 
     /// <summary>
@@ -141,40 +140,42 @@ public static class DomeAquariumUiKit
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 버튼 — Unity VR 템플릿(Assets/VRTemplateAssets)의 "Text Poke Button" 구성을 따른다
+    // 버튼 — 구성은 Unity VR 템플릿 "Text Poke Button", 겉모습은 Kenney UI Pack 2.0(CC0), 아이콘은 Material Icons(Apache 2.0)
     // ─────────────────────────────────────────────────────────────
     //
     //  버튼 루트   ─ 우물(Well): 눌려 들어갈 자리. 옅은 판 + 레이 판정 영역
-    //   └ 앞판(Front) ─ 루트보다 Lift 만큼 떠 있다. 손가락으로 누르면 XRPokeFollowAffordanceFill 이 우물까지 밀어 넣는다
+    //   ├ 테두리(Hover) ─ 레이·손가락이 닿으면 버튼 둘레에 밝은 고리 (Button 색 전환)
+    //   └ 앞판(Front) ─ Kenney "button_rectangle_depth_gradient": 외곽선 · 위가 밝은 그라데이션 · 아래 입체 띠.
+    //       루트보다 Lift 만큼 떠 있고, 손가락으로 누르면 XRPokeFollowAffordanceFill 이 우물까지 밀어 넣는다
     //       ├ 차오름(Fill)  ─ 누르는 깊이만큼 가운데서 번져 나온다 (앞판 Mask 안)
-    //       ├ 내용(Content) ─ 아이콘 + 글자
-    //       └ 테두리(Hover) ─ 레이·손가락이 닿으면 밝게 (Button 색 전환)
+    //       └ 내용(Content) ─ 아이콘 + 글자. 아래 입체 띠만큼 위로 올려 앞면 한가운데에 보이게
     //
-    //  모서리는 VR 템플릿 "Round Radius 10"(400px, 9-슬라이스 40px)을 배수로 줄여 반경을 맞춘다.
-    //  아이콘은 VR 템플릿 아이콘(선 6px / 128px)을 쓰고, 템플릿에 없는 닫기·관찰 일지만 같은 규격으로 그린다.
+    //  Kenney 회색 원본 하나에 색을 곱해 주 버튼·보조 버튼·칩을 모두 만든다 — 흰 글자 대비 4:1 이상이 되는 깊이로.
+    //  앞판은 원본 높이(64px)를 버튼 높이에 맞춰 늘이므로, 외곽선·입체 띠 비율이 버튼 크기와 상관없이 같다.
 
     public const string TemplateRoundPath = "Assets/VRTemplateAssets/Sprites/UI/Round Radius 10.png";
     public const string TemplateOutlinePath = "Assets/VRTemplateAssets/Sprites/UI/Round Radius 10 Outline.png";
-    public const string TemplateTopPath = "Assets/VRTemplateAssets/Sprites/UI/Round Radius 10 Top.png";
-    const string TemplateIconFolder = "Assets/VRTemplateAssets/Sprites/Icons";
     const float TemplateCorner = 40f;        // Round Radius 10 의 모서리(px)
-    public const string CloseIconPath = Folder + "/Kit_Icon_Close.png";
-    public const string JournalIconPath = Folder + "/Kit_Icon_Journal.png";
 
-    public static Sprite TemplateIcon(string name) => AssetDatabase.LoadAssetAtPath<Sprite>($"{TemplateIconFolder}/{name}.png");
-    public static Sprite CloseIcon => AssetDatabase.LoadAssetAtPath<Sprite>(CloseIconPath);
-    public static Sprite JournalIcon => AssetDatabase.LoadAssetAtPath<Sprite>(JournalIconPath);
+    public const string KenneyButtonPath = "Assets/ThirdParty/KenneyUI/Grey_button_rectangle_depth_gradient.png";
+    const float KenneyHeight = 64f;          // 원본 높이(px)
+    const float KenneyCorner = 4f;           // 원본 모서리(px)
+    static readonly Vector4 KenneyBorder = new Vector4(8f, 12f, 8f, 8f);   // 왼쪽 · 아래(입체 띠 포함) · 오른쪽 · 위
+    public const string IconFolder = "Assets/ThirdParty/MaterialIcons";
+
+    /// <summary>Material Icons(Round) — 흰색으로 바꿔 넣었으니 Image 색으로 물들인다.</summary>
+    public static Sprite MaterialIcon(string name) => EnsureSprite($"{IconFolder}/{name}.png", Vector4.zero);
+    public static Sprite CloseIcon => MaterialIcon("close");
+    public static Sprite JournalIcon => MaterialIcon("menu_book");
 
     public enum Tone { Primary, Secondary }
 
-    public static readonly Color PrimaryFront = new Color(0.05f, 0.42f, 0.52f, 1f);
-    public static readonly Color SecondaryFront = new Color(0.10f, 0.21f, 0.27f, 1f);
-    public static readonly Color PrimaryInk = Color.white;
-    public static readonly Color SecondaryInk = new Color(0.86f, 0.94f, 0.98f, 1f);
+    public static readonly Color PrimaryTint = new Color(0.16f, 0.55f, 0.78f, 1f);     // 바다빛 파랑
+    public static readonly Color SecondaryTint = new Color(0.40f, 0.50f, 0.58f, 1f);   // 청회색
+    static readonly Color Ink = Color.white;
     static readonly Color WellColor = new Color(1f, 1f, 1f, 0.07f);
     static readonly Color FillColor = new Color(1f, 1f, 1f, 0.16f);
     static readonly Color HoverColor = new Color(0.50f, 0.90f, 1f, 1f);
-    static readonly Color SheenColor = new Color(0.40f, 0.85f, 1f, 0.06f);   // 리니어 색 공간 — 흰색을 얹으면 어두운 청록이 회색으로 바랜다
 
     public struct ButtonParts
     {
@@ -185,8 +186,8 @@ public static class DomeAquariumUiKit
     }
 
     /// <summary>
-    /// rect 를 VR 템플릿식 누르는 버튼으로 꾸민다. 이미 있는 Button·onClick·PokeSelector 는 그대로 두고 겉모습만 새로 만든다
-    /// (기존 자식은 지운다). label 이 비면 아이콘만, icon 이 없으면 글자만.
+    /// rect 를 누르는 버튼으로 꾸민다. 이미 있는 Button·onClick·PokeSelector 는 그대로 두고 겉모습만 새로 만든다
+    /// (기존 자식은 지운다). label 이 비면 아이콘만, icon 이 없으면 글자만. corner 는 예전 인자 — 이제 모서리는 Kenney 원본을 따른다.
     /// </summary>
     public static ButtonParts PokeButton(RectTransform rect, Vector2 size, string label, Sprite icon, Tone tone,
                                          float fontSize, TMPro.TMP_FontAsset font, float iconSize = 0f,
@@ -194,37 +195,37 @@ public static class DomeAquariumUiKit
     {
         for (int i = rect.childCount - 1; i >= 0; i--) Object.DestroyImmediate(rect.GetChild(i).gameObject);
         rect.sizeDelta = size;
-        float multiplier = TemplateCorner / Mathf.Max(1f, corner);
+        float plateScale = KenneyHeight / Mathf.Max(8f, size.y);                 // 원본 높이 → 버튼 높이
+        float roundScale = TemplateCorner / Mathf.Max(1f, KenneyCorner / plateScale);   // 우물·차오름 모서리를 앞판과 맞춘다
         Sprite round = AssetDatabase.LoadAssetAtPath<Sprite>(TemplateRoundPath);
         Sprite outline = AssetDatabase.LoadAssetAtPath<Sprite>(TemplateOutlinePath);
-        Color front = tone == Tone.Primary ? PrimaryFront : SecondaryFront;
-        Color ink = tone == Tone.Primary ? PrimaryInk : SecondaryInk;
+        Sprite plate = EnsureSprite(KenneyButtonPath, KenneyBorder);
+        Color tint = tone == Tone.Primary ? PrimaryTint : SecondaryTint;
 
         var well = rect.GetComponent<UnityEngine.UI.Image>();
         if (well == null) well = rect.gameObject.AddComponent<UnityEngine.UI.Image>();
-        SkinSliced(well, round, WellColor, multiplier);
+        SkinSliced(well, round, WellColor, roundScale);
         well.raycastTarget = true;                         // 앞판이 움직여도 판정 영역은 제자리
 
-        var frontImage = Child("Front", rect, round, front, multiplier);
+        // 둘레 고리 — 버튼보다 4px 바깥, 선 3px (VR 템플릿 외곽선 스프라이트, 선 10px 를 1/3.3 로)
+        var hover = Child("Hover", rect, outline, HoverColor, TemplateCorner / 12f);
+        hover.rectTransform.offsetMin = new Vector2(-4f, -4f);
+        hover.rectTransform.offsetMax = new Vector2(4f, 4f);
+
+        var frontImage = Child("Front", rect, plate, tint, plateScale);
         frontImage.rectTransform.localPosition = new Vector3(0f, 0f, -lift);
         frontImage.gameObject.AddComponent<UnityEngine.UI.Mask>().showMaskGraphic = true;
 
-        var fill = Child("Fill", frontImage.rectTransform, round, FillColor, multiplier);
+        var fill = Child("Fill", frontImage.rectTransform, round, FillColor, roundScale);
         fill.rectTransform.anchorMin = fill.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         fill.rectTransform.sizeDelta = Vector2.zero;
-
-        if (tone == Tone.Primary)
-        {
-            // 윗쪽 절반에 옅은 광택 — VR 템플릿 "Round Radius 10 Top"(위만 둥근 판). 평평한 색 판이 손에 잡히는 물건처럼 보인다.
-            var sheen = Child("Sheen", frontImage.rectTransform, AssetDatabase.LoadAssetAtPath<Sprite>(TemplateTopPath), SheenColor, multiplier);
-            sheen.rectTransform.anchorMin = new Vector2(0f, 0.5f);
-        }
 
         var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
         content.SetParent(frontImage.rectTransform, false);
         content.anchorMin = Vector2.zero;
         content.anchorMax = Vector2.one;
-        content.offsetMin = content.offsetMax = Vector2.zero;
+        content.offsetMin = new Vector2(0f, 5f / plateScale);   // 아래 입체 띠(원본 4px)만큼 — 앞면 한가운데
+        content.offsetMax = Vector2.zero;
         var row = content.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
         row.childAlignment = TextAnchor.MiddleCenter;
         row.spacing = Mathf.Round(fontSize * 0.35f);
@@ -241,7 +242,7 @@ public static class DomeAquariumUiKit
             iconImage.rectTransform.SetParent(content, false);
             iconImage.sprite = icon;
             iconImage.preserveAspect = true;
-            iconImage.color = ink;
+            iconImage.color = Ink;
             iconImage.raycastTarget = false;
             var e = iconImage.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
             e.minWidth = e.preferredWidth = s;
@@ -255,15 +256,13 @@ public static class DomeAquariumUiKit
             if (font != null) text.font = font;
             text.fontSize = fontSize;
             text.fontStyle = TMPro.FontStyles.Bold;
-            text.color = ink;
+            text.color = Ink;
             text.alignment = TMPro.TextAlignmentOptions.Center;
             text.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
             text.raycastTarget = false;
             text.text = label;
             parts.label = text;
         }
-
-        var hover = Child("Hover", frontImage.rectTransform, outline, HoverColor, multiplier);
 
         var button = rect.GetComponent<UnityEngine.UI.Button>();
         if (button == null) button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
@@ -336,45 +335,30 @@ public static class DomeAquariumUiKit
         image.color = color;
     }
 
-    // ── 템플릿에 없는 아이콘 — 128px, 선 6px, 둥근 끝 (VR 템플릿 아이콘과 같은 규격) ──
-
-    const int IconSize = 128;
-    const float IconStroke = 3f;             // 선 두께의 절반
-
-    static void DrawIcons(bool force)
+    /// <summary>외부 스프라이트의 가져오기 설정을 맞춘다 — VR 에서 작게 보이므로 밉맵, 9-슬라이스 경계.</summary>
+    static Sprite EnsureSprite(string path, Vector4 border)
     {
-        // 닫기: 대각선 두 줄
-        Draw(CloseIconPath, force, IconSize, (x, y) =>
-            Fill(Mathf.Min(Segment(x, y, 38f, 38f, 90f, 90f), Segment(x, y, 90f, 38f, 38f, 90f)) - IconStroke), 0, mipmaps: true);
-
-        // 관찰 일지: 공책 — 표지 테두리, 왼쪽 묶음 줄, 본문 두 줄
-        Draw(JournalIconPath, force, IconSize, (x, y) =>
+        if (AssetImporter.GetAtPath(path) is TextureImporter imp)
         {
-            float cover = Mathf.Abs(RoundedBox(x, y, 64f, 64f, 32f, 44f, 9f)) - IconStroke;
-            float spine = Segment(x, y, 47f, 24f, 47f, 104f) - IconStroke;
-            float line1 = Segment(x, y, 60f, 76f, 82f, 76f) - IconStroke;
-            float line2 = Segment(x, y, 60f, 60f, 82f, 60f) - IconStroke;
-            return Fill(Mathf.Min(Mathf.Min(cover, spine), Mathf.Min(line1, line2)));
-        }, 0, mipmaps: true);
-    }
-
-    /// <summary>점에서 선분까지의 거리(px).</summary>
-    static float Segment(float x, float y, float ax, float ay, float bx, float by)
-    {
-        var p = new Vector2(x - ax, y - ay);
-        var d = new Vector2(bx - ax, by - ay);
-        float t = Mathf.Clamp01(Vector2.Dot(p, d) / d.sqrMagnitude);
-        return (p - d * t).magnitude;
-    }
-
-    /// <summary>중심 (cx, cy), 반폭 (hx, hy), 모서리 반경 r 인 둥근 사각형까지의 부호 있는 거리.</summary>
-    static float RoundedBox(float x, float y, float cx, float cy, float hx, float hy, float r)
-    {
-        float qx = Mathf.Abs(x - cx) - (hx - r);
-        float qy = Mathf.Abs(y - cy) - (hy - r);
-        float outside = new Vector2(Mathf.Max(qx, 0f), Mathf.Max(qy, 0f)).magnitude;
-        float inside = Mathf.Min(Mathf.Max(qx, qy), 0f);
-        return outside + inside - r;
+            bool dirty = imp.textureType != TextureImporterType.Sprite || imp.spriteBorder != border || !imp.mipmapEnabled
+                         || !imp.alphaIsTransparency || imp.wrapMode != TextureWrapMode.Clamp;
+            if (dirty)
+            {
+                imp.textureType = TextureImporterType.Sprite;
+                imp.spriteImportMode = SpriteImportMode.Single;
+                imp.spritePixelsPerUnit = 100f;
+                imp.spriteBorder = border;
+                imp.mipmapEnabled = true;
+                imp.alphaIsTransparency = true;
+                imp.wrapMode = TextureWrapMode.Clamp;
+                imp.filterMode = FilterMode.Trilinear;
+                imp.textureCompression = TextureImporterCompression.Uncompressed;
+                imp.SaveAndReimport();
+            }
+        }
+        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        if (sprite == null) Debug.LogWarning($"[UI 키트] 스프라이트를 찾지 못했다: {path}");
+        return sprite;
     }
 }
 #endif

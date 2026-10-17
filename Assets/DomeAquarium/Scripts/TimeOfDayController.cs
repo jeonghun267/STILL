@@ -151,6 +151,29 @@ public class TimeOfDayController : MonoBehaviour
         Apply(CurrentHour());
     }
 
+    /// <summary>
+    /// 층별 고정 조명. 실제 시계를 따르는 것은 1막(24m)뿐이고, 200m·1,000m 는 시각과 상관없이 같은 빛이다.
+    /// 갱신 주기는 그대로 돌되 시계 대신 이 키를 다시 칠한다 — 다른 코드가 안개를 덮어써도 2초 안에 돌아온다.
+    /// </summary>
+    public void SetFixedLighting(Key key)
+    {
+        hasFixed = true;
+        fixedKey = key;
+        ApplyNow();
+    }
+
+    /// <summary>다시 실제 시계를 따른다.</summary>
+    public void UseClock()
+    {
+        hasFixed = false;
+        ApplyNow();
+    }
+
+    public bool IsFixed => hasFixed;
+
+    bool hasFixed;
+    Key fixedKey;
+
     public float CurrentHour()
     {
         if (!useSystemClock) return Mathf.Repeat(overrideHour, 24f);
@@ -161,6 +184,7 @@ public class TimeOfDayController : MonoBehaviour
     /// <summary>지금 시각을 감싸는 두 키를 찾아 보간한다. 24시를 넘어 0시로 이어진다.</summary>
     void Apply(float hour)
     {
+        if (hasFixed) { Blend(fixedKey, fixedKey, 0f); return; }
         if (keys == null || keys.Length == 0) return;
 
         int a = keys.Length - 1;
@@ -180,8 +204,11 @@ public class TimeOfDayController : MonoBehaviour
         float t = span > 0.0001f ? Mathf.Clamp01(pos / span) : 0f;
         t = Mathf.SmoothStep(0f, 1f, t);        // 급격한 전환을 막는다
 
-        Key k = keys[a], m = keys[b];
+        Blend(keys[a], keys[b], t);
+    }
 
+    void Blend(Key k, Key m, float t)
+    {
         if (sun != null)
         {
             sun.color = Color.Lerp(k.sunColor, m.sunColor, t);

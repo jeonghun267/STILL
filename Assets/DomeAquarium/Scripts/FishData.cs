@@ -32,6 +32,15 @@ public class FishData : ScriptableObject
     [Header("등급")]
     public FishRarity rarity = FishRarity.Common;
 
+    [Header("서식 층")]
+    // 어느 층 돔에 나오는가. 층별 등장 생물(DiveMission.species)을 고를 때 쓴다 (DomeAquarium/18).
+    public DiveDepth habitat = DiveDepth.Reef24;
+    // 강에 사는 종(아마존·인더스강 돌고래 등). 바다 관찰 기록에 나오면 사실 오류라 어느 층에도 넣지 않는다.
+    public bool freshwater;
+    // 일지와 일치하는 기록이 없는 생물(3막 신호의 주인). 카드는 이름 대신 "일치하는 기록 없음"과 최초 관측자를 쓰고,
+    // 설명은 고정 대본(description)만 읽는다 — Gemini 에 묻지 않는다. AI 가 정체를 말해 버리면 미확인이 아니게 된다.
+    public bool unnamed;
+
     [Header("모델")]
     public GameObject prefab;
     public float swimScale = 0.25f;

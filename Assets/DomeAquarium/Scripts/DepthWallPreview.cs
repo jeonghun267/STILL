@@ -43,6 +43,7 @@ public sealed class DepthWallPreview : MonoBehaviour
         public Color skyTint = new Color(0.5f, 0.5f, 0.5f, 0.5f);
         public float skyExposure = 1f;
         [Range(0f, 1f)] public float lampLevel = 1f;   // 천장 네온 밝기 배율
+        [Range(0f, 1f)] public float reflectionLevel = 1f;   // 창밖 하늘 반사(바다·테라스) 세기 배율
         public Color scanTint = Color.white;            // 조명을 받지 않는 스캔 모델(바시스피어)에 곱할 색
 
         [NonSerialized] public Color fillBase;
@@ -58,6 +59,7 @@ public sealed class DepthWallPreview : MonoBehaviour
     public Renderer[] lamps;                   // 천장 네온 패널 (발광 재질)
     public int[] lampSlots;                    // 각 렌더러에서 네온 재질의 번호
     public Renderer[] unlitScans;              // 사진 스캔 모델 — 조명이 구워져 있어(KHR_materials_unlit) 주변광을 바꿔도 그대로 밝다
+    public ReflectionProbe[] skyProbes;        // 창밖 바다·테라스의 하늘 반사 — 미리 구운 밝은 하늘이라 200m·1,000m 에서도 테라스가 환하게 남았다
     public string scanColorProperty = "baseColorFactor";   // glTFast 셰이더의 기본색 속성
 
     [Header("시간")]
@@ -76,7 +78,7 @@ public sealed class DepthWallPreview : MonoBehaviour
     struct Look
     {
         public Color sky, equator, ground, sun, fog, skyTint, scan;
-        public float sunIntensity, fogDensity, skyExposure, lamps;
+        public float sunIntensity, fogDensity, skyExposure, lamps, reflection;
 
         public static Look Lerp(Look a, Look b, float t) => new Look
         {
@@ -91,6 +93,7 @@ public sealed class DepthWallPreview : MonoBehaviour
             skyExposure = Mathf.Lerp(a.skyExposure, b.skyExposure, t),
             scan = Color.Lerp(a.scan, b.scan, t),
             lamps = Mathf.Lerp(a.lamps, b.lamps, t),
+            reflection = Mathf.Lerp(a.reflection, b.reflection, t),
         };
     }
 
@@ -114,6 +117,7 @@ public sealed class DepthWallPreview : MonoBehaviour
     Color rippleTint;
     Color[] lampBase;
     Color[] scanBase;
+    float[] probeBase;
     int scanColorId;
 
     void Awake()
@@ -142,6 +146,8 @@ public sealed class DepthWallPreview : MonoBehaviour
             Material m = SlotMaterial(lamps[i], LampSlot(i));
             lampBase[i] = m != null && m.HasProperty(EmissionId) ? m.GetColor(EmissionId) : Color.black;
         }
+        probeBase = new float[skyProbes != null ? skyProbes.Length : 0];
+        for (int i = 0; i < probeBase.Length; i++) probeBase[i] = skyProbes[i] != null ? skyProbes[i].intensity : 1f;
         scanColorId = Shader.PropertyToID(scanColorProperty);
         scanBase = new Color[unlitScans != null ? unlitScans.Length : 0];
         for (int i = 0; i < scanBase.Length; i++)
@@ -323,6 +329,7 @@ public sealed class DepthWallPreview : MonoBehaviour
         skyExposure = skyExposureBase,
         scan = Color.white,
         lamps = 1f,
+        reflection = 1f,
     };
 
     static Look LookOf(Band b) => new Look
@@ -338,6 +345,7 @@ public sealed class DepthWallPreview : MonoBehaviour
         skyExposure = b.skyExposure,
         scan = b.scanTint,
         lamps = b.lampLevel,
+        reflection = b.reflectionLevel,
     };
 
     void Apply(Look look)
@@ -370,6 +378,8 @@ public sealed class DepthWallPreview : MonoBehaviour
             block.SetColor(EmissionId, lampBase[i] * look.lamps);
             r.SetPropertyBlock(block, slot);
         }
+        for (int i = 0; i < probeBase.Length; i++)
+            if (skyProbes[i] != null) skyProbes[i].intensity = probeBase[i] * look.reflection;
         for (int i = 0; i < scanBase.Length; i++)
         {
             Renderer r = unlitScans[i];

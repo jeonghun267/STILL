@@ -75,6 +75,7 @@ public sealed class AquariumAudioDirector : MonoBehaviour
             else if (encyclopedia != null && encyclopedia.IsOpen)
                 musicTarget = encyclopediaMusicVolume;
             else musicTarget = normalMusicVolume;
+            musicTarget *= Mathf.Clamp01(layerMusicLevel);
         }
 
         float ambientTarget = ambientMuted ? 0f : experienceStarted ? activeAmbientVolume : introAmbientVolume;
@@ -114,6 +115,9 @@ public sealed class AquariumAudioDirector : MonoBehaviour
     /// 물속 환경음을 끄거나 다시 켠다. 끌 때는 즉시(로비 첫 프레임에 물소리가 새지 않게),
     /// 켤 때는 Update 의 감쇠를 따라 서서히 올라온다.
     /// </summary>
+    /// <summary>층마다 배경음악 크기 (DiveDirector). 1 = 평소, 0 = 끈다 — 3막은 음악 없이 낮은 물소리만.</summary>
+    [System.NonSerialized] public float layerMusicLevel = 1f;
+
     public void SetAmbientMuted(bool muted)
     {
         ambientMuted = muted;

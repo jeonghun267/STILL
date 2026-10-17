@@ -362,6 +362,12 @@ public class BoidManager : MonoBehaviour, IObservationTargets
         agentCount = n;
     }
 
+    /// <summary>모든 개체를 치운다. 늘 헤엄치는 무리 없이 큰 생물만 가끔 지나가는 층(200m)에서 쓴다.</summary>
+    public void Clear()
+    {
+        ClearAgents();
+    }
+
     void ClearAgents()
     {
         for (int i = transform.childCount - 1; i >= 0; i--)

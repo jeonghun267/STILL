@@ -264,11 +264,10 @@ public static class DomeAquariumInfoPanelSetup
         // 6) 아래 줄 — 음성 해설 표시와 태그(비어 있으면 줄에서 빠진다)
         RectTransform footer = NewRow(panel, "FooterRow", 30f, 8f);
         Image voice = NewImage(footer, "VoiceMark");
-        Size(voice.gameObject, 24f, 24f);
-        Skin(voice, circle, new Color(0.30f, 0.84f, 1f, 0.85f));
-        AddVoiceBar(voice.rectTransform, round, "VoiceBarLeft", -5f, 7f);
-        AddVoiceBar(voice.rectTransform, round, "VoiceBarCenter", 0f, 12f);
-        AddVoiceBar(voice.rectTransform, round, "VoiceBarRight", 5f, 8f);
+        Size(voice.gameObject, 26f, 26f);
+        voice.sprite = DomeAquariumUiKit.MaterialIcon("volume_up");   // 관찰 일지 "음성 해설" 버튼과 같은 아이콘 (Material Icons)
+        voice.preserveAspect = true;
+        voice.color = new Color(0.45f, 0.88f, 1f, 1f);
         TMP_Text narration = NewText(footer, "NarrationLabel", font, 19f, FontStyles.Normal, Muted);
         narration.text = ObservationTerms.Narration;
         narration.textWrappingMode = TextWrappingModes.NoWrap;
@@ -344,15 +343,6 @@ public static class DomeAquariumInfoPanelSetup
         row.childForceExpandHeight = false;
         Height(rt.gameObject, height);
         return rt;
-    }
-
-    static void AddVoiceBar(RectTransform parent, Sprite round, string objectName, float x, float height)
-    {
-        Image bar = NewImage(parent, objectName);
-        bar.rectTransform.anchorMin = bar.rectTransform.anchorMax = bar.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        bar.rectTransform.sizeDelta = new Vector2(2f, height);
-        bar.rectTransform.anchoredPosition = new Vector2(x, 0f);
-        Skin(bar, round, new Color(0.60f, 0.94f, 1f, 0.95f));
     }
 
     static void Spacer(Transform parent, float height) => Height(NewUI(parent, "Spacer").gameObject, height);

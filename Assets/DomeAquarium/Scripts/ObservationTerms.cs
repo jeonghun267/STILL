@@ -38,6 +38,56 @@ public static class ObservationTerms
 
     public static string SessionCount(int recorded) => $"이번 탐사 {recorded}종 기록";
 
+    // 층마다 할 일 (기획 문서의 "의뢰서"). 관찰기 위에 두 줄로 뜬다. "의뢰·임무"보다 바로 읽히는 "할 일"로 쓴다.
+    public static string LayerTasks(string depth) => $"수심 {depth}  ·  할 일";
+    public static string LayerDone(string depth) => $"수심 {depth}  ·  기록 완료";
+    public static string CountTask(string subject, int count) => $"{subject} {count}종 기록하기";
+    public static string TargetTask(string clue) => $"찾아보기: {clue}";
+    public static string Tally(int recorded, int count) => $"{System.Math.Min(recorded, count)}/{count}";
+    public const string RideElevator = "엘리베이터 타기";
+
+    // 엘리베이터 깊이 버튼 아래 작은 글씨
+    public const string FloorHere = "지금 여기";
+    public const string FloorNext = "갈 차례";
+    public const string FloorGoing = "가는 중";
+    public const string FloorDone = "기록 완료";
+    public const string FloorLocked = "잠김";
+
+    // 관찰기 조명 (1막을 마치면 생긴다)
+    public const string LightOn = "조명 켜짐";
+    public const string LightOff = "조명 꺼짐";
+    // 관찰기 화면 한 줄(약 16자)에 들어가게 짧게. 손 추적이면 바로 옆 "조명" 버튼이 보인다.
+    public const string LightUnlocked = "조명이 생겼어요 · A 버튼";
+    public const string LightHint = "조명 끄기 · A 버튼";
+
+    // 3막 — 신호의 주인. "미확인" 대신 기획 문서의 관찰기 표시 그대로 "일치하는 기록 없음".
+    public const string SignalLabel = "신호";
+    public const string NoMatch = "일치하는 기록 없음";
+    public const string FirstSighting = "처음 관측된 생물";
+    public const string YouObserver = "나";
+    public static string FirstObserver(string name, System.DateTime when) => $"최초 관측자 · {name} · {when:yyyy.MM.dd}";
+
+    // 엔딩 — 밤 로비 데이터 월의 새 줄, 크레딧 뒤 다시 하기
+    public const string NewRecordTitle = "+1  처음 관측된 생물";
+    public static string NewRecordDetail(string depth, string observer, System.DateTime when) =>
+        $"수심 {depth}  ·  최초 관측자 {observer}  ·  {when:yyyy.MM.dd}";
+    public const string EndTitle = "오늘 밤의 관측 끝";
+    public const string Restart = "처음부터 다시";
+
+    // 큰 생물 예고 (2막). 무엇인지는 말하지 않는다 — 어느 쪽인지만 알려 주고, 누구인지는 지켜봐서 알아낸다.
+    public static string Approaching(string where) => $"무언가 다가와요 · {where}";
+
+    /// <summary>머리 방향 기준 여덟 방향. 0 = 앞, 시계 방향(오른쪽이 +).</summary>
+    public static readonly string[] Directions = { "앞", "오른쪽 앞", "오른쪽", "오른쪽 뒤", "뒤", "왼쪽 뒤", "왼쪽", "왼쪽 앞" };
+
+    /// <summary>signedYaw: 머리 정면에서 몇 도 돌아가 있나 (-180~180, 오른쪽이 +).</summary>
+    public static string Direction(float signedYaw)
+    {
+        int i = (int)System.Math.Round(signedYaw / 45.0);
+        i = ((i % 8) + 8) % 8;
+        return Directions[i];
+    }
+
     public static string FrequencyName(int index)
     {
         if (index < 0) index = 0;

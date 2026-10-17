@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 823f9e52fa16e974e8f49726b017a190, type: 3}
+  m_Name: Mission_200m
+  m_EditorClassIdentifier: Assembly-CSharp::DiveMission
+  depth: 1
+  meters: 200
+  layerName: "\uBC15\uAD11\uCE35 \uC785\uAD6C"
+  rideSeconds: 12
+  countSubject: "\uD070 \uC0DD\uBB3C"
+  recordCount: 2
+  targets:
+  - {fileID: 11400000, guid: 4eed80c547590114a9162acbe2735a52, type: 2}
+  targetClue: "\uAC00\uC7A5 \uD070 \uADF8\uB9BC\uC790"
+  species: []
+  passers:
+  - fish: {fileID: 11400000, guid: 7889c9c01e1994f48bc8c3290d9f1975, type: 2}
+    group: {x: 4, y: 6}
+    seconds: 22
+    weight: 1
+  - fish: {fileID: 11400000, guid: 9fb573a14f6cf3a4c93265386fc742c0, type: 2}
+    group: {x: 3, y: 4}
+    seconds: 24
+    weight: 1
+  - fish: {fileID: 11400000, guid: 24fc900ffa1825a4bb68aff966a4ce4b, type: 2}
+    group: {x: 2, y: 3}
+    seconds: 26
+    weight: 1
+  - fish: {fileID: 11400000, guid: 340b308ed2ab7f64caff52f3ece7e6e7, type: 2}
+    group: {x: 1, y: 1}
+    seconds: 30
+    weight: 1
+  - fish: {fileID: 11400000, guid: 5622ef1dcd86a984f923921480316503, type: 2}
+    group: {x: 1, y: 1}
+    seconds: 30
+    weight: 1
+  - fish: {fileID: 11400000, guid: 4eed80c547590114a9162acbe2735a52, type: 2}
+    group: {x: 1, y: 1}
+    seconds: 34
+    weight: 1
+  - fish: {fileID: 11400000, guid: a4a40c97f8969c44396ccb2cdf28eaff, type: 2}
+    group: {x: 1, y: 1}
+    seconds: 32
+    weight: 1
+  - fish: {fileID: 11400000, guid: 86de3f869d3ffed44a27485ee52adb48, type: 2}
+    group: {x: 2, y: 3}
+    seconds: 24
+    weight: 1
+  passInterval: {x: 60, y: 90}
+  firstPassDelay: 14
+  seabed: 1
+  marineSnow: 1
+  bioluminescence: 0
+  encounter: 0
+  taskLine: 
+  showSignal: 0
+  lightOnArrival: 0
+  hintLine: 
+  finale: 0
+  ascentLine: 
+  finalLine: 
+  ambience: {fileID: 8300000, guid: b3eab4efdf2784d4db12c99114618ca4, type: 3}
+  ambienceVolume: 0.22
+  musicLevel: 0.7
+  useClock: 0
+  lighting:
+    hour: 0
+    sunColor: {r: 0.32, g: 0.5, b: 0.85, a: 1}
+    sunIntensity: 0.34
+    ambientSky: {r: 0.06, g: 0.13, b: 0.26, a: 1}
+    ambientEquator: {r: 0.04, g: 0.09, b: 0.18, a: 1}
+    ambientGround: {r: 0.02, g: 0.04, b: 0.09, a: 1}
+    fogColor: {r: 0.051, g: 0.09, b: 0.17, a: 1}
+    fogDensity: 0.06
+    waterShallow: {r: 0.06, g: 0.15, b: 0.29, a: 1}
+    waterDeep: {r: 0.051, g: 0.075, b: 0.15, a: 1}
+    shaftStrength: 0.18
+    coralGlow: 0
+  caustics: 0
+  descentLine: "200m\uBD80\uD130\uB294 \uD587\uBE5B\uC774 \uAC70\uC758 \uB2FF\uC9C0
+    \uC54A\uC544\uC694. \uC5EC\uAE30\uC11C\uB294 \uC0DD\uBB3C\uC774 \uAC00\uB054\uC529\uB9CC
+    \uC9C0\uB098\uAC00\uC694. \uAE30\uB2E4\uB9AC\uB294 \uAC83\uB3C4 \uAD00\uCC30\uC774\uC5D0\uC694."
+  arrivalLine: "\uC218\uC2EC 200m\uC608\uC694. \uC5EC\uAE30\uC11C\uB294 \uD070 \uC0DD\uBB3C\uC774
+    \uAC00\uB054\uC529\uB9CC \uC9C0\uB098\uAC00\uC694. \uAD00\uCC30\uAE30\uC5D0 '\uB2E4\uAC00\uC640\uC694'\uAC00
+    \uB728\uBA74 \uADF8\uCABD\uC744 \uBCF4\uC138\uC694. \uD070 \uC0DD\uBB3C 2\uC885,
+    \uADF8\uB9AC\uACE0 \uAC00\uC7A5 \uD070 \uADF8\uB9BC\uC790\uB97C \uCC3E\uC544
+    \uC8FC\uC138\uC694."
+  completeLine: "200m \uAE30\uB85D \uC644\uB8CC! \uB05D\uAE4C\uC9C0 \uAE30\uB2E4\uB824
+    \uC92C\uB124\uC694. \uC2E0\uD638\uAC00 \uB354 \uAC15\uD574\uC84C\uC5B4\uC694.
+    \uC774\uC81C 1,000m\uB85C \uB0B4\uB824\uAC08 \uC218 \uC788\uC5B4\uC694."

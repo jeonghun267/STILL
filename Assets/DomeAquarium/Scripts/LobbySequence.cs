@@ -11,7 +11,10 @@ using UnityEngine.Playables;
 ///  1. 해 질 녘 아쿠아리움 로비. 창밖으로 바다가 보이고, 가운데에 1930년 잠수구(바시스피어)가 서 있다.
 ///     나레이션 "지구 표면의 71%는 바다… 80% 이상은 아직 아무도 본 적이 없습니다"가 자막과 함께 나온다.
 ///  2. 나레이션이 끝나면 "입장하기" 패널이 뜬다. 누르면 엘리베이터 문이 열리고, 개찰구를 지나 안으로 걸어 들어간다.
-///  3. 문이 닫히고 계기판 수심이 0m 에서 내려간다. 도착하면 수중 돔(기존 씬)에서 상자를 부른다.
+///  3. 칸 안 깊이 버튼(ElevatorConsole)을 누르면 문이 닫히고 계기판 수심이 내려간다. 도착하면 수중 돔으로 바뀐다.
+///  4. 층의 할 일을 마치면 돔에서 "엘리베이터 타기"로 칸에 돌아와 다음 깊이 버튼을 누른다 (DiveDirector 가 진행을 잡는다).
+///     칸만 따로 켜고 끈다(cabinSet) — 로비 건물은 엔딩 전까지 다시 켜지 않는다.
+///  5. 엔딩: 1,000m 를 마치면 엘리베이터가 해수면까지 올라가고, 밤이 된 로비에서 데이터 월을 보며 선다 (Ascend, LobbyNight).
 ///
 /// 멀미 설계 (이 프로젝트는 이동 기능을 전부 걷어냈다):
 ///  - 걷기는 일직선·등속이고 시작과 끝만 0.4초씩 부드럽게 가감속한다. 회전은 하지 않는다.
@@ -23,7 +26,7 @@ using UnityEngine.Playables;
 [DefaultExecutionOrder(-400)]
 public sealed class LobbySequence : MonoBehaviour
 {
-    enum Phase { Lobby, Entering, Dome }
+    enum Phase { Lobby, Entering, Cabin, Riding, Dome, Night }
 
     [Header("리그 (비면 XR Origin / Main Camera 를 찾는다)")]
     public Transform rig;
@@ -36,6 +39,15 @@ public sealed class LobbySequence : MonoBehaviour
     public Transform cabinPoint;           // 엘리베이터 안 바닥 중심
     public Transform gatePoint;            // 개찰구 통로 중심 — 지나갈 때 문이 열린다
     public Transform domePoint;            // 수중 돔에서 설 자리. 비면 월드 원점(수조 정중앙)
+    public GameObject cabinSet;            // 엘리베이터 칸·승강로·계기판·깊이 버튼. 로비 건물(lobbySet)과 따로 켜고 끈다
+
+    [Header("층 진행 (비면 런타임에 찾는다. 없으면 예전처럼 24m 로 바로 내려간다)")]
+    public DiveDirector director;
+
+    [Header("엔딩 — 밤이 된 로비")]
+    public LobbyNight night;
+    public Transform nightSpot;            // 올라와서 서는 자리 — 데이터 월(앞벽 오른쪽)이 정면 조금 오른쪽에 온다
+    [Range(0f, 1f)] public float nightAmbienceLevel = 0.55f;   // 밤 파도 소리는 낮보다 작게
 
     [Header("문 애니메이션 (glTF 클립)")]
     public Animator elevatorAnimator;
@@ -111,6 +123,8 @@ public sealed class LobbySequence : MonoBehaviour
     bool captionVisible;
     bool captionSnap;
     bool lobbyAudioOn;
+    bool doorsOpen;
+    bool arrivedOnce;
     float audioFade = 1f;                  // 하강하며 0 으로 — 로비 소리를 줄인다
 
     // 수중 돔 환경을 적어 두었다가 도착할 때 되돌린다 (로비 조명으로 덮어쓰기 전에).
@@ -135,6 +149,7 @@ public sealed class LobbySequence : MonoBehaviour
     EnvSnapshot dome;
 
     public bool InLobby => phase != Phase.Dome;
+    public bool IsNight => phase == Phase.Night;
 
     // --- 로비 활동(수심 벽 등)이 쓰는 것 ---
     /// <summary>로비에서 자유 활동을 받아도 되는지. 엘리베이터에 오른 뒤로는 받지 않는다.</summary>
@@ -190,6 +205,8 @@ public sealed class LobbySequence : MonoBehaviour
             gateDoors = new ClipScrubber(gateAnimator, gateClip, "TicketGate");
             gateDoors.Sample(0f);
         }
+
+        if (director == null) director = DiveDirector.Instance != null ? DiveDirector.Instance : FindFirstObjectByType<DiveDirector>();
 
         StartCoroutine(IntroRoutine());
     }
@@ -249,7 +266,7 @@ public sealed class LobbySequence : MonoBehaviour
     public void OpenGateAndDoors()
     {
         if (gateDoors != null && gateClip != null) StartCoroutine(Scrub(gateDoors, 0f, gateClip.length, gatePlaySeconds));
-        if (elevatorDoors != null) StartCoroutine(Scrub(elevatorDoors, 0f, doorOpenEnd, doorOpenEnd));
+        if (elevatorDoors != null) { StartCoroutine(Scrub(elevatorDoors, 0f, doorOpenEnd, doorOpenEnd)); doorsOpen = true; }
     }
 
     /// <summary>관람객이 엘리베이터 칸에 들어서면 준비 단계가 부른다. 문이 닫히고 내려간다.</summary>
@@ -272,6 +289,18 @@ public sealed class LobbySequence : MonoBehaviour
         if (fader != null) yield return fader.FadeTo(0f, 0.35f);
         yield return new WaitForSeconds(0.4f);
 
+        yield return BoardedOrDescend();
+    }
+
+    /// <summary>칸에 들어선 뒤. 층 진행이 있으면 깊이 버튼을 기다리고, 없으면(예전 씬) 바로 24m 로 내려간다.</summary>
+    IEnumerator BoardedOrDescend()
+    {
+        if (director != null)
+        {
+            phase = Phase.Cabin;
+            director.EnterCabin();
+            yield break;
+        }
         yield return CloseAndDescend();
     }
 
@@ -294,7 +323,7 @@ public sealed class LobbySequence : MonoBehaviour
         if (fader != null) yield return fader.FadeTo(0f, 0.35f);
 
         // 2) 문이 열린다
-        if (elevatorDoors != null) yield return Scrub(elevatorDoors, 0f, doorOpenEnd, doorOpenEnd);
+        if (elevatorDoors != null) { yield return Scrub(elevatorDoors, 0f, doorOpenEnd, doorOpenEnd); doorsOpen = true; }
 
         // 3) 걸어 들어간다
         fader?.SetVignette(0.9f);
@@ -302,18 +331,17 @@ public sealed class LobbySequence : MonoBehaviour
         fader?.SetVignette(0f);
         yield return new WaitForSeconds(0.5f);
 
-        yield return CloseAndDescend();
+        yield return BoardedOrDescend();
     }
 
     /// <summary>4) 문이 닫히고 5) 내려가 6) 수중 돔에 도착한다. 자동 걷기와 직접 타기가 같이 쓴다.</summary>
     IEnumerator CloseAndDescend()
     {
         // 4) 문이 닫힌다
-        if (elevatorDoors != null)
-            yield return Scrub(elevatorDoors, doorCloseStart, elevatorClip.length, elevatorClip.length - doorCloseStart);
+        yield return CloseDoors();
 
         // 5) 하강
-        yield return Descend();
+        yield return Descend(0f, arrivalDepth, descentSeconds, descentLine);
 
         // 6) 도착 — 장소 전환은 검은 화면 뒤에서
         if (fader != null) yield return fader.FadeTo(1f, 0.9f);
@@ -368,27 +396,190 @@ public sealed class LobbySequence : MonoBehaviour
         MoveCameraTo(to);
     }
 
-    IEnumerator Descend()
+    IEnumerator CloseDoors()
     {
-        Coroutine line = StartCoroutine(Say(descentLine));
+        if (!doorsOpen || elevatorDoors == null || elevatorClip == null) yield break;
+        yield return Scrub(elevatorDoors, doorCloseStart, elevatorClip.length, elevatorClip.length - doorCloseStart);
+        doorsOpen = false;
+    }
+
+    /// <summary>
+    /// 닫힌 칸 안에서 계기판 숫자가 fromMeters → toMeters 로 흐르고, 칸 안 빛이 그 깊이만큼 가라앉는다(올라가면 밝아진다).
+    /// 몸과 칸이 같이 움직이므로 바깥 흐름이 없다 — 이동하는 느낌은 숫자와 빛, 소리로만 준다.
+    /// </summary>
+    IEnumerator Descend(float fromMeters, float toMeters, float seconds, string line)
+    {
+        Coroutine say = string.IsNullOrWhiteSpace(line) ? null : StartCoroutine(Say(line));
         Color sky0 = RenderSettings.ambientSkyColor;
         Color eq0 = RenderSettings.ambientEquatorColor;
         Color gr0 = RenderSettings.ambientGroundColor;
-        float duration = Mathf.Max(1f, descentSeconds);
+        float sun0 = sun != null ? sun.intensity : 0f;
+        CabinLook(toMeters, out Color sky1, out Color eq1, out Color gr1, out float sun1);
+        float duration = Mathf.Max(1f, seconds);
 
         for (float t = 0f; t < 1f;)
         {
             t += Time.deltaTime / duration;
             float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t));
-            if (depthText != null) depthText.text = FormatDepth(arrivalDepth * k);
-            RenderSettings.ambientSkyColor = Color.Lerp(sky0, descentAmbient, k);
-            RenderSettings.ambientEquatorColor = Color.Lerp(eq0, descentAmbient * 0.7f, k);
-            RenderSettings.ambientGroundColor = Color.Lerp(gr0, descentAmbient * 0.35f, k);
-            if (sun != null) sun.intensity = Mathf.Lerp(sunIntensity, sunIntensity * 0.25f, k);
+            if (depthText != null) depthText.text = FormatDepth(Mathf.Lerp(fromMeters, toMeters, k));
+            RenderSettings.ambientSkyColor = Color.Lerp(sky0, sky1, k);
+            RenderSettings.ambientEquatorColor = Color.Lerp(eq0, eq1, k);
+            RenderSettings.ambientGroundColor = Color.Lerp(gr0, gr1, k);
+            if (sun != null) sun.intensity = Mathf.Lerp(sun0, sun1, k);
             audioFade = 1f - k;
             yield return null;
         }
-        yield return line;                       // 대사가 계기판보다 길면 마저 듣고 내린다
+        if (say != null) yield return say;       // 대사가 계기판보다 길면 마저 듣고 내린다
+    }
+
+    /// <summary>
+    /// 깊이에 따른 칸 안 빛. 0m 는 로비 실내광, 24m 는 descentAmbient(처음 하강의 도착값), 그 아래는 더 어둡게.
+    /// 가장 어두운 1,000m 에서도 채널이 13/255 아래로 떨어지지 않게 한다 (Quest 디스플레이가 그 아래를 구분하지 못한다).
+    /// </summary>
+    void CabinLook(float meters, out Color sky, out Color equator, out Color ground, out float sunLevel)
+    {
+        Color d = descentAmbient;
+        if (meters <= arrivalDepth)
+        {
+            float k = arrivalDepth > 0f ? Mathf.Clamp01(meters / arrivalDepth) : 1f;
+            sky = Color.Lerp(ambientSky, d, k);
+            equator = Color.Lerp(ambientEquator, d * 0.7f, k);
+            ground = Color.Lerp(ambientGround, d * 0.35f, k);
+            sunLevel = sunIntensity * Mathf.Lerp(1f, 0.25f, k);
+            return;
+        }
+        // 24m → 200m → 1,000m: 1 → 0.55 → 0.3 배
+        float dim = meters <= 200f
+            ? Mathf.Lerp(1f, 0.55f, Mathf.InverseLerp(arrivalDepth, 200f, meters))
+            : Mathf.Lerp(0.55f, 0.3f, Mathf.InverseLerp(200f, 1000f, meters));
+        Color floor = new Color(0.05f, 0.05f, 0.06f);
+        sky = Max(d * dim, floor);
+        equator = Max(d * (0.7f * dim), floor * 0.8f);
+        ground = Max(d * (0.35f * dim), floor * 0.6f);
+        sunLevel = sunIntensity * 0.25f * dim;
+    }
+
+    static Color Max(Color a, Color b) => new Color(Mathf.Max(a.r, b.r), Mathf.Max(a.g, b.g), Mathf.Max(a.b, b.b), 1f);
+
+    /// <summary>
+    /// 칸 안 깊이 버튼을 누르면 DiveDirector 가 부른다. 문을 닫고 fromMeters → toMeters 로 오간 뒤,
+    /// 검은 화면 뒤에서 돔으로 바꾸고 atBlack(층 꾸미기) → 화면이 밝아진 뒤 arrived(할 일 안내)를 부른다.
+    /// 같은 층을 다시 누르면 오가지 않고 잠깐 기다렸다 내린다.
+    /// </summary>
+    public void RideTo(float fromMeters, float toMeters, float seconds, string line, System.Action atBlack, System.Action arrived)
+    {
+        if (phase != Phase.Cabin) return;
+        phase = Phase.Riding;
+        StartCoroutine(RideToRoutine(fromMeters, toMeters, seconds, line, atBlack, arrived));
+    }
+
+    IEnumerator RideToRoutine(float fromMeters, float toMeters, float seconds, string line, System.Action atBlack, System.Action arrived)
+    {
+        HideCaption();
+        yield return CloseDoors();
+        if (Mathf.Abs(toMeters - fromMeters) > 0.5f) yield return Descend(fromMeters, toMeters, seconds, line);
+        else yield return new WaitForSeconds(0.8f);
+
+        if (fader != null) yield return fader.FadeTo(1f, 0.9f);
+        SwitchToDome();
+        atBlack?.Invoke();
+        yield return new WaitForSeconds(0.4f);
+        if (fader != null) yield return fader.FadeTo(0f, 1.4f);
+
+        // STILL — 아무 말 없이 물고기만 헤엄치는 순간. 층이 바뀔 때마다 먼저 바라볼 틈을 준다.
+        yield return new WaitForSeconds(2.5f);
+        phase = Phase.Dome;
+        if (!arrivedOnce)
+        {
+            arrivedOnce = true;
+            if (startPanel != null) startPanel.CompleteFromLobby();
+        }
+        arrived?.Invoke();
+    }
+
+    /// <summary>돔의 "엘리베이터 타기"를 누르면 DiveDirector 가 부른다. 검은 화면 뒤에서 칸으로 옮겨 서고 문은 닫혀 있다.</summary>
+    public void ReturnToCabin(float meters, System.Action arrived)
+    {
+        if (phase != Phase.Dome) return;
+        phase = Phase.Riding;
+        StartCoroutine(ReturnRoutine(meters, arrived));
+    }
+
+    IEnumerator ReturnRoutine(float meters, System.Action arrived)
+    {
+        HideCaption();
+        FishNarrationService.Instance?.Stop();
+        if (fader != null) yield return fader.FadeTo(1f, 0.6f);
+
+        AquariumAudioDirector.Instance?.SetAmbientMuted(true);
+        if (cabinSet != null) cabinSet.SetActive(true);
+        ApplyLobbyEnvironment();                 // 안개를 걷고 수중 조명을 끈다 — 칸 안은 실내다
+        CabinLook(meters, out Color sky, out Color eq, out Color gr, out float sunLevel);
+        RenderSettings.ambientSkyColor = sky;
+        RenderSettings.ambientEquatorColor = eq;
+        RenderSettings.ambientGroundColor = gr;
+        if (sun != null) sun.intensity = sunLevel;
+        if (elevatorDoors != null) elevatorDoors.Sample(0f);
+        doorsOpen = false;
+        if (depthText != null) depthText.text = FormatDepth(meters);
+        if (cabinPoint != null) AlignRig(cabinPoint.position, Vector3.forward);
+
+        yield return new WaitForSeconds(0.3f);
+        if (fader != null) yield return fader.FadeTo(0f, 0.6f);
+        phase = Phase.Cabin;
+        arrived?.Invoke();
+    }
+
+    /// <summary>
+    /// 엔딩 — 돔에서 칸으로 옮겨 서고, 계기판이 fromMeters → 0m 로 오르며 칸 안이 밝아진다.
+    /// 해수면에 닿으면 검은 화면 뒤에서 로비 건물을 다시 켜고 밤을 칠한 뒤, 데이터 월이 보이는 자리에 세운다.
+    /// 문은 열어 둔다 — 방금 타고 올라온 엘리베이터가 뒤에 있다.
+    /// </summary>
+    public void Ascend(float fromMeters, float seconds, string line, System.Action atLobby)
+    {
+        if (phase != Phase.Dome) return;
+        phase = Phase.Riding;
+        StartCoroutine(AscendRoutine(fromMeters, seconds, line, atLobby));
+    }
+
+    IEnumerator AscendRoutine(float fromMeters, float seconds, string line, System.Action atLobby)
+    {
+        HideCaption();
+        FishNarrationService.Instance?.Stop();
+        if (fader != null) yield return fader.FadeTo(1f, 0.9f);
+
+        var audio = AquariumAudioDirector.Instance;
+        if (audio != null) { audio.SetAmbientMuted(true); audio.layerMusicLevel = 0f; }
+        if (cabinSet != null) cabinSet.SetActive(true);
+        ApplyLobbyEnvironment();
+        CabinLook(fromMeters, out Color sky, out Color eq, out Color gr, out float sunLevel);
+        RenderSettings.ambientSkyColor = sky;
+        RenderSettings.ambientEquatorColor = eq;
+        RenderSettings.ambientGroundColor = gr;
+        if (sun != null) sun.intensity = sunLevel;
+        if (elevatorDoors != null) elevatorDoors.Sample(0f);
+        doorsOpen = false;
+        if (depthText != null) depthText.text = FormatDepth(fromMeters);
+        if (cabinPoint != null) AlignRig(cabinPoint.position, Vector3.forward);
+        yield return new WaitForSeconds(0.3f);
+        if (fader != null) yield return fader.FadeTo(0f, 0.9f);
+
+        yield return Descend(fromMeters, 0f, seconds, line);   // 이름은 Descend 지만 거꾸로도 오른다 — 숫자가 줄고 칸이 밝아진다
+        yield return new WaitForSeconds(0.8f);
+
+        // 해수면 — 검은 화면 뒤에서 로비에 밤을 칠하고 데이터 월 앞으로 옮겨 선다.
+        if (fader != null) yield return fader.FadeTo(1f, 1.0f);
+        if (lobbySet != null) lobbySet.SetActive(true);
+        ApplyLobbyEnvironment();
+        if (night != null) night.Apply();
+        if (elevatorDoors != null) { elevatorDoors.Sample(doorOpenEnd); doorsOpen = true; }
+        Transform spot = nightSpot != null ? nightSpot : walkStartPoint;
+        if (spot != null) AlignRig(spot.position, spot.forward);
+        StartLobbyAudio();
+        phase = Phase.Night;
+        yield return new WaitForSeconds(0.5f);
+        if (fader != null) yield return fader.FadeTo(0f, 1.8f);
+        atLobby?.Invoke();
     }
 
     void SwitchToDome()
@@ -398,6 +589,7 @@ public sealed class LobbySequence : MonoBehaviour
         if (ambience != null) ambience.Stop();
         if (music != null) music.Stop();
         if (lobbySet != null) lobbySet.SetActive(false);
+        if (cabinSet != null) cabinSet.SetActive(false);
 
         RestoreEnvironment(dome);
         if (timeOfDay != null)
@@ -484,12 +676,16 @@ public sealed class LobbySequence : MonoBehaviour
         if (immediate && captionGroup != null) captionGroup.alpha = 0f;
     }
 
+    /// <summary>다른 말로 넘어갈 때(DiveDirector). 자막은 천천히 사라지고 다음 줄이 이어 받는다.</summary>
+    public void HideCaptionNow() => HideCaption();
+
     void Update()
     {
         if (!lobbyAudioOn) return;
         bool speaking = FishNarrationService.Instance != null && FishNarrationService.Instance.IsSpeaking;
         float k = 1f - Mathf.Exp(-2.5f * Time.deltaTime);
-        if (ambience != null) ambience.volume = Mathf.Lerp(ambience.volume, ambienceVolume * audioFade * ambienceDuck, k);
+        float nightLevel = phase == Phase.Night ? nightAmbienceLevel : 1f;
+        if (ambience != null) ambience.volume = Mathf.Lerp(ambience.volume, ambienceVolume * audioFade * ambienceDuck * nightLevel, k);
         if (music != null)
             music.volume = Mathf.Lerp(music.volume, (speaking ? musicDuckedVolume : musicVolume) * audioFade * musicDuck, k);
     }

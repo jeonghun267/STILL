@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 823f9e52fa16e974e8f49726b017a190, type: 3}
+  m_Name: Mission_24m
+  m_EditorClassIdentifier: Assembly-CSharp::DiveMission
+  depth: 0
+  meters: 24
+  layerName: "\uC0B0\uD638\uCD08"
+  rideSeconds: 9
+  countSubject: "\uC544\uBB34 \uC0DD\uBB3C\uC774\uB098"
+  recordCount: 4
+  targets:
+  - {fileID: 11400000, guid: b6452cb9e5824cd4abc0a33a547ae68f, type: 2}
+  - {fileID: 11400000, guid: da2b6c342fe454448bcf6dc245af57a2, type: 2}
+  - {fileID: 11400000, guid: e50fed2147d9a144ca4f9aaf0a1126c1, type: 2}
+  - {fileID: 11400000, guid: 5bf0b08fd51099646a458c4ee4bbb5f1, type: 2}
+  targetClue: "\uC0B0\uD638 \uAC00\uC9C0\uB97C \uAF2C\uB9AC\uB85C \uBD99\uC7A1\uACE0
+    \uAC70\uC758 \uC6C0\uC9C1\uC774\uC9C0 \uC54A\uB294 \uC0DD\uBB3C"
+  species:
+  - {fileID: 11400000, guid: f5daab6f7417ab042a330a78ffd5912b, type: 2}
+  - {fileID: 11400000, guid: e731137cffe8eb948a72bcc41627ab6d, type: 2}
+  - {fileID: 11400000, guid: e3f683a2976c984429cf940ecb1e9a21, type: 2}
+  - {fileID: 11400000, guid: 342c5a63977e93646b824b2c75ac602b, type: 2}
+  - {fileID: 11400000, guid: a9bf2c8e4614c544a8d2af1212ce5d98, type: 2}
+  - {fileID: 11400000, guid: ed42396fe058af34ea78e5a71e79d2ec, type: 2}
+  - {fileID: 11400000, guid: 8150608d298527d42adaa3de4b68ed68, type: 2}
+  - {fileID: 11400000, guid: 54f188841a355224e8bd2eaaaf7b1572, type: 2}
+  - {fileID: 11400000, guid: 9f6e68b5d9543ba40bc416de17023bc7, type: 2}
+  - {fileID: 11400000, guid: 8a7be0358b1ee104daf8f384c732a96c, type: 2}
+  - {fileID: 11400000, guid: 6a6d1dc3b226f9942afb76be421a7aaf, type: 2}
+  - {fileID: 11400000, guid: 7c4a510da57cc8f46b52ecf736dc2997, type: 2}
+  - {fileID: 11400000, guid: c1b54a6ef66e36343b29b631c3dacf27, type: 2}
+  - {fileID: 11400000, guid: 282394ea18925c849ab83aacc917b946, type: 2}
+  - {fileID: 11400000, guid: b6452cb9e5824cd4abc0a33a547ae68f, type: 2}
+  - {fileID: 11400000, guid: da2b6c342fe454448bcf6dc245af57a2, type: 2}
+  - {fileID: 11400000, guid: 666a9ff2d092d2f4a99acf95f729e183, type: 2}
+  - {fileID: 11400000, guid: 21e333bc77ab3e741bae0fec50f3e011, type: 2}
+  - {fileID: 11400000, guid: dd61c536540a0824ca9794be60bf979d, type: 2}
+  - {fileID: 11400000, guid: 8e1ba89320d78dc4aa25b54e4c2a25c7, type: 2}
+  - {fileID: 11400000, guid: f974041714e8d1f4ea252fab0e212b4a, type: 2}
+  - {fileID: 11400000, guid: efe26d104cb697343aa14abfa0b2c2ae, type: 2}
+  - {fileID: 11400000, guid: ec6f4bacce197b74797ef29f315e18f1, type: 2}
+  - {fileID: 11400000, guid: e50fed2147d9a144ca4f9aaf0a1126c1, type: 2}
+  - {fileID: 11400000, guid: 30dd9ed578d42554bb7bc24f3222d789, type: 2}
+  - {fileID: 11400000, guid: 73efd52b72629d2489f68bd4c8d449b1, type: 2}
+  - {fileID: 11400000, guid: 6ae19ec66eb78e44699befe8996cf87e, type: 2}
+  - {fileID: 11400000, guid: 5bf0b08fd51099646a458c4ee4bbb5f1, type: 2}
+  - {fileID: 11400000, guid: 3ee045e0f86fcfd40b10ea8df5f4d61e, type: 2}
+  - {fileID: 11400000, guid: 4f2cc5043c57e2347bd3618389efca88, type: 2}
+  - {fileID: 11400000, guid: 47a95582cd2ae3149872eef611f8cd75, type: 2}
+  - {fileID: 11400000, guid: b805b4e5318484a47b47efc2471d23d7, type: 2}
+  - {fileID: 11400000, guid: d01cff094cbeeae408e9857e1fd7c906, type: 2}
+  - {fileID: 11400000, guid: 3580d17f82bc36048bf516278f452b90, type: 2}
+  - {fileID: 11400000, guid: bbd370562c093834ca9705c0223839cb, type: 2}
+  - {fileID: 11400000, guid: 56f6495e70ebe1040b176f52def729a6, type: 2}
+  passers: []
+  passInterval: {x: 60, y: 90}
+  firstPassDelay: 14
+  seabed: 0
+  marineSnow: 0
+  bioluminescence: 0
+  encounter: 0
+  taskLine: 
+  showSignal: 0
+  lightOnArrival: 0
+  hintLine: 
+  finale: 0
+  ascentLine: 
+  finalLine: 
+  ambience: {fileID: 0}
+  ambienceVolume: 0.25
+  musicLevel: 1
+  useClock: 1
+  lighting:
+    hour: 0
+    sunColor: {r: 0, g: 0, b: 0, a: 0}
+    sunIntensity: 0
+    ambientSky: {r: 0, g: 0, b: 0, a: 0}
+    ambientEquator: {r: 0, g: 0, b: 0, a: 0}
+    ambientGround: {r: 0, g: 0, b: 0, a: 0}
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    waterShallow: {r: 0, g: 0, b: 0, a: 0}
+    waterDeep: {r: 0, g: 0, b: 0, a: 0}
+    shaftStrength: 0
+    coralGlow: 0
+  caustics: 1
+  descentLine: "\uD587\uBE5B\uC740 \uC218\uC2EC 200m\uAE4C\uC9C0\uB9CC \uB2FF\uC2B5\uB2C8\uB2E4.
+    \uADF8 \uC544\uB798\uB294, \uC6B0\uB9AC\uAC00 \uAC70\uC758 \uBAA8\uB974\uB294
+    \uC138\uACC4\uC785\uB2C8\uB2E4."
+  arrivalLine: "\uC5EC\uAE30\uAC00 \uC218\uC2EC 24m \uC0B0\uD638\uCD08\uC608\uC694.
+    \uAD00\uCC30\uAE30\uB97C \uC0DD\uBB3C\uC5D0 \uACA8\uB204\uACE0 \uC9C0\uCF1C\uBCF4\uBA74
+    \uAE30\uB85D\uB3FC\uC694. 4\uC885\uC744 \uAE30\uB85D\uD558\uACE0, \uAF2C\uB9AC\uB85C
+    \uC0B0\uD638\uB97C \uBD99\uC7A1\uB294 \uC0DD\uBB3C\uB3C4 \uCC3E\uC544 \uC8FC\uC138\uC694."
+  completeLine: "24m \uAE30\uB85D \uC644\uB8CC! \uC774\uC81C 200m\uB85C \uB0B4\uB824\uAC08
+    \uC218 \uC788\uC5B4\uC694. \uC900\uBE44\uB418\uBA74 \uC5D8\uB9AC\uBCA0\uC774\uD130\uB97C
+    \uD0C0\uC138\uC694."

@@ -346,9 +346,11 @@ public static class DomeAquariumSetup
         Debug.Log("[DomeAquarium] TMP Settings 폴백 목록에 한글 폰트를 등록했다.");
     }
 
+    /// <summary>패널 빌더들이 쓰는 한글 글꼴 — 나눔스퀘어라운드로 바꿨으면 그것(DomeAquariumFonts), 아니면 예전 Noto Sans KR.</summary>
     public static TMP_FontAsset LoadKoreanFont()
     {
-        return AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
+        var nanum = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(DomeAquariumFonts.RegularAsset);
+        return nanum != null ? nanum : AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
     }
 
     // ─────────────────────────────────────────────────────────────

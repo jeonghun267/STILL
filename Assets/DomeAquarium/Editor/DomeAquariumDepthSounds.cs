@@ -59,7 +59,8 @@ public static class DomeAquariumDepthSounds
         AssetDatabase.Refresh();
         EnsureSplash("Small", force: true);
         EnsureSplash("Big", force: true);
-        Debug.Log($"[DepthSounds] 로비 소리를 다시 만들었다: 수심 벽 3개({Dir}) · 물보라 2개({LobbyDir})");
+        EnsureSonarPing(force: true);
+        Debug.Log($"[DepthSounds] 소리를 다시 만들었다: 수심 벽 3개({Dir}) · 물보라 2개({LobbyDir}) · 소나 핑({DiveDir})");
     }
 
     /// <summary>소리 파일이 없으면 만들고, 가져오기 설정을 맞춘 뒤 돌려준다.</summary>
@@ -297,6 +298,116 @@ public static class DomeAquariumDepthSounds
         float peak = 0f;
         foreach (float s in buf) peak = Mathf.Max(peak, Mathf.Abs(s));
         if (peak > 1e-4f) for (int i = 0; i < n; i++) buf[i] *= 0.7f / peak;
+        return buf;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 큰 생물 예고 — 부드러운 소나 핑 (2막)
+    // ─────────────────────────────────────────────────────────────
+
+    public const string DiveDir = "Assets/DomeAquarium/Audio/Dive";
+
+    /// <summary>
+    /// "띵—" 하고 퍼지는 낮은 핑 한 번과 두 번의 메아리. 경보처럼 들리지 않게 960Hz 사인에 8ms 로 부드럽게 시작하고,
+    /// 0.42초·0.84초 뒤 메아리는 고역을 깎아 멀리서 되돌아오는 소리처럼 만든다. 3D 로 생물이 올 쪽에서 울린다.
+    /// </summary>
+    public static AudioClip EnsureSonarPing(bool force = false)
+    {
+        string path = $"{DiveDir}/Sonar_Ping.wav";
+        if (force || !File.Exists(path))
+        {
+            Directory.CreateDirectory(DiveDir);
+            File.WriteAllBytes(path, ToWav(SynthesizePing()));
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        }
+        if (AssetImporter.GetAtPath(path) is AudioImporter imp && imp.defaultSampleSettings.loadType != AudioClipLoadType.DecompressOnLoad)
+        {
+            var s = imp.defaultSampleSettings;
+            s.loadType = AudioClipLoadType.DecompressOnLoad;
+            s.compressionFormat = AudioCompressionFormat.Vorbis;
+            s.quality = 0.6f;
+            imp.defaultSampleSettings = s;
+            imp.forceToMono = true;
+            imp.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+    }
+
+    /// <summary>
+    /// 엔딩 — 밤 로비 데이터 월에 새 줄이 새겨질 때 한 번. 맑은 두 음(도·솔, 1,047·1,568Hz)이 0.12초 어긋나
+    /// 부드럽게 울리고 1.6초에 걸쳐 사라진다. 경보가 아니라 "기록되었다"는 작은 종소리.
+    /// </summary>
+    public static AudioClip EnsureChime(bool force = false)
+    {
+        string path = $"{DiveDir}/Record_Chime.wav";
+        if (force || !File.Exists(path))
+        {
+            Directory.CreateDirectory(DiveDir);
+            const float seconds = 2.2f;
+            int n = (int)(seconds * Rate);
+            var buf = new float[n];
+            foreach (var (f, delay, gain) in new[] { (1046.5f, 0f, 0.55f), (1568f, 0.12f, 0.4f), (2093f, 0.12f, 0.08f) })
+                for (int i = 0; i < n; i++)
+                {
+                    float t = i / (float)Rate - delay;
+                    if (t < 0f) continue;
+                    float env = Mathf.Clamp01(t / 0.01f) * Mathf.Exp(-t / 0.55f);
+                    buf[i] += gain * env * Mathf.Sin(2f * Mathf.PI * f * t);
+                }
+            float peak = 0f;
+            foreach (float v in buf) peak = Mathf.Max(peak, Mathf.Abs(v));
+            if (peak > 1e-4f) for (int i = 0; i < n; i++) buf[i] *= 0.5f / peak;
+            File.WriteAllBytes(path, ToWav(buf));
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        }
+        if (AssetImporter.GetAtPath(path) is AudioImporter imp && imp.defaultSampleSettings.loadType != AudioClipLoadType.DecompressOnLoad)
+        {
+            var s = imp.defaultSampleSettings;
+            s.loadType = AudioClipLoadType.DecompressOnLoad;
+            s.compressionFormat = AudioCompressionFormat.Vorbis;
+            s.quality = 0.6f;
+            imp.defaultSampleSettings = s;
+            imp.forceToMono = true;
+            imp.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+    }
+
+    static float[] SynthesizePing()
+    {
+        const float seconds = 2.2f;
+        int n = (int)(seconds * Rate);
+        var dry = new float[n];
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float attack = Mathf.Clamp01(t / 0.008f);
+            float f = Mathf.Lerp(960f, 900f, Mathf.Clamp01(t / 0.6f));          // 아주 살짝 내려가며 퍼진다
+            float body = Mathf.Sin(2f * Mathf.PI * f * t) * Mathf.Exp(-t / 0.32f);
+            float shimmer = 0.12f * Mathf.Sin(2f * Mathf.PI * f * 2.01f * t) * Mathf.Exp(-t / 0.12f);
+            dry[i] = attack * (body + shimmer);
+        }
+
+        var buf = new float[n];
+        float a = OnePole(1400f), lp1 = 0f, lp2 = 0f;
+        int e1 = (int)(0.42f * Rate), e2 = (int)(0.84f * Rate);
+        for (int i = 0; i < n; i++)
+        {
+            float echo1 = i >= e1 ? dry[i - e1] : 0f;
+            float echo2 = i >= e2 ? dry[i - e2] : 0f;
+            lp1 += a * (echo1 * 0.32f - lp1);                                  // 메아리는 둔하게
+            lp2 += a * (echo2 * 0.12f - lp2);
+            buf[i] = dry[i] + lp1 + lp2;
+        }
+
+        float peak = 0f;
+        foreach (float v in buf) peak = Mathf.Max(peak, Mathf.Abs(v));
+        int fade = (int)(0.3f * Rate);
+        for (int i = 0; i < n; i++)
+        {
+            if (peak > 1e-4f) buf[i] *= 0.6f / peak;
+            if (i > n - fade) buf[i] *= (n - i) / (float)fade;
+        }
         return buf;
     }
 
