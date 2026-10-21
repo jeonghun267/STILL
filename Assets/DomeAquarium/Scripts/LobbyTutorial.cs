@@ -7,7 +7,8 @@ using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 /// <summary>
 /// 로비 준비 단계 — 바다에 내려가기 전에 할 일을 직접 해 보며 배운다.
 ///
-///  1. 이동:  나레이션이 끝나면 텔레포트(엄지 막대 앞)와 스냅 회전(좌우)을 켠다. 끌려가는 자동 걷기 대신 내가 고른 곳으로 간다.
+///  1. 이동:  나레이션이 끝나면 왼쪽 막대 걷기 · 오른쪽 막대 부드러운 회전 · 오른쪽 막대 앞 텔레포트를 켠다.
+///            끌려가는 자동 걷기 대신 내가 고른 곳으로 간다. 로비 벽에는 충돌체가 없어 걸을 수 있는 곳 밖으로는 못 나가게 막는다.
 ///  2. 장비:  장비대에서 관찰기를 집는다 → 오른손에 관찰기가 들린다.
 ///  3. 연습:  연습 수조의 물고기를 겨눠 첫 기록을 한다 (이미 기록한 종이어도 연습에서는 다시 기록된다).
 ///  4. 탑승:  개찰구·엘리베이터 문이 열리고, 엘리베이터 안으로 이동하면 문이 닫히고 내려간다.
@@ -27,14 +28,23 @@ public sealed class LobbyTutorial : MonoBehaviour
     public PokeSelector devicePoke;                // 손으로 건드리기·에디터 마우스
     public GameObject deviceOnTable;
     public GameObject deviceInHand;                // 오른손에 붙는 관찰기 모델
-    public GameObject locomotionRoot;              // XR 리그의 Locomotion — 텔레포트·스냅 회전만 켜 둔 상태로 저장돼 있다
+    public GameObject locomotionRoot;              // XR 리그의 Locomotion — 걷기·부드러운 회전·텔레포트만 켜 둔 상태로 저장돼 있다
     public TeleportationAnchor cabinAnchor;        // 엘리베이터 안 도착 지점. 개찰구가 열려야 켜진다
     public Transform cabinCenter;
     [Tooltip("0 장비대 · 1 연습 수조 · 2 엘리베이터 — 지금 할 일 위에만 뜬다")]
     public GameObject[] markers;
 
+    [Header("걸을 수 있는 곳 (로비 로컬 x·z, 빌더가 채운다)")]
+    public Rect hallArea;                          // 홀 안쪽. 비어 있으면 막지 않는다
+    [Tooltip("개찰구가 열리기 전에는 이 z 를 넘지 못한다")]
+    public float gateLineZ = float.PositiveInfinity;
+    [Tooltip("개찰구가 열린 뒤 아치 → 엘리베이터 칸 통로")]
+    public Rect cabinArea;
+
+    public const string DefaultMoveLine = "왼쪽 막대로 걷고, 오른쪽 막대로 몸을 돌려요. 오른쪽 막대를 앞으로 밀었다 놓으면 가리킨 곳으로 순간이동해요.";
+
     [Header("안내 (자막·음성)")]
-    [TextArea(2, 3)] public string moveLine = "엄지 막대를 앞으로 밀었다 놓으면, 가리킨 곳으로 이동해요.";
+    [TextArea(2, 3)] public string moveLine = DefaultMoveLine;
     [TextArea(2, 3)] public string pickUpLine = "먼저 장비대에서 관찰기를 집어 보세요.";
     [TextArea(2, 3)] public string practiceLine = "연습 수조의 물고기에 관찰기를 겨누고, 링이 다 찰 때까지 지켜보세요.";
     [TextArea(2, 3)] public string doneLine = "첫 기록 성공! 개찰구가 열렸어요. 엘리베이터 안으로 이동하세요.";
@@ -142,9 +152,40 @@ public sealed class LobbyTutorial : MonoBehaviour
         if (d.sqrMagnitude < boardRadius * boardRadius) Board();
     }
 
+    void LateUpdate()
+    {
+        // 이동 제공자가 Update 에서 리그를 옮긴 뒤, 화면에 그리기 전에 걸을 수 있는 곳 안으로 되돌린다.
+        // 이동 장치가 꺼진 동안(엘리베이터·수중 돔)은 리그를 스크립트가 옮기므로 건드리지 않는다.
+        if (locomotionRoot == null || !locomotionRoot.activeInHierarchy) return;
+        if (hallArea.width <= 0f || lobby == null || lobby.rig == null) return;
+        Transform view = ResolveView();
+        if (view == null) return;
+
+        Vector3 local = transform.InverseTransformPoint(view.position);
+        var at = new Vector2(local.x, local.z);
+        Vector2 inside = ClampToWalkable(at);
+        if (inside == at) return;
+        Vector3 shift = transform.TransformPoint(new Vector3(inside.x, local.y, inside.y)) - view.position;
+        shift.y = 0f;
+        lobby.rig.position += shift;
+    }
+
+    Vector2 ClampToWalkable(Vector2 p)
+    {
+        bool gateOpen = Current >= Step.Board;       // 엔딩의 밤 로비도 Riding 이라 열린 쪽으로 본다
+        Rect hall = hallArea;
+        if (!gateOpen) hall.yMax = Mathf.Min(hall.yMax, gateLineZ);
+        Vector2 inHall = Clamp(hall, p);
+        if (!gateOpen || cabinArea.width <= 0f) return inHall;
+        Vector2 inCabin = Clamp(cabinArea, p);
+        return (inHall - p).sqrMagnitude <= (inCabin - p).sqrMagnitude ? inHall : inCabin;
+    }
+
+    static Vector2 Clamp(Rect r, Vector2 p) => new Vector2(Mathf.Clamp(p.x, r.xMin, r.xMax), Mathf.Clamp(p.y, r.yMin, r.yMax));
+
     // ─────────────────────────────────────────────────────────────
 
-    /// <summary>엔딩의 밤 로비에서 다시 걸어 다니게 한다 (텔레포트·스냅 회전).</summary>
+    /// <summary>엔딩의 밤 로비에서 다시 걸어 다니게 한다 (걷기·부드러운 회전·텔레포트).</summary>
     public void EnableLocomotion(bool on) => SetLocomotion(on);
 
     void SetLocomotion(bool on)

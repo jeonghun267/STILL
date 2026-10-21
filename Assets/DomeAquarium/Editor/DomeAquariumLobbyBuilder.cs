@@ -11,7 +11,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 
@@ -1261,7 +1263,7 @@ public static class DomeAquariumLobbyBuilder
     // 준비 단계 — 장비대 · 연습 수조 · 안내 표시 · 텔레포트 바닥 · 엘리베이터 도착 지점
     // ─────────────────────────────────────────────────────────────
 
-    static readonly Vector3 TableLocal = new Vector3(2.0f, 0f, 4.4f);                     // 시작 자리 오른쪽 앞 — 첫 텔레포트 한 번이면 닿는다
+    static readonly Vector3 TableLocal = new Vector3(2.0f, 0f, 4.4f);                     // 시작 자리 오른쪽 앞 — 몇 걸음(첫 텔레포트 한 번)이면 닿는다
     static readonly Vector3 TankLocal = new Vector3(HallHalfWidth - 0.75f, 0f, 9.3f);     // 창가 — 바다를 배경으로 물고기를 본다
 
     static LobbyTutorial BuildPrep(Transform root, Transform set, Mats mats, LobbySequence seq, XROrigin origin)
@@ -1345,6 +1347,7 @@ public static class DomeAquariumLobbyBuilder
 
         // ── 텔레포트: 개찰구 앞 홀 바닥 전체 + 엘리베이터 안 도착 지점 ──
         tutorial.locomotionRoot = ConfigureLocomotion(origin, out TeleportationProvider provider);
+        ConfigureWalkArea(tutorial);
         InteractionLayerMask teleportLayer = InteractionLayerMask.GetMask("Teleport");
         if (teleportLayer.value == 0) teleportLayer = -1;
 
@@ -1381,9 +1384,13 @@ public static class DomeAquariumLobbyBuilder
         return tutorial;
     }
 
+    const float MoveSpeed = 1.5f;       // m/s — 박물관 걸음. XRI 기본 1, 스타터 리그 2.5 는 실내에서 빠르다
+    const float TurnSpeed = 60f;        // °/s — XRI 기본값
+
     /// <summary>
-    /// 리그의 이동 장치를 "텔레포트 + 스냅 회전"만 남기고 끈다. 연속 이동·연속 회전·잡아 끌기·점프·중력은 끈다
-    /// (중력은 바닥 충돌체가 없는 수중 돔에서 리그를 떨어뜨린다). 이동 장치 묶음은 꺼 둔 채 저장하고 준비 단계가 켠다.
+    /// 리그의 이동 장치를 "왼쪽 막대 걷기 + 오른쪽 막대 부드러운 회전 + 오른쪽 막대 앞 텔레포트"로 맞춘다.
+    /// 스냅 회전·잡아 끌기·점프·중력은 끈다 (중력은 바닥 충돌체가 없는 수중 돔에서 리그를 떨어뜨린다).
+    /// 이동 장치 묶음은 꺼 둔 채 저장하고 준비 단계가 켠다.
     /// </summary>
     static GameObject ConfigureLocomotion(XROrigin origin, out TeleportationProvider teleport)
     {
@@ -1399,17 +1406,20 @@ public static class DomeAquariumLobbyBuilder
             Debug.Log("[Lobby] LocomotionMediator 가 없어 붙였다.");
         }
 
-        // 이 리그(손 추적 데모)는 Turn·Teleportation 자리만 있고 제공자 컴포넌트가 빠져 있다 — 없으면 붙인다.
+        // 씬 빌더가 리그의 이동 제공자를 모두 걷어 냈다 — Move·Turn·Teleportation 자리에 필요한 것만 다시 붙인다.
         teleport = rootGo.GetComponentInChildren<TeleportationProvider>(true);
         if (teleport == null) teleport = Undo.AddComponent<TeleportationProvider>(ChildOf(rootGo.transform, "Teleportation"));
-        var snap = rootGo.GetComponentInChildren<SnapTurnProvider>(true);
-        if (snap == null) snap = Undo.AddComponent<SnapTurnProvider>(ChildOf(rootGo.transform, "Turn"));
-        WireSnapTurnInput(snap);
+        var move = rootGo.GetComponentInChildren<ContinuousMoveProvider>(true);
+        if (move == null) move = Undo.AddComponent<ContinuousMoveProvider>(ChildOf(rootGo.transform, "Move"));
+        var turn = rootGo.GetComponentInChildren<ContinuousTurnProvider>(true);
+        if (turn == null) turn = Undo.AddComponent<ContinuousTurnProvider>(ChildOf(rootGo.transform, "Turn"));
+        WireSmoothInput(move, turn);
+        SetControllerModes(origin);
 
         var kept = new List<string>();
         foreach (var p in rootGo.GetComponentsInChildren<LocomotionProvider>(true))
         {
-            bool keep = p is TeleportationProvider || p is SnapTurnProvider;
+            bool keep = p is TeleportationProvider || p is ContinuousMoveProvider || p is ContinuousTurnProvider;
             Undo.RecordObject(p, "Lobby locomotion");
             p.enabled = keep;
             if (keep)
@@ -1429,6 +1439,45 @@ public static class DomeAquariumLobbyBuilder
         return rootGo;
     }
 
+    /// <summary>
+    /// 막대로 걸을 수 있는 곳 (로비 로컬 x·z). 로비 벽에는 충돌체가 없어서 이 밖으로는 머리가 못 나가게 막는다.
+    /// 개찰구가 열리기 전에는 개찰구 앞까지, 열린 뒤에는 홀 전체와 아치 → 엘리베이터 칸 통로까지.
+    /// </summary>
+    static void ConfigureWalkArea(LobbyTutorial tutorial)
+    {
+        const float wall = 0.35f;                  // 벽에 얼굴을 묻지 않을 만큼
+        const float doorHalf = 0.55f;              // 엘리베이터 문 폭 1.5m 안쪽
+        Undo.RecordObject(tutorial, "Lobby walk area");
+        tutorial.hallArea = Rect.MinMaxRect(-HallHalfWidth + wall, wall, HallHalfWidth - wall, HallLength - wall);
+        tutorial.gateLineZ = GateLocal.z - wall;
+        tutorial.cabinArea = Rect.MinMaxRect(-doorHalf, HallLength - wall, doorHalf, CabinLocal.z + 0.9f);
+        EditorUtility.SetDirty(tutorial);
+    }
+
+    /// <summary>
+    /// 로비를 다시 세우지 않고 이동 방식·걸을 수 있는 곳·이동 안내만 지금 씬에 다시 적용한다.
+    /// 로비를 손으로 고친 뒤라 "9. 육지 로비 빌드" 로 덮어쓰고 싶지 않을 때 쓴다.
+    /// </summary>
+    [MenuItem("DomeAquarium/디버그/로비 이동 방식 다시 적용 (걷기·부드러운 회전)", priority = 216)]
+    public static void ReapplyLocomotion()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        var tutorial = Object.FindFirstObjectByType<LobbyTutorial>(FindObjectsInactive.Include);
+        var origin = Object.FindFirstObjectByType<XROrigin>(FindObjectsInactive.Include);
+        if (tutorial == null || origin == null)
+        {
+            Debug.LogError("[Lobby] LobbyTutorial 또는 XR Origin 이 없다. 먼저 \"9. 육지 로비 빌드\" 를 실행할 것.");
+            return;
+        }
+        Undo.RecordObject(tutorial, "Lobby locomotion");
+        tutorial.locomotionRoot = ConfigureLocomotion(origin, out _);
+        tutorial.moveLine = LobbyTutorial.DefaultMoveLine;
+        ConfigureWalkArea(tutorial);
+        EditorUtility.SetDirty(tutorial);
+        EditorSceneManager.MarkSceneDirty(tutorial.gameObject.scene);   // 저장은 사람이 한다 — 다른 손작업이 섞여 있을 수 있다
+        Debug.Log("[Lobby] 이동 방식 다시 적용: 왼쪽 막대 걷기 · 오른쪽 막대 부드러운 회전 · 오른쪽 막대 앞 텔레포트.");
+    }
+
     static GameObject ChildOf(Transform parent, string name)
     {
         Transform child = parent.Find(name);
@@ -1441,25 +1490,61 @@ public static class DomeAquariumLobbyBuilder
         return child.gameObject;
     }
 
-    /// <summary>스냅 회전을 XRI 기본 입력의 "XRI Left/Right Locomotion / Snap Turn" 에 잇는다 (엄지 막대 좌우).</summary>
-    static void WireSnapTurnInput(SnapTurnProvider snap)
+    /// <summary>
+    /// 걷기·회전을 XRI 기본 입력의 "XRI Left/Right Locomotion / Move · Turn" 에 잇는다.
+    /// 어느 손 막대가 실제로 쓰이는지는 컨트롤러의 ControllerInputActionManager 가 액션을 켜고 꺼서 정한다.
+    /// </summary>
+    static void WireSmoothInput(ContinuousMoveProvider move, ContinuousTurnProvider turn)
     {
         const string actionsPath = "Assets/Samples/XR Interaction Toolkit/3.5.1/Starter Assets/XRI Default Input Actions.inputactions";
         var refs = AssetDatabase.LoadAllAssetsAtPath(actionsPath).OfType<UnityEngine.InputSystem.InputActionReference>().ToArray();
-        UnityEngine.InputSystem.InputActionReference Find(string map) =>
-            refs.FirstOrDefault(r => r.action != null && r.action.name == "Snap Turn" && r.action.actionMap != null && r.action.actionMap.name == map);
+        UnityEngine.InputSystem.InputActionReference Find(string map, string action) =>
+            refs.FirstOrDefault(r => r.action != null && r.action.name == action && r.action.actionMap != null && r.action.actionMap.name == map);
 
-        var left = Find("XRI Left Locomotion");
-        var right = Find("XRI Right Locomotion");
-        if (left == null || right == null)
+        var leftMove = Find("XRI Left Locomotion", "Move");
+        var rightMove = Find("XRI Right Locomotion", "Move");
+        var leftTurn = Find("XRI Left Locomotion", "Turn");
+        var rightTurn = Find("XRI Right Locomotion", "Turn");
+        if (leftMove == null || rightMove == null || leftTurn == null || rightTurn == null)
         {
-            Debug.LogWarning($"[Lobby] 스냅 회전 입력을 찾지 못했다: {actionsPath}");
+            Debug.LogWarning($"[Lobby] 걷기·회전 입력을 찾지 못했다: {actionsPath}");
             return;
         }
-        Undo.RecordObject(snap, "Lobby locomotion");
-        snap.leftHandTurnInput = new UnityEngine.XR.Interaction.Toolkit.Inputs.Readers.XRInputValueReader<Vector2>("Left Hand Snap Turn") { inputActionReference = left };
-        snap.rightHandTurnInput = new UnityEngine.XR.Interaction.Toolkit.Inputs.Readers.XRInputValueReader<Vector2>("Right Hand Snap Turn") { inputActionReference = right };
-        EditorUtility.SetDirty(snap);
+
+        Undo.RecordObject(move, "Lobby locomotion");
+        move.leftHandMoveInput = new XRInputValueReader<Vector2>("Left Hand Move") { inputActionReference = leftMove };
+        move.rightHandMoveInput = new XRInputValueReader<Vector2>("Right Hand Move") { inputActionReference = rightMove };
+        move.moveSpeed = MoveSpeed;
+        move.enableStrafe = true;
+        move.enableFly = false;
+        EditorUtility.SetDirty(move);
+
+        Undo.RecordObject(turn, "Lobby locomotion");
+        turn.leftHandTurnInput = new XRInputValueReader<Vector2>("Left Hand Turn") { inputActionReference = leftTurn };
+        turn.rightHandTurnInput = new XRInputValueReader<Vector2>("Right Hand Turn") { inputActionReference = rightTurn };
+        turn.turnSpeed = TurnSpeed;
+        EditorUtility.SetDirty(turn);
+    }
+
+    /// <summary>
+    /// 왼손은 걷기(텔레포트 끔), 오른손은 부드러운 회전 + 앞으로 밀어 텔레포트 — XRI 스타터 리그의 기본 배치.
+    /// 스타터 리그 기본은 오른손 스냅 회전이라 오른손만 바꾸면 되지만, 왼손도 명시해 둔다.
+    /// 샘플 어셈블리를 참조하지 않으려고 이름으로 찾고 직렬화 필드로 고친다.
+    /// </summary>
+    static void SetControllerModes(XROrigin origin)
+    {
+        int found = 0;
+        foreach (var m in origin.GetComponentsInChildren<MonoBehaviour>(true))
+        {
+            if (m == null || m.GetType().Name != "ControllerInputActionManager") continue;
+            bool left = m.gameObject.name.Contains("Left");
+            var so = new SerializedObject(m);
+            so.FindProperty("m_SmoothMotionEnabled").boolValue = left;
+            so.FindProperty("m_SmoothTurnEnabled").boolValue = !left;
+            so.ApplyModifiedProperties();
+            found++;
+        }
+        if (found == 0) Debug.LogWarning("[Lobby] ControllerInputActionManager 가 없어 막대 역할(걷기·회전)을 나누지 못했다.");
     }
 
     /// <summary>손바닥만 한 관찰기 — 몸통, 뒤쪽(-Z) 화면, 앞쪽(+Z) 렌즈, 아래 손잡이.</summary>
