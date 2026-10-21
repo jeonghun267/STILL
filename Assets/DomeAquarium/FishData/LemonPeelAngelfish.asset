@@ -20,6 +20,9 @@ MonoBehaviour:
   sizeTag: 
   habitatTag: 
   rarity: 1
+  habitat: 0
+  freshwater: 0
+  unnamed: 0
   prefab: {fileID: 8420684796371704251, guid: 09fb8092ab3e4d44994530dcf1ffed6d, type: 3}
   swimScale: 0.8015661
   revealScale: 0.8015661
@@ -27,4 +30,4 @@ MonoBehaviour:
   bandWidth: 0.45
   bodyLength: 0.3
   swimSpeed: 0.6
-  schoolCount: 6
+  schoolCount: 3

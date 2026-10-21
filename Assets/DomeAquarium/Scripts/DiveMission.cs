@@ -44,6 +44,12 @@ public sealed class DiveMission : ScriptableObject
     [Header("등장 생물 — 늘 돔 안을 헤엄치는 무리 (BoidManager)")]
     public FishData[] species;
 
+    [Header("무리 교체 — 몇 분마다 한 무리가 떠나고 아직 안 나온 종이 들어온다 (BoidManager)")]
+    // 동시에 헤엄치는 마릿수(= Quest 드로우콜 예산)는 그대로 두고, 한 번의 탐사에서 만나는 종을 늘린다.
+    // species 중 여기 없는 종(볼거리·지목 생물)은 떠나지 않는다. 비면 교체하지 않는다.
+    public FishData[] rotation;
+    public Vector2 rotationInterval = new Vector2(100f, 160f);
+
     [Header("가끔 지나가는 큰 생물 — 한 번에 한 무리, passInterval 마다 (LargeCreaturePasses)")]
     // 2막의 기본 진행: 큰 생물이 늘 돌아다니지 않고 정해진 간격으로 돔 가까이 지나간다. 기다리는 법을 배운다.
     public PassingCreature[] passers;

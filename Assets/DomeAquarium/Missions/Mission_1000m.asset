@@ -22,6 +22,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5829f78b2a83b1f44bffb2b832bc2fc4, type: 2}
   targetClue: 
   species: []
+  rotation: []
+  rotationInterval: {x: 100, y: 160}
   passers: []
   passInterval: {x: 60, y: 90}
   firstPassDelay: 14

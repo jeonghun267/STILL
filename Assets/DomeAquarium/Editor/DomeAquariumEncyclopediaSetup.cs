@@ -449,11 +449,13 @@ public static class DomeAquariumEncyclopediaSetup
     public static readonly Vector2 WristButtonSize = new Vector2(288f, 104f);
     public static readonly Vector2 WristButtonPosition = new Vector2(0f, 30f);
 
-    static FishData[] LoadAllFish()
+    /// <summary>관찰 일지에 담을 종 — 층별 하강에서 실제로 만날 수 있는 종만 (18 전이면 강에 사는 종만 뺀다).</summary>
+    internal static FishData[] LoadAllFish()
     {
+        var meetable = DomeAquariumDiveSetup.MeetableFish();
         return AssetDatabase.FindAssets("t:FishData", new[] { "Assets/DomeAquarium/FishData" })
             .Select(guid => AssetDatabase.LoadAssetAtPath<FishData>(AssetDatabase.GUIDToAssetPath(guid)))
-            .Where(fish => fish != null)
+            .Where(fish => fish != null && (meetable != null ? meetable.Contains(fish) : !fish.freshwater))
             .OrderBy(fish => (int)fish.rarity)
             .ThenBy(fish => fish.DisplayName)
             .ToArray();

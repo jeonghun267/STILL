@@ -22,6 +22,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4eed80c547590114a9162acbe2735a52, type: 2}
   targetClue: "\uAC00\uC7A5 \uD070 \uADF8\uB9BC\uC790"
   species: []
+  rotation: []
+  rotationInterval: {x: 100, y: 160}
   passers:
   - fish: {fileID: 11400000, guid: 7889c9c01e1994f48bc8c3290d9f1975, type: 2}
     group: {x: 4, y: 6}

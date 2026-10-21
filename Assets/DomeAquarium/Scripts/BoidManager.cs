@@ -27,6 +27,10 @@ public enum BoidShape
 ///     경계 조향·플레이어 회피·적분은 매 프레임 전원 수행한다. 이걸 stride 로 미루면
 ///     비갱신 프레임에 벽을 뚫고 나가거나 플레이어 얼굴로 파고들기 때문이다.
 ///  4) Update() 안에서 GetComponent / Find / LINQ / new 를 쓰지 않는다. 배열은 Rebuild() 에서만 할당한다.
+///     예외는 무리 교체(5) — 몇 분에 한 번 들어오는 무리를 Instantiate 한다.
+///  5) 무리 교체: 마릿수(= 드로우콜 예산)는 그대로 두고, 몇 분마다 rotation 종 무리 하나가 돔 벽(불투명 물 벽) 너머로
+///     헤엄쳐 나가고, 아직 안 나온 종이 그 자리(같은 슬롯)를 받아 벽 너머에서 헤엄쳐 들어온다.
+///     슬롯 수가 늘지 않으므로 처음 Rebuild 의 마릿수를 넘지 않는다. 작은 무리가 들어오면 남는 슬롯은 비워 둔다.
 ///
 /// 배칭 전제:
 ///  스폰된 물고기는 매 프레임 움직이므로 static batching 대상이 아니다. 드로우콜을 30 이하로 유지하려면
@@ -54,6 +58,13 @@ public class BoidManager : MonoBehaviour, IObservationTargets
     public int updateStride = 4;
     public int maxAgents = 200;
     public int seed = 7777;
+
+    [Header("무리 교체 — 몇 분마다 한 무리가 떠나고 아직 안 나온 종이 들어온다")]
+    // species 중 여기 없는 종(볼거리·지목 생물)은 떠나지 않는다. 비면 교체하지 않는다.
+    public FishData[] rotation;
+    public Vector2 rotationInterval = new Vector2(100f, 160f);
+    [Tooltip("돔 벽 바깥 이만큼에서 사라지고, 같은 거리에서 나타난다 (벽이 불투명 물이라 가려진다)")]
+    public float rotationMargin = 2.5f;
 
     [Header("보이드 가중치")]
     public float neighborRadius = 4f;
@@ -104,12 +115,37 @@ public class BoidManager : MonoBehaviour, IObservationTargets
         public float cruise;         // 종별 순항 속도 * 개체 지터
         public float sepRadius;      // 체장에 비례하는 개체별 분리 반경
         public float phase;          // wander 위상
+        public byte state;           // Swim · Leaving · Entering · Empty
+        public Vector3 travel;       // 떠날 때·들어올 때 향하는 수평 방향
+    }
+
+    const byte Swim = 0, Leaving = 1, Entering = 2, Empty = 3;
+    static readonly Vector3 Parked = new Vector3(0f, -1000f, 0f);   // 빈 슬롯 — 이웃 반경 밖이라 무리 계산에 끼지 않는다
+
+    // 한 종 무리가 쓰는 연속 슬롯. 종이 바뀌어도 슬롯 범위(capacity)는 그대로다.
+    struct School
+    {
+        public int start;
+        public int capacity;
+        public int kind;
+        public int live;             // 아직 돔 안팎에 보이는 개체 수 (떠나는 중이면 줄어든다)
+        public float since;          // 들어온 시각 — 가장 오래 머문 무리부터 떠난다
     }
 
     Agent[] agents;
     Transform[] bodies;
     FishAnimatorSync[] anims;
     int agentCount;
+
+    // 종 목록 = species 뒤에 rotation 의 나머지를 붙인 것. Agent.species 는 여기의 번호다.
+    FishData[] kinds;
+    bool[] rotates;
+    bool[] shown;                    // 이번 탐사에 한 번이라도 들어온 종
+    School[] schools;
+    int schoolCount;
+    int leavingSchool = -1;
+    float leaveStarted;
+    float nextRotation = float.PositiveInfinity;
 
     // 균일 그리드 (전부 Rebuild 에서만 할당, 매 프레임 재사용)
     int[] cellOf;
@@ -155,6 +191,7 @@ public class BoidManager : MonoBehaviour, IObservationTargets
         for (int i = 0; i < agentCount; i++)
         {
             float angle;
+            if (agents[i].state == Empty) continue;
             if (!AngleInCone(i, origin, direction, maxDistance, coneDegrees, out angle)) continue;
             if (angle < bestAngle) { bestAngle = angle; best = i; }
         }
@@ -165,7 +202,7 @@ public class BoidManager : MonoBehaviour, IObservationTargets
     public bool IsAgentInCone(int index, Vector3 origin, Vector3 direction, float maxDistance, float coneDegrees)
     {
         if (agents == null || index < 0 || index >= agentCount) return false;
-        if (direction.sqrMagnitude < 1e-8f) return false;
+        if (direction.sqrMagnitude < 1e-8f || agents[index].state == Empty) return false;
         float angle;
         return AngleInCone(index, origin, direction.normalized, maxDistance, coneDegrees, out angle);
     }
@@ -175,8 +212,9 @@ public class BoidManager : MonoBehaviour, IObservationTargets
 
     FishData SpeciesOf(int index)
     {
+        if (agents[index].state == Empty) return null;
         int s = agents[index].species;
-        return (species != null && s >= 0 && s < species.Length) ? species[s] : null;
+        return (kinds != null && s >= 0 && s < kinds.Length) ? kinds[s] : null;
     }
 
     // ---------------------------------------------------------------- 라이프사이클
@@ -285,6 +323,9 @@ public class BoidManager : MonoBehaviour, IObservationTargets
         anims = new FishAnimatorSync[total];
         cellOf = new int[total];
         sorted = new int[total];
+        BuildKinds();
+        schools = new School[species.Length];
+        schoolCount = 0;
 
         BuildGridArrays();
 
@@ -308,58 +349,92 @@ public class BoidManager : MonoBehaviour, IObservationTargets
             float minY, maxY;
             ComputeBand(s, out minY, out maxY);
 
-            float baseSpeed = Mathf.Max(0.05f, s.swimSpeed * Mathf.Clamp(globalSpeedMultiplier, 0.1f, 1.5f));
-            float scale = Mathf.Max(0.001f, s.swimScale);
+            schools[schoolCount++] = new School { start = n, capacity = Mathf.Min(c, total - n), kind = i, live = Mathf.Min(c, total - n), since = 0f };
+            shown[i] = true;
 
             for (int m = 0; m < c && n < total; m++, n++)
             {
                 Vector3 pos = RandomPointInBand(minY, maxY);
                 Vector3 dir = RandomHorizontalDirection();
-                Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
-
-                GameObject go = Instantiate(s.prefab, container);
-                go.name = s.DisplayName + "_" + m.ToString("000");
-                // 부모 스케일에 휘둘리지 않게 월드 기준으로 다시 앉힌다.
-                go.transform.SetPositionAndRotation(pos, rot);
-                go.transform.localScale = new Vector3(scale, scale, scale);
-
-                // 스폰 시 한 번만 캐싱한다 (Update 에서는 절대 GetComponent 하지 않는다).
-                // 프리팹에 없으면 붙여 준다 — 빌더가 프리팹마다 수동으로 달 필요가 없게.
-                FishAnimatorSync sync = go.GetComponentInChildren<FishAnimatorSync>(true);
-                if (sync == null) sync = go.AddComponent<FishAnimatorSync>();
-
-                // 뱅킹(롤)을 끈다.
-                // FishAnimatorSync 는 transform.GetChild(0) 을 롤 축으로 삼는데, Layer Lab 프리팹마다
-                // 그 자식이 다르다 — 어떤 종은 SkinnedMeshRenderer(효과 없음), 어떤 종은 Rx(-90) 보정
-                // 노드라 로컬 Z 롤이 실제로는 ±35° 요잉이 되고, 돌고래는 ±35° 피칭이 된다.
-                // 그래서 "삐걱대는" 움직임이 났다. 헤엄 애니메이션은 Animator 가 따로 돌리므로
-                // 뱅킹 없이도 자연스럽다.
-                sync.bankAngle = bankAngle;
-
-                float jitter = 1f + UnityEngine.Random.Range(-speedJitter, speedJitter);
-                float cruise = baseSpeed * Mathf.Max(0.1f, jitter);
-
-                agents[n].pos = pos;
-                agents[n].rot = rot;
-                agents[n].vel = dir * cruise;
-                agents[n].flockSteer = Vector3.zero;
-                agents[n].flockTarget = Vector3.zero;
-                agents[n].species = i;
-                agents[n].minY = minY;
-                agents[n].maxY = maxY;
-                agents[n].cruise = cruise;
-                agents[n].phase = UnityEngine.Random.Range(0f, 100f);
-                // 어류 무리의 최근접 간격은 통상 1~2 체장이다. 분리력이 감쇠형이라
-                // 그 2배 지점까지 미쳐야 실제 간격이 1~2 체장으로 수렴한다.
-                agents[n].sepRadius = Mathf.Clamp(Mathf.Max(0.02f, s.bodyLength) * 3f, 0.35f, 3.5f);
-
-                bodies[n] = go.transform;
-                anims[n] = sync;
+                Spawn(n, i, m, pos, dir, minY, maxY, Swim);
             }
         }
 
         UnityEngine.Random.state = prevState;
         agentCount = n;
+        leavingSchool = -1;
+        ScheduleRotation();
+    }
+
+    /// <summary>species 뒤에 rotation 중 아직 없는 종을 붙인다. species 번호는 그대로라 Agent.species 가 바로 쓴다.</summary>
+    void BuildKinds()
+    {
+        int extra = rotation != null ? rotation.Length : 0;
+        var list = new FishData[species.Length + extra];
+        int k = 0;
+        for (int i = 0; i < species.Length; i++) list[k++] = species[i];
+        for (int i = 0; i < extra; i++)
+        {
+            FishData f = rotation[i];
+            if (f == null || f.prefab == null || Array.IndexOf(list, f, 0, k) >= 0) continue;
+            list[k++] = f;
+        }
+        kinds = new FishData[k];
+        Array.Copy(list, kinds, k);
+        rotates = new bool[k];
+        shown = new bool[k];
+        for (int i = 0; i < k; i++)
+            rotates[i] = kinds[i] != null && rotation != null && Array.IndexOf(rotation, kinds[i]) >= 0;
+    }
+
+    /// <summary>슬롯 n 에 kind 종 한 마리를 낸다. 처음 채울 때와 무리가 바뀔 때 같이 쓴다.</summary>
+    void Spawn(int n, int kind, int m, Vector3 pos, Vector3 dir, float minY, float maxY, byte state)
+    {
+        FishData s = kinds[kind];
+        Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
+        float baseSpeed = Mathf.Max(0.05f, s.swimSpeed * Mathf.Clamp(globalSpeedMultiplier, 0.1f, 1.5f));
+        float scale = Mathf.Max(0.001f, s.swimScale);
+
+        GameObject go = Instantiate(s.prefab, container);
+        go.name = s.DisplayName + "_" + m.ToString("000");
+        // 부모 스케일에 휘둘리지 않게 월드 기준으로 다시 앉힌다.
+        go.transform.SetPositionAndRotation(pos, rot);
+        go.transform.localScale = new Vector3(scale, scale, scale);
+
+        // 스폰 시 한 번만 캐싱한다 (Update 에서는 절대 GetComponent 하지 않는다).
+        // 프리팹에 없으면 붙여 준다 — 빌더가 프리팹마다 수동으로 달 필요가 없게.
+        FishAnimatorSync sync = go.GetComponentInChildren<FishAnimatorSync>(true);
+        if (sync == null) sync = go.AddComponent<FishAnimatorSync>();
+
+        // 뱅킹(롤)을 끈다.
+        // FishAnimatorSync 는 transform.GetChild(0) 을 롤 축으로 삼는데, Layer Lab 프리팹마다
+        // 그 자식이 다르다 — 어떤 종은 SkinnedMeshRenderer(효과 없음), 어떤 종은 Rx(-90) 보정
+        // 노드라 로컬 Z 롤이 실제로는 ±35° 요잉이 되고, 돌고래는 ±35° 피칭이 된다.
+        // 그래서 "삐걱대는" 움직임이 났다. 헤엄 애니메이션은 Animator 가 따로 돌리므로
+        // 뱅킹 없이도 자연스럽다.
+        sync.bankAngle = bankAngle;
+
+        float jitter = 1f + UnityEngine.Random.Range(-speedJitter, speedJitter);
+        float cruise = baseSpeed * Mathf.Max(0.1f, jitter);
+
+        agents[n].pos = pos;
+        agents[n].rot = rot;
+        agents[n].vel = dir * cruise;
+        agents[n].flockSteer = Vector3.zero;
+        agents[n].flockTarget = Vector3.zero;
+        agents[n].species = kind;
+        agents[n].minY = minY;
+        agents[n].maxY = maxY;
+        agents[n].cruise = cruise;
+        agents[n].phase = UnityEngine.Random.Range(0f, 100f);
+        // 어류 무리의 최근접 간격은 통상 1~2 체장이다. 분리력이 감쇠형이라
+        // 그 2배 지점까지 미쳐야 실제 간격이 1~2 체장으로 수렴한다.
+        agents[n].sepRadius = Mathf.Clamp(Mathf.Max(0.02f, s.bodyLength) * 3f, 0.35f, 3.5f);
+        agents[n].state = state;
+        agents[n].travel = dir;
+
+        bodies[n] = go.transform;
+        anims[n] = sync;
     }
 
     /// <summary>모든 개체를 치운다. 늘 헤엄치는 무리 없이 큰 생물만 가끔 지나가는 층(200m)에서 쓴다.</summary>
@@ -388,6 +463,10 @@ public class BoidManager : MonoBehaviour, IObservationTargets
         cellOf = null;
         sorted = null;
         agentCount = 0;
+        schools = null;
+        schoolCount = 0;
+        leavingSchool = -1;
+        nextRotation = float.PositiveInfinity;
     }
 
     void ComputeBand(FishData s, out float minY, out float maxY)
@@ -446,6 +525,136 @@ public class BoidManager : MonoBehaviour, IObservationTargets
         return new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
     }
 
+    // ---------------------------------------------------------------- 무리 교체
+
+    const float LeaveTimeout = 60f;   // 이 안에 다 못 나가면(벽에 끼는 등) 남은 개체를 그 자리에서 비운다
+
+    void ScheduleRotation()
+    {
+        bool any = false;
+        for (int k = 0; rotates != null && k < rotates.Length && !any; k++) any = rotates[k];
+        nextRotation = any && Application.isPlaying
+            ? Time.time + UnityEngine.Random.Range(Mathf.Max(5f, rotationInterval.x), Mathf.Max(5f, rotationInterval.y))
+            : float.PositiveInfinity;
+    }
+
+    void UpdateRotation()
+    {
+        if (schools == null) return;
+        if (leavingSchool >= 0)
+        {
+            ref School s = ref schools[leavingSchool];
+            if (s.live > 0 && Time.time - leaveStarted < LeaveTimeout) return;
+            ArriveNext(leavingSchool);
+            leavingSchool = -1;
+            ScheduleRotation();
+            return;
+        }
+        if (Time.time >= nextRotation && !BeginLeaving()) ScheduleRotation();
+    }
+
+    /// <summary>가장 오래 머문 교체 대상 무리를 벽 너머로 내보낸다. 들어올 종이 없으면 false.</summary>
+    bool BeginLeaving()
+    {
+        if (PickIncoming(int.MaxValue, -1) < 0) return false;
+
+        int pick = -1;
+        for (int i = 0; i < schoolCount; i++)
+        {
+            School s = schools[i];
+            if (s.live <= 0 || !rotates[s.kind]) continue;
+            if (pick < 0 || s.since < schools[pick].since ||
+                (s.since == schools[pick].since && UnityEngine.Random.value < 0.5f)) pick = i;
+        }
+        if (pick < 0) return false;
+
+        // 무리 한가운데에서 가장 가까운 벽 쪽으로 — 관람객 얼굴 앞을 가로지르지 않는다.
+        School leaving = schools[pick];
+        Vector3 c = Vector3.zero;
+        for (int n = leaving.start; n < leaving.start + leaving.capacity; n++)
+            if (agents[n].state != Empty) c += agents[n].pos;
+        c.y = 0f;
+        Vector3 outward = c.sqrMagnitude > 1e-4f ? c.normalized : RandomHorizontalDirection();
+        for (int n = leaving.start; n < leaving.start + leaving.capacity; n++)
+        {
+            if (agents[n].state == Empty) continue;
+            agents[n].state = Leaving;
+            agents[n].travel = outward;
+        }
+        leavingSchool = pick;
+        leaveStarted = Time.time;
+        return true;
+    }
+
+    /// <summary>
+    /// 지금 돔에 없는 교체 종 하나. 이번 탐사에 아직 안 나온 종을 먼저, 그다음 무리 크기가 슬롯 수에 가까운 종을 고른다.
+    /// slots 가 int.MaxValue 면 크기는 보지 않는다(들어올 종이 있는지만 확인). exclude 는 방금 떠난 종. 없으면 -1.
+    /// </summary>
+    int PickIncoming(int slots, int exclude)
+    {
+        int best = -1;
+        float bestScore = float.MaxValue;
+        for (int k = 0; k < kinds.Length; k++)
+        {
+            if (!rotates[k] || k == exclude || IsPresent(k)) continue;
+            float score = (shown[k] ? 1000f : 0f) + UnityEngine.Random.value;
+            if (slots != int.MaxValue) score += Mathf.Abs(Mathf.Max(1, kinds[k].schoolCount) - slots) * 10f;
+            if (score < bestScore) { bestScore = score; best = k; }
+        }
+        return best;
+    }
+
+    bool IsPresent(int kind)
+    {
+        for (int i = 0; i < schoolCount; i++)
+            if (schools[i].kind == kind && schools[i].live > 0) return true;
+        return false;
+    }
+
+    /// <summary>비운 슬롯에 새 종 무리를 벽 너머 한 곳에 모아 내고, 돔 안쪽으로 헤엄쳐 들어오게 한다.</summary>
+    void ArriveNext(int school)
+    {
+        ref School s = ref schools[school];
+        int left = s.kind;
+        for (int n = s.start; n < s.start + s.capacity; n++)
+        {
+            if (bodies[n] != null) Destroy(bodies[n].gameObject);
+            bodies[n] = null;
+            anims[n] = null;
+            agents[n].state = Empty;
+            agents[n].pos = Parked;
+        }
+        s.live = 0;
+
+        int kind = PickIncoming(s.capacity, left);
+        if (kind < 0) return;
+        FishData f = kinds[kind];
+        int count = Mathf.Clamp(f.schoolCount, 1, s.capacity);
+        float minY, maxY;
+        ComputeBand(f, out minY, out maxY);
+
+        Vector3 from = RandomHorizontalDirection();
+        Vector3 gate = from * (radius + Mathf.Max(0.5f, rotationMargin) - 0.3f);
+        for (int m = 0; m < count; m++)
+        {
+            Vector2 jitter = UnityEngine.Random.insideUnitCircle * 1.2f;
+            Vector3 pos = gate + new Vector3(jitter.x, 0f, jitter.y);
+            pos.y = UnityEngine.Random.Range(minY, maxY);
+            Spawn(s.start + m, kind, m, pos, -from, minY, maxY, Entering);
+        }
+        s.kind = kind;
+        s.live = count;
+        s.since = Time.time;
+        shown[kind] = true;
+    }
+
+    int SchoolOf(int agent)
+    {
+        for (int i = 0; i < schoolCount; i++)
+            if (agent >= schools[i].start && agent < schools[i].start + schools[i].capacity) return i;
+        return 0;
+    }
+
     // ---------------------------------------------------------------- 시뮬레이션
 
     void Update()
@@ -458,6 +667,7 @@ public class BoidManager : MonoBehaviour, IObservationTargets
 
         playerPos = player != null ? player.position : Vector3.zero;
 
+        UpdateRotation();
         BuildGrid();
 
         int stride = Mathf.Max(1, updateStride);
@@ -466,8 +676,15 @@ public class BoidManager : MonoBehaviour, IObservationTargets
         float lerp = 1f - Mathf.Exp(-Mathf.Max(0.01f, turnResponse) * dt);
         float clearSq = Mathf.Max(0f, playerClearance) * Mathf.Max(0f, playerClearance);
 
+        float wallSq = radius * radius;
+        float goneSq = (radius + Mathf.Max(0.5f, rotationMargin)) * (radius + Mathf.Max(0.5f, rotationMargin));
+        float insideR = Mathf.Max(0.1f, radius - Mathf.Max(0.2f, boundarySoftness));
+
         for (int i = 0; i < agentCount; i++)
         {
+            byte state = agents[i].state;
+            if (state == Empty) continue;
+
             // 1/stride 만 이웃 탐색을 갱신한다. 다만 결과를 **그대로 갈아끼우면**
             // 4프레임마다 조향이 계단식으로 튀어 유영이 삐걱거린다.
             // 새 값은 목표로만 두고, 매 프레임 그쪽으로 부드럽게 수렴시킨다.
@@ -479,7 +696,9 @@ public class BoidManager : MonoBehaviour, IObservationTargets
             float cruise = agents[i].cruise;
 
             Vector3 steer = agents[i].flockSteer;
-            steer += BoundarySteer(pos, agents[i].minY, agents[i].maxY, cruise);
+            steer += BoundarySteer(pos, agents[i].minY, agents[i].maxY, cruise, state == Swim);
+            // 떠나는 무리는 벽 바깥으로, 들어오는 무리는 돔 안쪽으로 곧게 헤엄친다 (수평 경계는 잠시 무시).
+            if (state != Swim) steer += agents[i].travel * (cruise * boundaryWeight);
             steer += PlayerSteer(pos, cruise, clearSq);
             steer += WanderSteer(time, agents[i].phase, cruise);
 
@@ -498,8 +717,24 @@ public class BoidManager : MonoBehaviour, IObservationTargets
             }
 
             pos += vel * dt;
-            ClampInside(ref pos, ref vel, agents[i].minY, agents[i].maxY);
+            ClampInside(ref pos, ref vel, agents[i].minY, agents[i].maxY, state == Swim);
             PushOutOfPlayer(ref pos);
+
+            float h2 = pos.x * pos.x + pos.z * pos.z;
+            if (state == Leaving && h2 > goneSq)
+            {
+                // 벽 너머 물 속으로 사라졌다 — 슬롯을 비운다. 마지막 한 마리가 나가면 UpdateRotation 이 새 무리를 들인다.
+                agents[i].state = Empty;
+                agents[i].pos = Parked;
+                if (bodies[i] != null) bodies[i].gameObject.SetActive(false);
+                schools[SchoolOf(i)].live--;
+                continue;
+            }
+            if (state == Entering)
+            {
+                if (h2 < insideR * insideR) agents[i].state = Swim;
+                else if (h2 > 1e-4f) agents[i].travel = new Vector3(-pos.x, 0f, -pos.z) * (1f / Mathf.Sqrt(h2));   // 분리력에 밀려도 중심을 향한다
+            }
 
             // 회전은 struct 에 캐싱해 Transform 읽기를 없앤다.
             Quaternion rot = agents[i].rot;
@@ -629,13 +864,14 @@ public class BoidManager : MonoBehaviour, IObservationTargets
         return steer;
     }
 
-    Vector3 BoundarySteer(Vector3 p, float minY, float maxY, float cruise)
+    Vector3 BoundarySteer(Vector3 p, float minY, float maxY, float cruise, bool walls)
     {
         Vector3 steer = Vector3.zero;
         float soft = Mathf.Max(0.2f, boundarySoftness);
         float w = cruise * boundaryWeight;
 
-        if (shape == BoidShape.Cylinder)
+        // walls 가 꺼지면(떠나는·들어오는 무리) 수직 밴드만 지킨다.
+        if (walls && shape == BoidShape.Cylinder)
         {
             float h2 = p.x * p.x + p.z * p.z;
             float start = Mathf.Max(0.1f, radius - soft);
@@ -648,7 +884,7 @@ public class BoidManager : MonoBehaviour, IObservationTargets
                 steer.z += -p.z * invH * t * w;
             }
         }
-        else
+        else if (walls)
         {
             float d2 = p.sqrMagnitude;
             float start = Mathf.Max(0.1f, radius - soft);
@@ -707,11 +943,16 @@ public class BoidManager : MonoBehaviour, IObservationTargets
     /// 안전망 클램프. 위치만 되돌리고 속도를 그대로 두면 다음 프레임에도 같은 방향으로 밀어붙여
     /// 경계에 "갈리는" 떨림이 생긴다. 그래서 바깥으로 향하던 속도 성분을 함께 죽인다.
     /// </summary>
-    void ClampInside(ref Vector3 p, ref Vector3 v, float minY, float maxY)
+    void ClampInside(ref Vector3 p, ref Vector3 v, float minY, float maxY, bool walls)
     {
         float lim = Mathf.Max(0.1f, radius - wallMargin);
 
-        if (shape == BoidShape.Cylinder)
+        if (!walls)
+        {
+            if (p.y < minY) { p.y = minY; if (v.y < 0f) v.y = 0f; }
+            else if (p.y > maxY) { p.y = maxY; if (v.y > 0f) v.y = 0f; }
+        }
+        else if (shape == BoidShape.Cylinder)
         {
             float h2 = p.x * p.x + p.z * p.z;
             if (h2 > lim * lim)

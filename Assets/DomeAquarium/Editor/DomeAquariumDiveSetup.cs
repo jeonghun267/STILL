@@ -37,10 +37,11 @@ public static class DomeAquariumDiveSetup
     static readonly string[] Freshwater = { "PinkDolphin", "TucuxiDophin", "IndusRiverDolphin" };
 
     // 1막 볼거리. 산호초를 찾는 상어·가오리·거북·돌고래와 관람객이 기대하는 산호초 어종, 지목 생물인 해마류.
+    // 이 종들과 해마류는 늘 돔에 남고, 나머지 산호초 종은 몇 분마다 무리 단위로 바뀐다(rotation).
     static readonly string[] ReefMustHave =
     {
         "BlacktipReefShark", "NurseShark", "SpottedEagleRay",
-        "GreenTurtle", "HawksbillTurtle", "HectorDolphin",
+        "GreenTurtle", "HawksbillTurtle", "LoggerheadTurtle", "HectorDolphin",
         "Clownfish", "TomatoClownfish",
         "BlueTang", "YellowTang", "MoorishIdol",
         "GreenChromis", "DominoDamsel",
@@ -120,7 +121,18 @@ public static class DomeAquariumDiveSetup
         // 돔은 1막 층으로 시작한다 — 강돌고래와 200m 종이 섞여 있던 예전 전시 목록을 바꾼다.
         Undo.RecordObject(swarm, "층별 하강 적용");
         swarm.species = reef.species;
+        swarm.rotation = reef.rotation;
+        swarm.rotationInterval = reef.rotationInterval;
         EditorUtility.SetDirty(swarm);
+
+        // 관찰 일지는 실제로 만날 수 있는 종만 센다 — 어느 층에도 안 나오는 종(강돌고래)이 있으면 일지를 다 채울 수 없다.
+        var journal = Object.FindFirstObjectByType<FishEncyclopediaPanel>(FindObjectsInactive.Include);
+        if (journal != null)
+        {
+            Undo.RecordObject(journal, "층별 하강 적용");
+            journal.allFish = DomeAquariumEncyclopediaSetup.LoadAllFish();
+            EditorUtility.SetDirty(journal);
+        }
 
         if (lobby != null)
         {
@@ -137,6 +149,8 @@ public static class DomeAquariumDiveSetup
         if (saveScene) EditorSceneManager.SaveScene(scene);
 
         Debug.Log($"[층 하강] 적용 완료 — 24m {reef.species.Length}종 {reef.species.Sum(f => f.schoolCount)}마리 " +
+                  $"(교체 후보 {reef.rotation.Length}종, {reef.rotationInterval.x:0}~{reef.rotationInterval.y:0}초마다 한 무리), " +
+                  $"관찰 일지 {journal?.allFish?.Length ?? 0}종 " +
                   $"(지목: {string.Join(", ", reef.targets.Select(f => f.DisplayName))}), " +
                   $"200m 큰 생물 {twilight.passers.Length}종이 {twilight.passInterval.x:0}~{twilight.passInterval.y:0}초마다 한 무리씩 " +
                   $"(지목: {twilight.targets[0].DisplayName}), 바닥 {twilight.seabed}, 바다눈 {(twilight.marineSnow ? "켬" : "끔")}. " +
@@ -188,15 +202,44 @@ public static class DomeAquariumDiveSetup
         return m;
     }
 
+    /// <summary>
+    /// 층별 하강에서 실제로 만날 수 있는 종 — 늘 헤엄치는 무리 · 교체 무리 · 지나가는 큰 생물 · 지목 생물.
+    /// 관찰 일지의 총 종 수는 이것만 센다. 층 데이터가 아직 없으면 null (그때는 강에 사는 종만 뺀다).
+    /// </summary>
+    internal static HashSet<FishData> MeetableFish()
+    {
+        if (!AssetDatabase.IsValidFolder(MissionDir)) return null;
+        var missions = AssetDatabase.FindAssets("t:DiveMission", new[] { MissionDir })
+            .Select(g => AssetDatabase.LoadAssetAtPath<DiveMission>(AssetDatabase.GUIDToAssetPath(g)))
+            .Where(m => m != null)
+            .ToList();
+        if (missions.Count == 0) return null;
+
+        var meetable = new HashSet<FishData>();
+        foreach (var m in missions)
+        {
+            if (m.species != null) meetable.UnionWith(m.species);
+            if (m.rotation != null) meetable.UnionWith(m.rotation);
+            if (m.targets != null) meetable.UnionWith(m.targets);
+            if (m.passers != null) meetable.UnionWith(m.passers.Select(p => p.fish));
+        }
+        meetable.Remove(null);
+        return meetable;
+    }
+
     static DiveMission BuildReefMission(List<FishData> all, LobbySequence lobby)
     {
         var reef = all.Where(f => f.habitat == DiveDepth.Reef24 && !f.freshwater && f.prefab != null).ToList();
         var byName = reef.ToDictionary(f => f.name);
 
         // 씬 빌드(4)의 전시 종 선정과 같은 방식: 볼거리를 먼저 넣고, 남은 예산을 수직 층위 순으로 고르게 채운다.
+        // 해마류는 지목 생물이라 모두 늘 남는다 — 교체로 들어온 해마를 기록해도 할 일이 안 채워지면 안 된다.
         var picked = new List<FishData>();
         foreach (string n in ReefMustHave)
             if (byName.TryGetValue(n, out var f) && !picked.Contains(f)) picked.Add(f);
+        foreach (var f in reef.Where(f => f.name.Contains("Seahorse")))
+            if (!picked.Contains(f)) picked.Add(f);
+        var stay = new HashSet<FishData>(picked);
         int used = picked.Sum(f => DomeAquariumSceneBuilder.SchoolSizeFor(f.name));
         var rest = reef.Where(f => !picked.Contains(f)).ToList();
         int stride = Mathf.Max(1, rest.Count / 24);
@@ -207,7 +250,8 @@ public static class DomeAquariumDiveSetup
             picked.Add(rest[i]);
             used += cost;
         }
-        foreach (var f in picked)
+        // 교체로 들어오는 종도 같은 무리 크기를 쓴다 — 떠난 무리의 슬롯 수에 맞는 종을 고를 때 본다.
+        foreach (var f in reef)
         {
             int count = DomeAquariumSceneBuilder.SchoolSizeFor(f.name);
             if (f.schoolCount != count) { f.schoolCount = count; EditorUtility.SetDirty(f); }
@@ -223,6 +267,9 @@ public static class DomeAquariumDiveSetup
         m.targets = picked.Where(f => f.name.Contains("Seahorse")).ToArray();
         m.targetClue = "산호 가지를 꼬리로 붙잡고 거의 움직이지 않는 생물";
         m.species = picked.ToArray();
+        // 처음부터 헤엄치는 종 중 볼거리가 아닌 것 + 예산에 못 든 종. 150마리 예산 안에서 무리째 바뀐다.
+        m.rotation = reef.Where(f => !stay.Contains(f)).ToArray();
+        m.rotationInterval = new Vector2(100f, 160f);
         m.useClock = true;                      // 1막만 실제 시계 — 밤에 오면 산호가 빛나는 밤 바다
         m.caustics = true;
         m.seabed = SeabedDressing.CoralReef;

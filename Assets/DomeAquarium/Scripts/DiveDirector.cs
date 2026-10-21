@@ -224,6 +224,8 @@ public sealed class DiveDirector : MonoBehaviour
         if (swarm != null)
         {
             swarm.species = m.species ?? new FishData[0];
+            swarm.rotation = m.rotation ?? new FishData[0];
+            swarm.rotationInterval = m.rotationInterval;
             if (swarm.species.Length > 0) swarm.Rebuild();
             else swarm.Clear();
         }
