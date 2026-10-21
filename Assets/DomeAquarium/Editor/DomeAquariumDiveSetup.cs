@@ -106,10 +106,12 @@ public static class DomeAquariumDiveSetup
         director.unknown = BuildUnknown(director, unknownFish, aim);
         director.bioSparks = BuildBioSparks();
         director.layerAmbience = BuildLayerAmbience(director);
-        director.credits = BuildCredits(director, font);
+        director.night = Object.FindFirstObjectByType<LobbyNight>(FindObjectsInactive.Include);
+        director.credits = BuildCredits(director, director.night, font);
+        // "처음부터 다시"는 크레딧과 달리 시선을 따라온다 — 손 닿는 곳(0.62m, 눈높이 26° 아래)이라야 누른다.
+        // 크레딧을 다 읽은 눈 앞 아래에 뜨고, 데이터 월을 돌아봐도 새 줄(3.2m, 눈높이 3~15° 아래)보다 낮다.
         director.endPanel = BuildFloatingPanel(director.transform, "EndPanel", ObservationTerms.EndTitle, ObservationTerms.Restart,
                                                director.credits.Restart, font);
-        director.night = Object.FindFirstObjectByType<LobbyNight>(FindObjectsInactive.Include);
         director.tutorial = Object.FindFirstObjectByType<LobbyTutorial>(FindObjectsInactive.Include);
         if (director.night == null)
             Debug.LogWarning("[층 하강] 밤 로비(LobbyNight)가 없습니다. '9. 육지 로비 빌드'를 다시 실행하세요 — 엔딩이 로비로 올라와도 낮 그대로입니다.");
@@ -869,10 +871,10 @@ public static class DomeAquariumDiveSetup
         "<size=40><b>오늘 밤, 관측해 줘서 고마워요.</b></size>";
 
     /// <summary>
-    /// 밤 로비에 뜨는 크레딧 판 — 1.03 × 0.91m, 1.9m 앞(왼쪽 40°). 글은 창(RectMask2D) 안에서 아래에서 위로 올라간다.
+    /// 밤 로비에 뜨는 크레딧 판 — 1.03 × 0.91m, 1.9m 앞, 데이터 월 새 줄(빛줄)의 왼쪽 끝보다 더 왼쪽. 글은 창(RectMask2D) 안에서 아래에서 위로 올라간다.
     /// 본문 30(약 3.6cm, 1.9m 에서 1.09°) — 10~15세 기준 1° 이상.
     /// </summary>
-    static CreditsRoll BuildCredits(DiveDirector director, TMP_FontAsset font)
+    static CreditsRoll BuildCredits(DiveDirector director, LobbyNight night, TMP_FontAsset font)
     {
         var old = director.transform.Find("Credits");
         if (old != null) Object.DestroyImmediate(old.gameObject);
@@ -890,8 +892,8 @@ public static class DomeAquariumDiveSetup
         group.blocksRaycasts = false;
 
         var plate = NewUI("Plate", go.transform, new Vector2(860f, 760f));
-        // 뒤로 밤 로비(열린 엘리베이터·네온)가 비치면 글이 묻힌다 — 거의 불투명하게
-        DomeAquariumUiKit.TemplatePlate(plate, 28f, new Color(0.03f, 0.06f, 0.09f, 0.95f), DomeAquariumUiKit.PlateLine);
+        // 뒤로 밤 로비(열린 엘리베이터·네온)가 비치면 글이 묻힌다 — 0.95 로는 데이터 월 글자와 빛줄이 비쳤다. 불투명하게
+        DomeAquariumUiKit.TemplatePlate(plate, 28f, new Color(0.03f, 0.06f, 0.09f, 1f), DomeAquariumUiKit.PlateLine);
 
         var viewport = NewUI("Viewport", go.transform, new Vector2(800f, 700f));
         viewport.gameObject.AddComponent<RectMask2D>();
@@ -918,6 +920,11 @@ public static class DomeAquariumDiveSetup
         roll.text = text;
         roll.body = CreditsBody;
         roll.view = Camera.main != null ? Camera.main.transform : null;
+        Transform record = night != null && night.record != null ? night.record.transform : null;
+        var rule = record != null ? record.Find("Rule") as RectTransform : null;
+        roll.keepClear = rule != null ? rule : record as RectTransform;
+        if (roll.keepClear == null)
+            Debug.LogWarning("[층 하강] 데이터 월 새 줄(NewRecordLine)이 없어 크레딧이 보던 방향 왼쪽에 뜹니다. '9. 육지 로비 빌드'를 다시 실행하세요.");
         EditorUtility.SetDirty(roll);
         return roll;
     }
