@@ -24,7 +24,8 @@ Unity 6 기반의 VR 수중 생태 관찰 프로젝트입니다. 해안가 해�
 | 5 | `end-credits-placement` | `7c0126c` | 2026-10-21 | 엔딩 크레딧이 데이터 월 새 줄을 가리지 않게 자리 고정 |
 | 6 | `lobby-stick-locomotion` | `3b850a9` | 2026-10-21 | 왼쪽 막대 걷기 · 오른쪽 막대 부드러운 회전 |
 | 7 | `reef-school-rotation` | `96b2460` | 2026-10-21 | 24m 물고기 무리가 몇 분마다 바뀌어 안 쓰던 종까지 나옴, 관찰 일지 95종 |
-| 8 | `branch-guide` | | 2026-10-21 | 이 브랜치 안내 |
+| 8 | `unity-ai-packages` | `70c3abf` | 2026-10-28 | Sentis(신경망 추론) · Unity AI Assistant 패키지 설치 |
+| 9 | `branch-guide` | | 2026-10-28 | 이 브랜치 안내 |
 | — | `main` | 최신 | | 위 기능 전부 |
 
 ### `land-lobby-intro` — 육지에서 시작
@@ -74,9 +75,21 @@ Unity 6 기반의 VR 수중 생태 관찰 프로젝트입니다. 해안가 해�
 - 관찰 일지는 실제로 만날 수 있는 95종만 센다(강돌고래 3종 제외).
 - 적용 메뉴: `DomeAquarium/18. 층별 하강 적용 (24m → 200m → 1,000m)`.
 
+### `unity-ai-packages` — Sentis · Unity AI 패키지
+
+- `com.unity.ai.inference` 2.6.1(Sentis, 런타임 신경망 추론)과 `com.unity.ai.assistant` 2.21.0-pre.2(Muse 를 대신하는 Unity AI)를 넣었다. 아직 이 패키지를 쓰는 기능은 없다.
+- `ai.assistant` 2.x 는 Generators · Toolkit 모듈을 이미 품고 있다. `com.unity.ai.generators` 를 같이 넣으면 어셈블리가 겹쳐 Safe Mode 로 열리므로 넣지 않는다.
+- Assistant 에는 MCP 서버가 들어 있어, Claude 같은 외부 앱이 붙으면 Unity 에 "New MCP Connection" 창이 뜬다.
+
 ## 변경 기록
 
 새 작업을 반영할 때마다 해당 날짜 제목 아래에 변경 사항을 추가합니다.
+
+### 2026-10-28
+
+- Sentis(`com.unity.ai.inference` 2.6.1)와 Unity AI Assistant(`com.unity.ai.assistant` 2.21.0-pre.2) 패키지를 넣었습니다. Unity Muse 는 Unity AI 로 바뀌었고, Assistant 패키지 하나에 에셋 생성 기능까지 들어 있습니다.
+  - `com.unity.ai.generators` 를 같이 넣으면 Assistant 안의 같은 모듈과 어셈블리 이름 24개가 겹쳐 컴파일이 깨집니다. 프로젝트가 Safe Mode 로 열리고, URP 가 안 떠서 화면 전체가 분홍색이 되며 `.glb` 프리팹이 빠진 것으로 나옵니다.
+  - 에디터가 켜진 채로 패키지를 뺐는데 "Assembly with name ... already exists" 가 남으면 Unity 를 다시 엽니다.
 
 ### 2026-10-21
 
