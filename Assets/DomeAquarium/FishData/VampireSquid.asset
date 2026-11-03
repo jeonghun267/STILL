@@ -24,10 +24,10 @@ MonoBehaviour:
   freshwater: 0
   unnamed: 0
   prefab: {fileID: 6226434249563637812, guid: f053439903982574ab5b0ea23a8e1c03, type: 3}
-  swimScale: 0.28
+  swimScale: 0.47523764
   revealScale: 0.28
   bandCenter: 0.52
   bandWidth: 0.25
-  bodyLength: 0.28
+  bodyLength: 0.47523764
   swimSpeed: 0.14
   schoolCount: 2

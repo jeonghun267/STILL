@@ -22,11 +22,12 @@ MonoBehaviour:
   rarity: 2
   habitat: 1
   freshwater: 0
+  unnamed: 0
   prefab: {fileID: 6378786065993609, guid: b708b3a65194d5440b9b530a824beeb5, type: 3}
-  swimScale: 1.6559895
+  swimScale: 2.0270634
   revealScale: 1.0054222
   bandCenter: 0.55
   bandWidth: 0.45
-  bodyLength: 1.4
+  bodyLength: 1.7137117
   swimSpeed: 2.2
   schoolCount: 4

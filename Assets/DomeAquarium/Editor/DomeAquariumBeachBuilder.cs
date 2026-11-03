@@ -84,7 +84,21 @@ public static class DomeAquariumBeachBuilder
                 tut.markers[0].transform.position += table.position - before;
         }
         if (tut.markers != null && tut.markers.Length > 1 && tut.markers[1] != null && pool != null)
+        {
             tut.markers[1].transform.position = pool.transform.position + Vector3.up * 1.1f;
+            foreach (var label in tut.markers[1].GetComponentsInChildren<TMPro.TMP_Text>(true))
+            {
+                label.text = "조수 웅덩이";                                     // 로비 빌더는 "연습 수조"로 만든다
+                if (label.transform.parent is RectTransform pill)
+                {
+                    pill.sizeDelta = new Vector2(6 * 150f + 120f, pill.sizeDelta.y);   // 글자 수에 맞춘 알약 폭 (LobbyBuilder.Marker 와 같은 셈)
+                    label.rectTransform.sizeDelta = pill.sizeDelta;
+                }
+            }
+        }
+        // 홀 연습 수조의 "관찰기로 물고기를 겨눠 보세요" 안내판 — 연습은 이제 해변에서 한다 (예전 로비 빌드에 남아 있으면 걷어 낸다)
+        var tankSign = set.Find("Prep/PracticeTank/TankSign");
+        if (tankSign != null) Object.DestroyImmediate(tankSign.gameObject);
 
         // 시작 자리 — 해변 남쪽에서 장비대 · 웅덩이 · 놀란을 바라본다
         Vector3 face = TableLocal - SpawnLocal;

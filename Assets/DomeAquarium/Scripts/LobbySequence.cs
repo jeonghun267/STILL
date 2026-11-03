@@ -40,6 +40,9 @@ public sealed class LobbySequence : MonoBehaviour
     public Transform gatePoint;            // 개찰구 통로 중심 — 지나갈 때 문이 열린다
     public Transform domePoint;            // 수중 돔에서 설 자리. 비면 월드 원점(수조 정중앙)
     public GameObject cabinSet;            // 엘리베이터 칸·승강로·계기판·깊이 버튼. 로비 건물(lobbySet)과 따로 켜고 끈다
+    [Tooltip("수중 돔(물고기 떼 · 산호초 · 수조 · 바닥) — 물 위(해변 · 로비 · 엔딩의 밤)에 있는 동안은 끈다. 로비가 돔 24m 위라 보이지도 않는데 " +
+             "물고기 140여 마리의 애니메이션 · 무리 계산 · 그리기가 그대로 돌아 Quest 프레임을 깎았다. 처음 돔으로 내려갈 때(검은 화면) 켠다.")]
+    public GameObject[] domeSet;
 
     [Header("층 진행 (비면 런타임에 찾는다. 없으면 예전처럼 24m 로 바로 내려간다)")]
     public DiveDirector director;
@@ -200,6 +203,7 @@ public sealed class LobbySequence : MonoBehaviour
         sun = timeOfDay != null && timeOfDay.sun != null ? timeOfDay.sun : FindDirectionalLight();
         dome = CaptureEnvironment();
         ApplyLobbyEnvironment();
+        SetDome(false);                       // 모든 Awake 가 돔 물체를 찾아 둔 뒤 (DiveDirector 는 이름으로 ReefFloor 를 찾는다)
 
         AquariumAudioDirector.Instance?.SetAmbientMuted(true);
 
@@ -581,6 +585,7 @@ public sealed class LobbySequence : MonoBehaviour
         // 해수면 — 검은 화면 뒤에서 로비에 밤을 칠하고 데이터 월 앞으로 옮겨 선다.
         if (fader != null) yield return fader.FadeTo(1f, 1.0f);
         if (lobbySet != null) lobbySet.SetActive(true);
+        SetDome(false);
         ApplyLobbyEnvironment();
         if (night != null) night.Apply();
         if (elevatorDoors != null) { elevatorDoors.Sample(doorOpenEnd); doorsOpen = true; }
@@ -601,6 +606,7 @@ public sealed class LobbySequence : MonoBehaviour
         if (music != null) music.Stop();
         if (lobbySet != null) lobbySet.SetActive(false);
         if (cabinSet != null) cabinSet.SetActive(false);
+        SetDome(true);                        // 층 꾸미기(DiveDirector.PrepareLayer)보다 먼저
 
         RestoreEnvironment(dome);
         if (timeOfDay != null)
@@ -617,6 +623,13 @@ public sealed class LobbySequence : MonoBehaviour
             Vector3 target = domePoint != null ? domePoint.position : Vector3.zero;
             PlaceCameraOver(target);
         }
+    }
+
+    void SetDome(bool on)
+    {
+        if (domeSet == null) return;
+        foreach (var g in domeSet)
+            if (g != null && g.activeSelf != on) g.SetActive(on);
     }
 
     // ─────────────────────────────────────────────────────────────

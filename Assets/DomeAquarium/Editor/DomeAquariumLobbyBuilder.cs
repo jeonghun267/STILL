@@ -170,6 +170,7 @@ public static class DomeAquariumLobbyBuilder
         DomeAquariumCoastBuilder.Build(set, seq);           // 창밖 땅 · 바위 · 부표 · 배 · 등대 · 갈매기 · 고래
         DomeAquariumTerraceBuilder.Build(set, seq, seq.tutorial);   // 테라스 문 · 데크 걷기 · 관망 쌍안경
         DomeAquariumNpcBuilder.Build(set, seq);                     // 테라스 데크의 선장 · 해변의 놀란
+        DomeAquariumQuestPerformance.AssignDomeSet(seq);             // 물 위에 있는 동안 수중 돔을 끈다
         DomeAquariumBeachBuilder.Build(root.transform, set, seq, seq.tutorial);   // 해변 시작 — 모래사장 · 계단 · 조수 웅덩이 · 장비대
         if (depthWall != null) depthWall.skyProbes = set.GetComponentsInChildren<ReflectionProbe>(true);   // 창밖 하늘 반사도 깊이에 맞춰 어둡게
         BuildNight(root.transform, set, seq, depthWall);
@@ -1367,8 +1368,7 @@ public static class DomeAquariumLobbyBuilder
         Box("Water", tank, new Vector3(0f, standH + tankH * 0.5f, 0f), new Vector3(tankW - 0.02f, tankH - 0.06f, tankL - 0.02f), WaterMaterial());
         Box("Glass", tank, new Vector3(0f, standH + tankH * 0.5f, 0f), new Vector3(tankW, tankH, tankL), mats.glass);
         Box("Rim", tank, new Vector3(0f, standH + tankH + 0.015f, 0f), new Vector3(tankW + 0.04f, 0.03f, tankL + 0.04f), mats.frame);
-        Label("TankSign", tank, new Vector3(-(tankW + 0.06f) * 0.5f - 0.01f, 0.5f, 0f), 90f, new Vector2(1.6f, 0.3f),
-              "<b>연습 수조</b>  ·  관찰기로 물고기를 겨눠 보세요", 0.075f, new Color(0.85f, 0.95f, 1f), TextAlignmentOptions.Center);
+        // 안내판은 없다 — 관찰기 연습은 해변 조수 웅덩이에서 하고(DomeAquariumBeachBuilder), 이 수조는 홀의 볼거리다.
 
         var fishRoot = Group("Fish", tank);
         fishRoot.localPosition = new Vector3(0f, standH + tankH * 0.5f, 0f);

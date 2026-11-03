@@ -196,7 +196,7 @@ public static class DomeAquariumCoastBuilder
         var terrain = go.GetComponent<Terrain>();
         terrain.materialTemplate = TerrainMaterial();
         terrain.heightmapPixelError = 6f;
-        terrain.basemapDistance = 400f;
+        terrain.basemapDistance = DomeAquariumQuestPerformance.TerrainBasemapDistance;   // 그 밖은 미리 구운 한 장(베이스맵)으로
         terrain.drawInstanced = true;
         terrain.drawTreesAndFoliage = false;
         terrain.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -240,7 +240,8 @@ public static class DomeAquariumCoastBuilder
             AssetDatabase.CreateAsset(layer, path);
         }
         layer.diffuseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(diffuse);
-        layer.normalMapTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(normal);
+        // 노멀맵은 쓰지 않는다 — 층 셋 × (색 + 노멀) 에 지형 노멀까지 픽셀마다 8번 읽어 해변 장면의 GPU 를 잡아먹었다 (DomeAquariumQuestPerformance).
+        layer.normalMapTexture = null;
         layer.normalScale = 1f;
         layer.tileSize = new Vector2(tile, tile);
         layer.metallic = 0f;
@@ -262,7 +263,7 @@ public static class DomeAquariumCoastBuilder
             AssetDatabase.CreateAsset(mat, path);
         }
         mat.shader = shader;
-        mat.EnableKeyword("_NORMALMAP");                // 레이어 노멀맵 — 스크립트로 만들면 키워드가 저절로 켜지지 않는다
+        DomeAquariumQuestPerformance.LightenTerrainMaterial(mat);   // 노멀맵 없이 — Quest 에서 해변을 가득 채우는 지형의 픽셀 비용
         mat.enableInstancing = true;
         EditorUtility.SetDirty(mat);
         return mat;

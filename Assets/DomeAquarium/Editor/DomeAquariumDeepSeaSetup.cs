@@ -123,6 +123,15 @@ public static class DomeAquariumDeepSeaSetup
     };
 
     // 로비 앞바다의 혹등고래 — 관찰 일지 종이 아니라 쌍안경으로 보는 풍경이라 FishData 는 만들지 않는다 (코스트 빌더 19 가 쓴다).
+    /// <summary>이 빌더가 만든 종의 실제 몸길이(m) — 크기 보정(10)이 돔에서 보일 크기를 다시 셈할 때 쓴다.</summary>
+    internal static bool TryRealLength(string name, out float meters)
+    {
+        foreach (var s in All.Concat(Reef).Concat(Shore))
+            if (s.name == name) { meters = s.meters; return true; }
+        meters = 0f;
+        return false;
+    }
+
     internal static readonly Spec Humpback = new Spec
     {
         name = "HumpbackWhale", glb = "Whales/HumpbackWhale.glb", clip = "SWIM-delphinidae", korean = "혹등고래",
@@ -465,8 +474,8 @@ public static class DomeAquariumDeepSeaSetup
         f.freshwater = false;
         f.unnamed = false;
         f.prefab = prefab;
-        f.bodyLength = s.meters;
-        f.swimScale = s.meters;                  // 프리팹 몸길이가 1 이다
+        f.bodyLength = DomeAquariumScaleSetup.ShownLength(s.meters);   // 작은 종일수록 돔에서 더 크게 (실물은 정보 카드의 몸길이)
+        f.swimScale = f.bodyLength;              // 프리팹 몸길이가 1 이다
         f.revealScale = Mathf.Clamp(s.meters, 0.22f, 0.85f);
         f.swimSpeed = s.speed;
         f.schoolCount = s.school;

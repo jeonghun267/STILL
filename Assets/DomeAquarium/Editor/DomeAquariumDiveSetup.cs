@@ -426,7 +426,8 @@ public static class DomeAquariumDiveSetup
         m.recordCount = 1;
         m.targets = new[] { unknownFish };
         m.targetClue = "";
-        m.taskLine = "신호의 정체 확인하기";
+        // 무엇을 하라는 건지 모르겠다는 말을 듣고 — "신호의 정체 확인하기"만으로는 할 일이 보이지 않았다. 할 일 자체를 적는다.
+        m.taskLine = "조명 끄고 가만히 기다리기";        // 할 일 판 한 줄(380px · 26pt)에 들어가게 — 버튼은 도착 안내와 알림이 말한다
         m.species = species.ToArray();          // 조명에 비칠 때만 보이는 심해 생물 — 마릿수는 FishData.schoolCount
         m.rotation = new FishData[0];
         m.passers = passers.ToArray();
@@ -445,9 +446,9 @@ public static class DomeAquariumDiveSetup
         m.ambienceVolume = 0.32f;
         m.musicLevel = 0f;                      // 3막은 음악을 끄고 낮은 물소리만
         m.descentLine = "1,000m까지 내려갑니다. 여기부터는 햇빛이 전혀 닿지 않아요. 신호가 점점 강해지고 있어요.";
-        m.arrivalLine = "수심 1,000m예요. 빛이 하나도 없어서 관찰기 조명을 켜 두었어요. 저 멀리 깜빡이는 푸른 빛, 보이나요? " +
-                        "3주 동안 잡히던 신호예요. 관찰기를 그쪽으로 겨눠 보세요.";
-        m.hintLine = "불을 꺼 봐요. 그리고 움직이지 말고.";
+        m.arrivalLine = "수심 1,000m예요. 저 멀리 깜빡이는 푸른 빛 보이나요? 3주 동안 잡히던 신호, 해파리를 닮은 빛나는 생물이에요. " +
+                        "빛을 싫어해서, 관찰기 조명을 끄고(A 또는 X 버튼) 가만히 기다리면 다가와요.";
+        m.hintLine = "조명을 꺼 봐요. 그리고 움직이지 말고 기다려요. 해파리를 닮은 생물이 다가올 거예요.";
         m.completeLine = "신호의 주인을 처음으로 기록했어요. 이제 올라갈게요.";
         m.finale = true;
         m.ascentLine = "1,000m에서 해수면까지 올라갑니다. 신호는 다시 조용해졌어요.";
@@ -934,13 +935,17 @@ public static class DomeAquariumDiveSetup
     // 엔딩 크레딧
     // ─────────────────────────────────────────────────────────────
 
-    // CC-BY 줄(로비 세 모델 · 심해 생물 · 고래)은 반드시 들어가야 한다 (Assets/ThirdParty/CREDITS.md). 이름(만든 사람)은 씬의 CreditsRoll.body 에서 고친다.
+    // CC-BY 줄(로비 세 모델 · 심해 생물 · 고래)은 반드시 들어가야 한다 (Assets/ThirdParty/CREDITS.md).
     const string CreditsBody =
         "<size=72><b>STILL</b></size>\n" +
         "<size=30><color=#8FE6FF>해양 관측소 STILL · 1,000m 의 신호</color></size>\n\n\n" +
-        "<size=26><color=#8FB0C0>만든 사람</color></size>\nSTILL 제작팀\n\n" +
+        "<size=26><color=#8FB0C0>만든 사람</color></size>\n<size=36><b>오정훈</b></size>\n\n" +
         "<size=26><color=#8FB0C0>관측소장의 목소리 · 생물 설명</color></size>\nGoogle Gemini\n(일지에 없는 생물은 고정 대본)\n\n" +
-        "<size=26><color=#8FB0C0>바다 생물 · 산호 모델</color></size>\nLayer Lab · 3D Characters - Fish (Unity Asset Store)\n\n" +
+        "<size=26><color=#8FB0C0>바다 생물 · 산호 모델</color></size>\nLayer Lab · 3D Characters - Fish (Unity Asset Store)\n" +
+        "Pixit3D - Fish Free Pack · Pixit Games (Unity Asset Store)\n\n" +
+        "<size=26><color=#8FB0C0>보리 선장 · 놀란</color></size>\n" +
+        "\"Pirate Captain\" by Quaternius (Poly Pizza, CC0)\n" +
+        "Stylized NPC - Peasant Nolant · Winged Boots Studio (Unity Asset Store)\n\n" +
         "<size=26><color=#8FB0C0>심해 생물 · 고래</color></size>\n" +
         "\"Angler Fish - Inktober Day 3\" by lesliestowe\n" +
         "\"Vampire Squid\" · \"Gigantura Chuni\" · \"Hatchet Fish\" by Razan Negm\n" +
@@ -953,8 +958,8 @@ public static class DomeAquariumDiveSetup
         "\"Animated Ticket Gate\" by €r!c, CC BY 4.0\n" +
         "\"Bathysphere | New York Aquarium\" by sabster, CC BY 4.0\n" +
         "<size=24>(modified: reduced polygons and texture size)</size>\n" +
-        "Furniture Kit · UI Pack · Kenney (CC0)\n" +
-        "Secluded Beach · Poly Haven (CC0)\n" +
+        "Furniture Kit · UI Pack · Watercraft Kit · Kenney (CC0)\n" +
+        "하늘 · 모래 · 바위 · 부표 · Poly Haven (CC0)\n" +
         "3D Free Modular Kit · Barking Dog (Unity Asset Store)\n\n" +
         "<size=26><color=#8FB0C0>소리</color></size>\n" +
         "\"Exploration Theme\" · Cleyton Kauffman (CC0)\n" +

@@ -33,7 +33,7 @@ STILL 육지 인트로(아쿠아리움 로비 → 엘리베이터 → 수중 돔
 | `Sketchfab/Whales/BlueWhale.glb` | https://sketchfab.com/3d-models/blue-rorqual-d2adf28a014647be97b593d442ffd602 | nolanfa | **CC-BY 4.0** — 200m 대왕고래. 재질 · 크기 조정, 물보라 판 제거 |
 | `Sketchfab/Whales/HumpbackWhale.glb` | https://sketchfab.com/3d-models/humpback-whale-animated-marine-mammals-219ed629c9394d869bbf19d443188423 | nolanfa | **CC-BY 4.0** — 로비 앞바다 혹등고래. 재질 · 크기 조정, 물보라 판 제거 |
 | `PolyPizza/PirateCaptain.glb` | https://poly.pizza/m/sN18LyyHAU | Quaternius | CC0 1.0 — 로비 테라스의 보리 선장(NPC). 칼은 숨기고 재질을 URP Simple Lit 으로 바꿈 |
-| `../Stylized NPC - Peasant Nolant/` | https://assetstore.unity.com/packages/3d/characters/humanoids/fantasy/stylized-npc-peasant-nolant-demo-252440 | Winged Boots Studio | Unity Asset Store Standard EULA — 테라스의 놀란(NPC). 재질을 URP Simple Lit 으로 바꿈 |
+| `../Stylized NPC - Peasant Nolant/` | https://assetstore.unity.com/packages/3d/characters/humanoids/fantasy/stylized-npc-peasant-nolant-demo-252440 | Winged Boots Studio | Unity Asset Store Standard EULA — 해변 조수 웅덩이의 놀란(NPC). 재질을 URP Simple Lit 으로 바꿈 |
 | `../PixitGames/Pixit3D/` | Unity Asset Store "Pixit3D - Fish Free Pack" | Pixit Games | Unity Asset Store Standard EULA — 24m 복어 · 갑오징어 · 문어(일지 종)와 산호초 바닥 꾸밈 |
 | `../Barking_Dog/` | https://assetstore.unity.com/packages/3d/environments/3d-free-modular-kit-85732 | Barking Dog | Unity Asset Store Standard EULA |
 | `Fonts/NanumSquareRound/NanumSquareRound{R,EB}.ttf` | https://hangeul.naver.com/font (`hangeul_static/webfont/zips/nanum-square-round.zip`) | NAVER | SIL OFL 1.1 (`OFL.txt`) — 앱 UI 글꼴. TMP 에셋: `DomeAquarium/Fonts/NanumSquareRound* SDF.asset` |

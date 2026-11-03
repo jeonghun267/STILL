@@ -25,6 +25,9 @@ public sealed class LargeCreaturePasses : MonoBehaviour, IObservationTargets
     public Vector2 heightOffset = new Vector2(-2.2f, 0.8f); // 눈높이 기준 — 조금 아래가 목이 편하다
     public float warnSeconds = 5f;
     public float swayMeters = 0.6f;            // 똑바로 미끄러지지 않게 좌우·위아래로 천천히 흔든다
+    [Tooltip("흔들림 때문에 머리가 길에서 벗어나는 최대 각도(°) — 작은 생물(1m) → 큰 생물(7m 이상). " +
+             "몸은 움직이는 쪽을 보므로, 느리게 지나가는 고래에 0.6m 를 그대로 흔들면 머리가 좌우로 50° 넘게 돌아 옆으로 걷는 것처럼 보였다.")]
+    public Vector2 swayMaxYaw = new Vector2(20f, 5f);
 
     [Header("그림자 → 제 색")]
     public float shadowFar = 9f;               // 이보다 멀면 거의 검은 그림자
@@ -83,6 +86,8 @@ public sealed class LargeCreaturePasses : MonoBehaviour, IObservationTargets
     DiveMission.PassingCreature current;
     Vector3 pathStart, pathDir, pathSide;
     float pathLength, pathSeconds, passTime;
+    float swaySide, swayUp;                    // 이번 무리의 흔들림 폭(m) — 지나가는 속도 · 몸 크기에 맞춰 줄인다
+    const float SwaySideHz = 0.21f, SwayUpHz = 0.13f;
 
     public bool IsPassing => phase == Phase.Passing;
     public bool IsRunning => phase != Phase.Off;
@@ -240,6 +245,13 @@ public sealed class LargeCreaturePasses : MonoBehaviour, IObservationTargets
         pathLength = 2f * half;
         pathSeconds = Mathf.Max(5f, current.seconds > 0f ? current.seconds : 30f);
 
+        // 흔들림의 옆 속도가 지나가는 속도에 비해 크면 머리가 좌우로 크게 돈다 — 머리가 길에서 swayMaxYaw 넘게 벗어나지 않을 만큼만 흔든다.
+        // 사인 흔들림 A·sin(2πft) 의 최대 옆 속도는 2πfA, 지나가는 속도 v 에서 머리 각은 atan(2πfA / v).
+        float speed = pathLength / pathSeconds;
+        float maxYaw = Mathf.Lerp(swayMaxYaw.x, swayMaxYaw.y, Mathf.InverseLerp(1f, 7f, current.fish.bodyLength)) * Mathf.Deg2Rad;
+        swaySide = Mathf.Min(swayMeters, speed * Mathf.Tan(maxYaw) / (2f * Mathf.PI * SwaySideHz));
+        swayUp = Mathf.Min(swayMeters * 0.5f, speed * Mathf.Tan(maxYaw * 0.6f) / (2f * Mathf.PI * SwayUpHz));
+
         // 무리 짜기 — 앞장선 하나 뒤로 체장의 1.3배 간격, 옆으로 조금씩 흩어진다.
         group.Clear();
         if (pool.TryGetValue(current.fish, out var bucket))
@@ -320,8 +332,8 @@ public sealed class LargeCreaturePasses : MonoBehaviour, IObservationTargets
     Vector3 PathPoint(float u, Body b)
     {
         float t = u * pathSeconds;
-        Vector3 sway = pathSide * (Mathf.Sin((t * 0.21f + b.phase) * Mathf.PI * 2f) * swayMeters)
-                     + Vector3.up * (Mathf.Sin((t * 0.13f + b.phase * 0.7f) * Mathf.PI * 2f) * swayMeters * 0.5f);
+        Vector3 sway = pathSide * (Mathf.Sin((t * SwaySideHz + b.phase) * Mathf.PI * 2f) * swaySide)
+                     + Vector3.up * (Mathf.Sin((t * SwayUpHz + b.phase * 0.7f) * Mathf.PI * 2f) * swayUp);
         // 처음과 끝에 흔들림을 줄여 벽 밖으로 나가지 않게 한다.
         float edge = Mathf.Sin(Mathf.Clamp01(u) * Mathf.PI);
         Vector3 local = pathSide * b.offset.x + Vector3.up * b.offset.y;
