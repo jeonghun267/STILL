@@ -284,6 +284,8 @@ public static class DomeAquariumEncyclopediaSetup
         Fixed(count.gameObject, -1f, 32f);
         controller.detailCountText = count;
 
+        BuildPhotoRow(detail, controller, font);
+
         TMP_Text detailDescription = NewText("DetailDescription", detail, 26f, font, FontStyles.Normal, Body);
         detailDescription.text = "카드를 선택하면 생김새와 설명이 여기에 표시됩니다.";
         detailDescription.textWrappingMode = TextWrappingModes.Normal;
@@ -450,6 +452,55 @@ public static class DomeAquariumEncyclopediaSetup
     public static readonly Vector2 WristButtonPosition = new Vector2(0f, 30f);
 
     /// <summary>관찰 일지에 담을 종 — 층별 하강에서 실제로 만날 수 있는 종만 (18 전이면 강에 사는 종만 뺀다).</summary>
+    /// <summary>
+    /// 상세 아래 줄(음성 해설 단추 왼쪽)의 "내가 찍은 사진" — 기록하는 순간 관찰기 사진(ObservationPhotos). 사진이 있는 종만 켜진다.
+    /// 예전에는 설명 위에 한 줄을 따로 두었더니 설명이 한 줄로 잘렸다 — 이미 있는 아래 줄의 빈자리에 넣는다.
+    /// </summary>
+    static void BuildPhotoRow(RectTransform detail, FishEncyclopediaPanel controller, TMP_FontAsset font)
+    {
+        Transform bottom = detail.Find("DetailBottom");
+        RectTransform photoRow = NewRow(bottom != null ? bottom : detail, "PhotoRow", 72f, 10f);
+        photoRow.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleLeft;
+        Fixed(photoRow.gameObject, 300f, 72f);
+        photoRow.SetSiblingIndex(0);
+        if (bottom != null) Fixed(bottom.gameObject, -1f, 72f);
+        RectTransform photoFrame = NewUI("PhotoFrame", photoRow);
+        Skin(photoFrame.gameObject.AddComponent<Image>(), RoundSprite, new Color(0.92f, 0.95f, 0.97f, 1f));   // 흰 테 — 인화한 사진처럼
+        Fixed(photoFrame.gameObject, 115f, 72f);
+        RectTransform photoRect = NewUI("Photo", photoFrame);
+        Stretch(photoRect);
+        photoRect.offsetMin = new Vector2(5f, 5f);
+        photoRect.offsetMax = new Vector2(-5f, -5f);
+        var photo = photoRect.gameObject.AddComponent<RawImage>();
+        photo.color = Color.white;
+        photo.raycastTarget = false;
+        TMP_Text photoCaption = NewText("PhotoCaption", photoRow, 18f, font, FontStyles.Normal, Muted);
+        photoCaption.textWrappingMode = TextWrappingModes.Normal;
+        photoCaption.richText = true;
+        photoCaption.alignment = TextAlignmentOptions.MidlineLeft;
+        Element(photoCaption.gameObject).flexibleWidth = 1f;
+        controller.photoRow = photoRow.gameObject;
+        controller.photo = photo;
+        controller.photoCaption = photoCaption;
+        photoRow.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// 지금 장면의 관찰 일지에 사진 줄만 더하고 종 목록을 다시 읽는다 — 판을 통째로 다시 세우면(15번) 관찰기 · 손목 메뉴의 연결이 끊긴다.
+    /// </summary>
+    public static void EnsurePhotoRow()
+    {
+        var controller = Object.FindFirstObjectByType<FishEncyclopediaPanel>(FindObjectsInactive.Include);
+        if (controller == null) { Debug.LogWarning("[도감] 관찰 일지가 없다 (15번 메뉴)."); return; }
+        var detail = controller.GetComponentsInChildren<RectTransform>(true).FirstOrDefault(t => t.name == "DetailPanel");
+        if (detail == null) { Debug.LogWarning("[도감] DetailPanel 을 찾지 못했다."); return; }
+        foreach (var old in detail.GetComponentsInChildren<Transform>(true).Where(t => t.name == "PhotoRow").ToArray()) Object.DestroyImmediate(old.gameObject);
+        BuildPhotoRow(detail, controller, DomeAquariumSetup.LoadKoreanFont());
+        controller.allFish = LoadAllFish();
+        EditorUtility.SetDirty(controller);
+        Debug.Log($"[도감] 사진 줄 · 종 {controller.allFish.Length}");
+    }
+
     internal static FishData[] LoadAllFish()
     {
         var meetable = DomeAquariumDiveSetup.MeetableFish();

@@ -57,7 +57,8 @@ public sealed class DiveMissionBoard : MonoBehaviour
         }
         Paint(countMark, countLine, countTally, countDone);
 
-        bool showSignal = m.showSignal && !complete && signal != null;
+        signalOn = m.showSignal && !complete && signal != null;
+        bool showSignal = signalOn || Teasing;
         if (signalRow != null && signalRow.activeSelf != showSignal) signalRow.SetActive(showSignal);
 
         bool hasTarget = m.HasTarget && !custom;
@@ -66,10 +67,36 @@ public sealed class DiveMissionBoard : MonoBehaviour
         Paint(targetMark, targetLine, null, hasTarget && targetFound);
     }
 
+    bool signalOn;                             // 이 층이 신호 막대를 쓰는가 (Show 가 정한다)
+    float teaseStart = -1f, teaseLength;
+    bool Teasing => teaseStart >= 0f && Time.time - teaseStart < teaseLength;
+
+    /// <summary>신호 예고(200m) — 신호 줄을 잠깐 띄워 막대가 튀었다가 꺼진다. 신호를 쓰지 않는 층에서도.</summary>
+    public void TeaseSignal(float seconds)
+    {
+        teaseStart = Time.time;
+        teaseLength = Mathf.Max(0.5f, seconds);
+        if (signalRow != null && !signalRow.activeSelf) signalRow.SetActive(true);
+    }
+
     void Update()
     {
-        if (signal == null || signalRow == null || !signalRow.activeInHierarchy || signalFill == null) return;
-        float w = Mathf.Clamp01(signal()) * signalWidth;
+        if (teaseStart >= 0f && !Teasing)
+        {
+            teaseStart = -1f;
+            if (signalRow != null && signalRow.activeSelf != signalOn) signalRow.SetActive(signalOn);
+        }
+        if (signalRow == null || !signalRow.activeInHierarchy || signalFill == null) return;
+        float value;
+        if (Teasing)
+        {
+            // 확 올랐다가 떨리며 사라진다 — 잡혔다 놓친 신호
+            float u = (Time.time - teaseStart) / teaseLength;
+            value = Mathf.Sin(Mathf.Clamp01(u * 1.6f) * Mathf.PI * 0.5f) * (1f - Mathf.SmoothStep(0.55f, 1f, u)) * Mathf.Lerp(0.55f, 0.85f, Mathf.PerlinNoise(Time.time * 9f, 0.3f));
+        }
+        else if (signal != null) value = Mathf.Clamp01(signal());
+        else return;
+        float w = value * signalWidth;
         signalFill.sizeDelta = new Vector2(Mathf.Lerp(signalFill.sizeDelta.x, w, 1f - Mathf.Exp(-10f * Time.deltaTime)), signalFill.sizeDelta.y);
     }
 

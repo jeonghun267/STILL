@@ -53,6 +53,13 @@ public sealed class LobbyNpc : MonoBehaviour
         walking = false;
     }
 
+    /// <summary>밤 이야기 장면이 NPC 를 옮긴다 — 서 있던 방향(rest)도 함께 바꿔, 돌아볼 때 기준이 새 자리가 된다.</summary>
+    public void Place(Vector3 position, Quaternion rotation)
+    {
+        transform.SetPositionAndRotation(position, rotation);
+        rest = rotation;
+    }
+
     /// <summary>애니메이터 트리거 — "Wave" 손 흔들기, "Talk" 말할 때 끄덕이기. 없는 트리거는 건너뛴다.</summary>
     public void Gesture(string trigger)
     {

@@ -805,6 +805,7 @@ public static class DomeAquariumCoastBuilder
         waves.travel = 34f;
         waves.width = 3.5f;
         waves.opacity = 0.9f;
+        DomeAquariumNightBeach.AddGlow(waves);         // 엔딩의 밤 — 푸르게 빛나는 파도
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -968,6 +969,7 @@ public static class DomeAquariumCoastBuilder
         for (int i = 0; i < rear.Count; i++) rear[i] += v.Count;
         mesh.SetVertices(verts);
         mesh.SetNormals(normals);
+        mesh.SetUVs(0, verts.ConvertAll(p => DomeAquariumWhaleListening.FlukeUv(p)));   // 아랫면 무늬(꼬리 사진 식별) — 30번 메뉴
         mesh.subMeshCount = 2;
         mesh.SetTriangles(front, 0);
         mesh.SetTriangles(rear, 1);

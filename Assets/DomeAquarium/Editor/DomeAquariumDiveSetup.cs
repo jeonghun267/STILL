@@ -111,6 +111,7 @@ public static class DomeAquariumDiveSetup
         DomeAquariumUiKit.EnsureAll();
         director.board = BuildBoard(aim, font);
         director.callPanel = BuildCallPanel(director, font);
+        director.namePanel = BuildNamePanel(director, font);
         director.passes = BuildPasses(director, swarm);
         Transform reefFloor = GameObject.Find("ReefFloor")?.transform;
         director.reefProps = reefFloor != null ? reefFloor.Find("Generated") : null;
@@ -120,6 +121,7 @@ public static class DomeAquariumDiveSetup
         director.deviceLight = BuildDeviceLight(director, aim, font);
         BuildStillness(director);
         director.unknown = BuildUnknown(director, unknownFish, aim);
+        director.signalTease = BuildSignalTease(director, director.unknown.haloMaterial);
         director.bioSparks = BuildBioSparks();
         director.layerAmbience = BuildLayerAmbience(director);
         director.night = Object.FindFirstObjectByType<LobbyNight>(FindObjectsInactive.Include);
@@ -336,6 +338,7 @@ public static class DomeAquariumDiveSetup
         m.firstPassDelay = 14f;                 // 도착 안내(약 10초)가 끝날 즈음 첫 예고 → 20초 안에 첫 무리
         m.seabed = SeabedDressing.RockBed;
         m.marineSnow = true;
+        m.migration = true;                         // 밤의 대이동 — 돔 둘레로 솟는 빛 알갱이 (DomeAquarium/32)
         m.ambience = DomeAquariumDepthSounds.Ensure("Twilight");   // 로비 수심 벽과 같은 200m 물소리
         m.ambienceVolume = 0.22f;
         m.musicLevel = 0.7f;
@@ -346,6 +349,9 @@ public static class DomeAquariumDiveSetup
         m.arrivalLine = "수심 200m예요. 여기서는 큰 생물이 가끔씩만 지나가요. 관찰기에 '다가와요'가 뜨면 그쪽을 보세요. " +
                         "큰 생물 2종을 기록해 주세요.";
         m.completeLine = "200m 기록 완료! 끝까지 기다려 줬네요. 신호가 더 강해졌어요. 이제 1,000m로 내려갈 수 있어요.";
+        // 신호 예고 — 첫 큰 생물을 보고 난 뒤쯤, 먼 어둠에서 푸른 빛이 세 번 (1,000m 에서 만날 그 빛)
+        m.signalTeaseAfter = 50f;
+        m.signalTeaseLine = "방금… 저 아래 어둠에서 푸른 빛이 세 번 깜빡였어요. 신호가 잠깐 잡혔다가 사라졌어요. 1,000m에서 기다리는 그 신호일까요?";
         EditorUtility.SetDirty(m);
         return m;
     }
@@ -452,7 +458,8 @@ public static class DomeAquariumDiveSetup
         m.completeLine = "신호의 주인을 처음으로 기록했어요. 이제 올라갈게요.";
         m.finale = true;
         m.ascentLine = "1,000m에서 해수면까지 올라갑니다. 신호는 다시 조용해졌어요.";
-        m.finalLine = "바다의 80%는 여전히 아무도 본 적이 없습니다. 하지만 오늘 밤, 그중 한 칸에 당신의 이름이 적혔습니다.";
+        m.finalLine = "90년 전 비브가 그랬던 것처럼, 오늘 밤 당신은 아무도 본 적 없는 생물을 처음 보았습니다. " +
+                      "바다의 80%는 여전히 아무도 본 적이 없습니다. 하지만 오늘 밤, 그중 한 칸에 당신의 이름이 적혔습니다.";
         EditorUtility.SetDirty(m);
         return m;
     }
@@ -608,6 +615,42 @@ public static class DomeAquariumDiveSetup
         go.SetActive(false);
         EditorUtility.SetDirty(c);
         return c;
+    }
+
+    /// <summary>200m 신호 예고 — 신호의 주인과 같은 빛무리 재질의 판 하나와 탐지 삑 소리.</summary>
+    static SignalTease BuildSignalTease(DiveDirector director, Material halo)
+    {
+        var old = director.transform.Find("SignalTease");
+        if (old != null) Object.DestroyImmediate(old.gameObject);
+        var go = new GameObject("SignalTease");
+        go.transform.SetParent(director.transform, false);
+        var tease = go.AddComponent<SignalTease>();
+
+        var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        quad.name = "Glow";
+        Object.DestroyImmediate(quad.GetComponent<Collider>());
+        quad.transform.SetParent(go.transform, false);
+        quad.transform.localScale = Vector3.one * 3.2f;
+        var r = quad.GetComponent<Renderer>();
+        r.sharedMaterial = halo;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        r.receiveShadows = false;
+        r.enabled = false;
+        tease.halo = r;
+        tease.drop = 1.2f;                                 // 눈높이 조금 아래 — 2.5m 아래는 200m 바위 더미에 반쯤 가려졌다
+
+        var src = go.AddComponent<AudioSource>();
+        src.playOnAwake = false;
+        src.spatialBlend = 1f;
+        src.rolloffMode = AudioRolloffMode.Linear;
+        src.minDistance = 2f;
+        src.maxDistance = 16f;
+        src.dopplerLevel = 0f;
+        src.volume = 0.5f;
+        tease.ping = src;
+        tease.pingClip = DomeAquariumDepthSounds.EnsureSonarPing();
+        EditorUtility.SetDirty(tease);
+        return tease;
     }
 
     static Material GlowMaterial(string name, Color inner, Color rim, float rimPower)
@@ -952,7 +995,13 @@ public static class DomeAquariumDiveSetup
         "\"Dumbo Octopus\" by Erik\n" +
         "\"Pacific Viperfish\" by redsonder1000\n" +
         "\"Sperm Whale\" · \"Humpback Whale\" · \"Blue Rorqual\" by nolanfa\n" +
+        "\"Whale Skeleton\" by 20lux · \"Oarfish\" by TheoBaldeteBRID\n" +
         "<size=24>Sketchfab, CC BY 4.0 (modified: materials and scale)</size>\n\n" +
+        "<size=26><color=#8FB0C0>밤의 이야기 · 2,500m 열수구</color></size>\n" +
+        "\"Sequoia Vent - Mariana Islands\" by DeepSeaBEE\n" +
+        "\"Riftia pachyptila\" by Scientart\n" +
+        "\"Crab_Walking\" by majidakbarimoganjogi\n" +
+        "<size=24>Sketchfab, CC BY 4.0 (modified: reduced polygons, materials, colors and scale)</size>\n\n" +
         "<size=26><color=#8FB0C0>로비</color></size>\n" +
         "\"Elevator - Low Poly Animated\" by JeffK, CC BY 4.0\n" +
         "\"Animated Ticket Gate\" by €r!c, CC BY 4.0\n" +
@@ -1039,6 +1088,67 @@ public static class DomeAquariumDiveSetup
     /// 눈앞 아래쪽에 떠서 손 닿는 곳에 머무는 판 — 제목 한 줄 + 누르는 버튼 하나 (ElevatorCallPanel).
     /// 찌르기(PokeSelector)와 컨트롤러 레이(Button) 둘 다 action 을 부른다 — action 은 두 번 불려도 안전해야 한다.
     /// </summary>
+    /// <summary>신호의 주인 이름 고르기 — 제목 한 줄과 후보 버튼 셋 (약 32 × 27cm, 0.62m 앞).</summary>
+    static SignalNamePanel BuildNamePanel(DiveDirector director, TMP_FontAsset font)
+    {
+        var old = director.transform.Find("SignalNamePanel");
+        if (old != null) Object.DestroyImmediate(old.gameObject);
+
+        var go = new GameObject("SignalNamePanel", typeof(RectTransform));
+        go.transform.SetParent(director.transform, false);
+        var canvas = go.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        canvas.worldCamera = Camera.main;
+        go.AddComponent<CanvasScaler>();
+        go.AddComponent<UnityEngine.XR.Interaction.Toolkit.UI.TrackedDeviceGraphicRaycaster>();
+        var rt = (RectTransform)go.transform;
+        rt.sizeDelta = new Vector2(460f, 390f);
+        rt.localScale = Vector3.one * 0.0007f;
+
+        var plate = NewUI("Plate", go.transform, new Vector2(460f, 390f));
+        DomeAquariumUiKit.TemplatePlate(plate, 24f, DomeAquariumUiKit.PlateFill, DomeAquariumUiKit.PlateLine);
+        var group = go.AddComponent<CanvasGroup>();
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
+        var title = Text("Title", go.transform, new Vector2(-210f, 150f), new Vector2(420f, 50f), 28f, font, TextAlignmentOptions.Center);
+        title.color = new Color(0.55f, 0.85f, 1f);
+        title.fontStyle = FontStyles.Bold;
+        title.text = ObservationTerms.NameTitle;
+
+        var panel = go.AddComponent<SignalNamePanel>();
+        panel.group = group;
+        panel.title = title;
+        var labels = new TMP_Text[3];
+        UnityEngine.Events.UnityAction[] actions = { panel.Choose0, panel.Choose1, panel.Choose2 };
+        var size = new Vector2(360f, 84f);
+        for (int i = 0; i < 3; i++)
+        {
+            var button = NewUI($"Name{i}", go.transform, size);
+            button.anchoredPosition = new Vector2(0f, 62f - i * 100f);
+            var parts = DomeAquariumUiKit.PokeButton(button, size, ObservationTerms.SignalNames[i], null,
+                DomeAquariumUiKit.Tone.Primary, 32f, font, corner: 18f, lift: 12f);
+            UnityEventTools.AddPersistentListener(parts.button.onClick, actions[i]);
+            var col = button.gameObject.AddComponent<BoxCollider>();
+            col.isTrigger = true;
+            col.size = new Vector3(size.x + 20f, size.y + 16f, 240f);
+            var rb = button.gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            var poke = button.gameObject.AddComponent<PokeSelector>();
+            poke.mysteryBox = null;
+            poke.handTag = "Hand";
+            poke.inputCooldown = 1f;
+            UnityEventTools.AddPersistentListener(poke.onPoked, actions[i]);
+            labels[i] = parts.label;
+        }
+        panel.labels = labels;
+        DomeAquariumOverlayUi.Apply(go);
+        EditorUtility.SetDirty(panel);
+        return panel;
+    }
+
     static ElevatorCallPanel BuildFloatingPanel(Transform parent, string name, string titleText, string buttonText,
                                                 UnityEngine.Events.UnityAction action, TMP_FontAsset font)
     {
@@ -1177,6 +1287,16 @@ public static class DomeAquariumDiveSetup
         d.deviceLight.debugAimAt = d.unknown.transform;
         d.deviceLight.SetOn(true);
         Debug.Log("[층 하강] 조명을 켜서 생물에게 비춘다 | " + d.DebugState());
+    }
+
+    [MenuItem("DomeAquarium/디버그/플레이 중 - 엔딩: 밤 로비로 바로 가기", priority = 224)]
+    public static void DebugJumpToEnding()
+    {
+        if (!EditorApplication.isPlaying) { Debug.LogWarning("[층 하강] 플레이 모드에서만 쓸 수 있다."); return; }
+        var d = FindDirector();
+        if (d == null) return;
+        d.DebugJumpToEnding();
+        Debug.Log("[층 하강] 엔딩의 밤 로비로 바로 간다 | " + d.DebugState());
     }
 
     [MenuItem("DomeAquarium/디버그/플레이 중 - 엔딩: 크레딧 끝으로 넘기기", priority = 225)]

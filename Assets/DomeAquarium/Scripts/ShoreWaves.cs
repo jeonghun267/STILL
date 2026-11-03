@@ -5,6 +5,9 @@ using UnityEngine;
 /// 띠는 해안선 모양을 따라 휜다 — 꼭짓점마다 그 z 의 해안선(테라스 앞은 부두 벽)까지 간다.
 /// 부두 벽에 닿으면 물보라가 위로 튄다(창 바로 앞이라 크게 보인다), 모래톱에서는 낮게 퍼진다.
 /// 바다 판은 평면이라 물마루를 세울 수 없다 — 거품 띠의 움직임으로 파도를 보인다. 메시 하나에 띠 여러 개, 매 프레임 꼭짓점만 고친다.
+///
+/// 엔딩의 밤에는 파도가 야광 플랑크톤처럼 푸르게 빛난다 — 같은 메시를 가산 재질로 한 번 더 그리는 판(nightGlow)을 켜고,
+/// 부서지는 물보라도 푸르게. 와편모조류는 물결에 흔들릴 때 빛을 낸다 — 선장이 30년 전에 본 "푸른빛"과 이어지는 마지막 그림.
 /// </summary>
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public sealed class ShoreWaves : MonoBehaviour
@@ -27,7 +30,13 @@ public sealed class ShoreWaves : MonoBehaviour
     public ParticleSystem spray;                        // 월드 시뮬레이션 — ShoreFoam 과 같은 것
     public int sprayPoints = 7;                         // 부서질 때 해안선 위 몇 곳에서 튀나
 
+    [Header("밤 — 푸르게 빛나는 파도")]
+    public LobbySequence lobby;                         // IsNight 일 때만
+    public MeshRenderer nightGlow;                      // 같은 띠 메시를 가산 · 푸른 재질로 한 번 더
+    public Color nightSpray = new Color(0.40f, 0.85f, 1f, 1f);
+
     Mesh mesh;
+    bool night;
     Vector3[] vertices;
     Color[] colors;
     bool[] broke;
@@ -73,12 +82,20 @@ public sealed class ShoreWaves : MonoBehaviour
         mesh.bounds = new Bounds(new Vector3(minX + travel * 0.5f, seaY, zStart + (n - 1) * zStep * 0.5f),
                                  new Vector3(travel + 10f, 2f, (n - 1) * zStep + 4f));
         GetComponent<MeshFilter>().sharedMesh = mesh;
+        if (nightGlow != null)
+        {
+            var glowFilter = nightGlow.GetComponent<MeshFilter>();
+            if (glowFilter != null) glowFilter.sharedMesh = mesh;
+            nightGlow.enabled = false;
+        }
         broke = new bool[fronts];
     }
 
     void Update()
     {
         if (mesh == null) return;
+        night = lobby != null && lobby.IsNight;
+        if (nightGlow != null && nightGlow.enabled != night) nightGlow.enabled = night;
         int n = shoreX.Length;
         float time = Time.time;
         for (int f = 0; f < fronts; f++)
@@ -132,7 +149,8 @@ public sealed class ShoreWaves : MonoBehaviour
                     : new Vector3(Random.Range(-0.4f, 0.4f), Random.Range(0.6f, 1.4f), Random.Range(-0.6f, 0.6f)));
                 e.startSize = wall ? Random.Range(0.5f, 1.2f) : Random.Range(0.4f, 0.8f);
                 e.startLifetime = Random.Range(0.8f, 1.3f);
-                e.startColor = new Color(1f, 1f, 1f, Random.Range(0.5f, 0.85f));
+                e.startColor = night ? new Color(nightSpray.r, nightSpray.g, nightSpray.b, Random.Range(0.6f, 0.95f))
+                                     : new Color(1f, 1f, 1f, Random.Range(0.5f, 0.85f));
                 spray.Emit(e, 1);
             }
         }

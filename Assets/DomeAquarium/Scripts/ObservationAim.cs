@@ -250,6 +250,9 @@ public sealed class ObservationAim : MonoBehaviour
         lastRecordedName = fish.DisplayName;
         recordVersion++;
 
+        // 관찰기 사진 — 카드가 뜨기 전에 눈 자리에서 한 장 (관찰 일지 상세의 "내가 찍은 사진")
+        ObservationPhotos.Take(fish, view != null ? view.position : AimOrigin, fishPos, fish.bodyLength > 0f ? fish.bodyLength : 0.4f, ObservationPhotos.Where());
+
         ShowCard(fish, fishPos, view);
 
         if (sfx != null && recordClip != null)
@@ -464,6 +467,13 @@ public sealed class ObservationAim : MonoBehaviour
         dir = (pos - origin).normalized;
         view.rotation = Quaternion.LookRotation(dir, Vector3.up);
         return true;
+    }
+
+    /// <summary>헤드셋 없이 확인할 때 — 겨누고 지켜본 것처럼 바로 기록한다 (카드 · 해설 · Recorded 이벤트 그대로).</summary>
+    public void DebugRecord(FishData fish, Vector3 fishPos)
+    {
+        Camera cam = Camera.main;
+        if (fish != null && cam != null) Record(fish, fishPos, cam.transform);
     }
 
     /// <summary>에디터 메뉴가 콘솔에 찍는 한 줄 상태.</summary>

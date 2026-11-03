@@ -132,6 +132,8 @@ MonoBehaviour:
   seabed: 0
   marineSnow: 0
   bioluminescence: 0
+  signalTeaseAfter: 0
+  signalTeaseLine: 
   encounter: 0
   taskLine: 
   showSignal: 0

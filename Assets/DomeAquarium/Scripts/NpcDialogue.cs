@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -10,6 +11,7 @@ using UnityEngine.UI;
 ///
 /// 대화는 마디(Node) 목록 — 마디마다 대사 · 대답(다음 마디 id, 비우면 끝) · 남길 표시(set, 쉼표로 여러 개).
 /// 어디서 시작할지는 지금까지의 표시와 상황으로 정한다(Entry): 처음 → start, 엔딩의 밤 로비 → night.
+/// 밤에 24m 의 그물에 걸린 거북 구조 요청을 보냈으면 → night_rescued (한 번).
 /// 그 마디가 있으면: 관찰기 첫 기록을 한 뒤 처음 → practiced, 첫 기록 전 → revisit_pre,
 /// 고래를 찾아 달라고 한 뒤 쌍안경으로 고래를 봤으면 → whale_found, 아직이면 → whale_wait. 그 밖에는 → revisit.
 ///
@@ -102,7 +104,9 @@ public sealed class NpcDialogue : MonoBehaviour
         d.y = 0f;
         float dist = d.magnitude;
         if (talking && dist > endRadius) EndTalk();
-        bool visible = talking || dist < showRadius;
+        // 쌍안경을 들여다보는 동안은 숨는다 — 판은 맨 위에 그려져 깜깜한 쌍안경 화면 위에 떴다
+        // 밤 이야기 장면 안에서는 "말 걸기" 판을 띄우지 않는다 — 장면이 시키는 말(SayLine)만 보인다
+        bool visible = (talking || (dist < showRadius && !NightStoryHub.AnyRunning)) && !BinocularViewer.AnyEngaged;
 
         if (group != null)
         {
@@ -165,12 +169,19 @@ public sealed class NpcDialogue : MonoBehaviour
 
     string Entry()
     {
-        if (lobby != null && lobby.IsNight && Find("night") != null) return "night";
+        if (lobby != null && lobby.IsNight)
+        {
+            // 24m 에서 그물에 걸린 거북의 구조 요청을 보냈으면 그 소식부터 (놀란)
+            bool rescued = DiveDirector.Instance != null && DiveDirector.Instance.TurtleRescued;
+            if (rescued && !Has("rescueTold") && Find("night_rescued") != null) return "night_rescued";
+            if (Find("night") != null) return "night";
+        }
         bool practiced = tutorial != null && tutorial.Current >= LobbyTutorial.Step.Board;
         if (!Has("met")) return practiced && Find("practiced_new") != null ? "practiced_new" : "start";
         if (practiced && !Has("practicedSeen") && Find("practiced") != null) return "practiced";
         if (!practiced && tutorial != null && Find("revisit_pre") != null) return "revisit_pre";
-        if (Has("whaleAsked") && !Has("whaleThanked")) return WhaleSeen ? "whale_found" : "whale_wait";
+        if (Has("whaleAsked") && !Has("whaleThanked"))
+            return !WhaleSeen ? "whale_wait" : FlukePhotoId.Identified && Find("whale_found_id") != null ? "whale_found_id" : "whale_found";
         return "revisit";
     }
 
@@ -183,23 +194,74 @@ public sealed class NpcDialogue : MonoBehaviour
         return null;
     }
 
-    void Go(string id)
+    /// <summary>
+    /// 말을 걸지 않았는데 NPC 가 먼저 하는 한 마디 (해변 쓰레기를 다 주웠을 때 등). 대화 중이면 넘긴다.
+    /// 대답 버튼 하나로 끝나고, set 표시를 남겨 나중 대사가 받아 줄 수 있다.
+    /// </summary>
+    public void Remark(string line, string reply = "알겠어요", string set = null)
     {
-        current = Find(id);
+        if (talking || string.IsNullOrWhiteSpace(line)) return;
+        talking = true;
+        talkingNow.Add(this);
+        ShowFull();
+        Show(new Node { id = "remark", line = line, set = set, choices = new[] { new Choice { label = reply } } });
+    }
+
+    /// <summary>
+    /// 밤 이야기 장면에서 NPC 가 혼자 하는 말 — 대답 버튼 없이 판에 대사를 띄우고, 목소리가 끝나면(없으면 읽을 시간 뒤) 내린다.
+    /// 그동안 관측소장 자막은 기다린다(AnyTalking).
+    /// </summary>
+    public IEnumerator SayLine(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line)) yield break;
+        while (talking) yield return null;
+        talking = true;
+        talkingNow.Add(this);
+        ShowFull();
+        Show(new Node { id = "say", line = line, choices = new Choice[0] });
+        var tts = FishNarrationService.Instance;
+        float start = Time.time, read = 1.6f + line.Length * 0.085f;
+        yield return null;
+        while (talking && Time.time - start < read + 10f)
+        {
+            bool speaking = tts != null && tts.IsSpeaking;
+            if (!speaking && Time.time - start >= read) break;
+            yield return null;
+        }
+        if (talking) EndTalk();
+    }
+
+    void Go(string id) => Show(Find(id));
+
+    void Show(Node node)
+    {
+        current = node;
         if (current == null) { EndTalk(); return; }
         if (!string.IsNullOrWhiteSpace(current.set))
             foreach (var f in current.set.Split(',')) if (!string.IsNullOrWhiteSpace(f)) flags.Add(f.Trim());
 
+        string line = Fill(current.line);
         if (title != null) title.text = speaker;
-        if (body != null) { body.gameObject.SetActive(true); body.text = current.line; }
+        if (body != null) { body.gameObject.SetActive(true); body.text = line; }
         if (talkButton != null) talkButton.gameObject.SetActive(false);
         // 대답은 대사를 조금 들은 뒤에 — 바로 누르고 넘겨 버리지 않게
-        choicesAt = Time.time + Mathf.Min(2.5f, 0.8f + current.line.Length * 0.025f);
+        choicesAt = Time.time + Mathf.Min(2.5f, 0.8f + line.Length * 0.025f);
         foreach (var b in choiceButtons) if (b != null) b.gameObject.SetActive(false);
 
         if (npc != null) npc.Gesture("Talk");
         var tts = FishNarrationService.Instance;
-        if (tts != null) tts.Speak(string.Empty, current.line, voice);
+        if (tts != null) tts.Speak(string.Empty, line, voice);
+    }
+
+    /// <summary>대사 속 {name} 을 체험자가 1,000m 에서 붙인 신호의 주인 이름으로 — 아직 없으면 "그 생물". {이라고} · {이에요} 는 받침에 맞춘다.</summary>
+    static string Fill(string line)
+    {
+        if (string.IsNullOrEmpty(line) || !line.Contains("{name}")) return line;
+        string name = DiveDirector.Instance != null ? DiveDirector.Instance.SignalName : string.Empty;
+        if (string.IsNullOrWhiteSpace(name)) name = "그 생물";
+        return line.Replace("{name}", name)
+                   .Replace("{이라고}", ObservationTerms.Particle(name, "이라고", "라고"))
+                   .Replace("{이에요}", ObservationTerms.Particle(name, "이에요", "예요"));
     }
 
     void UpdateChoices()

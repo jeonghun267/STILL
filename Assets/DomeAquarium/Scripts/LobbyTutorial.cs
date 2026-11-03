@@ -166,7 +166,7 @@ public sealed class LobbyTutorial : MonoBehaviour
     {
         // 이동 제공자가 Update 에서 리그를 옮긴 뒤, 화면에 그리기 전에 걸을 수 있는 곳 안으로 되돌린다.
         // 이동 장치가 꺼진 동안(엘리베이터·수중 돔)은 리그를 스크립트가 옮기므로 건드리지 않는다.
-        if (locomotionRoot == null || !locomotionRoot.activeInHierarchy) return;
+        if (locomotionRoot == null || !locomotionRoot.activeInHierarchy || NightStoryHub.AnyRunning) return;
         if (hallArea.width <= 0f || lobby == null || lobby.rig == null) return;
         Transform view = ResolveView();
         if (view == null) return;
@@ -231,6 +231,7 @@ public sealed class LobbyTutorial : MonoBehaviour
 
     void SetLocomotion(bool on)
     {
+        if (on && NightStoryHub.AnyRunning) on = false;                    // 밤 이야기 장면 안에서는 서서 본다 (엔딩 루틴이 켜려 해도)
         if (locomotionRoot != null && locomotionRoot.activeSelf != on) locomotionRoot.SetActive(on);
     }
 

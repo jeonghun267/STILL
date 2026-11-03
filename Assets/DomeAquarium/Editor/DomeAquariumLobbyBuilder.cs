@@ -171,6 +171,13 @@ public static class DomeAquariumLobbyBuilder
         DomeAquariumTerraceBuilder.Build(set, seq, seq.tutorial);   // 테라스 문 · 데크 걷기 · 관망 쌍안경
         DomeAquariumNpcBuilder.Build(set, seq);                     // 테라스 데크의 선장 · 해변의 놀란
         DomeAquariumQuestPerformance.AssignDomeSet(seq);             // 물 위에 있는 동안 수중 돔을 끈다
+        DomeAquariumCabinExtras.Build(seq);                          // 엘리베이터 칸 둥근 창 · 수압 컵
+        DomeAquariumGhostNet.Build(seq);                             // 해변 쓰레기 줍기 · 24m 그물에 걸린 거북 (놀란 대화 뒤)
+        DomeAquariumWhaleListening.Build(seq);                       // 수중 마이크 고래 소리 · 쌍안경 꼬리 사진 식별
+        DomeAquariumNightStories.Build(seq);                         // 엔딩의 밤 "오늘 밤의 이야기" 판 · 다섯 이야기 장면
+        DomeAquariumDepthExtras.Build();                             // 24m 산호 백화 · 200m 밤의 대이동
+        DomeAquariumTidePoolTouch.Build();                           // 조수 웅덩이에 손 넣기 (놀란 다음)
+        DomeAquariumDeepEncounters.Build();                          // 찍을까 바라볼까 · 고래 낙하 · 산갈치 · 밤의 대왕고래
         DomeAquariumBeachBuilder.Build(root.transform, set, seq, seq.tutorial);   // 해변 시작 — 모래사장 · 계단 · 조수 웅덩이 · 장비대
         if (depthWall != null) depthWall.skyProbes = set.GetComponentsInChildren<ReflectionProbe>(true);   // 창밖 하늘 반사도 깊이에 맞춰 어둡게
         BuildNight(root.transform, set, seq, depthWall);
@@ -603,8 +610,9 @@ public static class DomeAquariumLobbyBuilder
         Label("PlaqueText", ex, plaquePos + Vector3.up * 1.05f - Quaternion.Euler(0f, yaw, 0f) * Vector3.forward * 0.02f, yaw,
               new Vector2(0.56f, 0.34f),
               "<b>바시스피어  BATHYSPHERE</b>\n<size=70%>1930년, 윌리엄 비브와 오티스 바턴은 이 지름 1.45m의 쇠공을 타고 " +
-              "사람으로서 처음 깊은 바다를 직접 들여다봤다. 1934년에는 수심 923m까지 내려갔다.</size>",
-              0.034f, new Color(0.88f, 0.95f, 1f), TextAlignmentOptions.TopLeft);
+              "사람으로서 처음 깊은 바다를 직접 들여다봤다. 1934년에는 수심 923m까지 내려갔다. " +
+              "그날 비브는 다섯 줄로 빛나는 물고기를 보고 그림으로 남겼지만, 그 뒤로 아무도 다시 보지 못했다.</size>",
+              0.03f, new Color(0.88f, 0.95f, 1f), TextAlignmentOptions.TopLeft);
     }
 
     static void BuildFurniture(Transform set)
