@@ -54,7 +54,7 @@ public static class DomeAquariumDiveSetup
     // 이 종들과 해마류는 늘 돔에 남고, 나머지 산호초 종은 몇 분마다 무리 단위로 바뀐다(rotation).
     static readonly string[] ReefMustHave =
     {
-        "BlacktipReefShark", "NurseShark", "SpottedEagleRay",
+        "BlacktipReefShark", "NurseShark", "AngelShark", "SpottedEagleRay",   // 전자리상어 — 교체 64종 속에 있으면 한 번 체험에 거의 못 봤다
         "GreenTurtle", "HawksbillTurtle", "LoggerheadTurtle", "HectorDolphin",
         "Clownfish", "TomatoClownfish",
         "BlueTang", "YellowTang", "MoorishIdol",

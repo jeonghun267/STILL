@@ -60,6 +60,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 719305e483518c34f9a82db3221d3e5f, type: 2}
   - {fileID: 11400000, guid: e6396a5e961dbb449acd1011e02a3d4e, type: 2}
   - {fileID: 11400000, guid: 3429bec52d6f7c44c8b4b7edde904ced, type: 2}
+  - {fileID: 11400000, guid: 56f6495e70ebe1040b176f52def729a6, type: 2}
   rotation:
   - {fileID: 11400000, guid: 8e1ba89320d78dc4aa25b54e4c2a25c7, type: 2}
   - {fileID: 11400000, guid: d338eecf9c7a92e4ba94e9105cf11e02, type: 2}
@@ -124,7 +125,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 24a001b95038a1447a51f056dcee281c, type: 2}
   - {fileID: 11400000, guid: 1c6f97f283f61874e81f1e73f5fbc27c, type: 2}
   - {fileID: 11400000, guid: a5db409fda16829499075acee1629c8c, type: 2}
-  - {fileID: 11400000, guid: 56f6495e70ebe1040b176f52def729a6, type: 2}
   rotationInterval: {x: 100, y: 160}
   passers: []
   passInterval: {x: 60, y: 90}
@@ -132,6 +132,8 @@ MonoBehaviour:
   seabed: 0
   marineSnow: 0
   bioluminescence: 0
+  migration: 0
+  oarfish: 0
   signalTeaseAfter: 0
   signalTeaseLine: 
   encounter: 0

@@ -474,6 +474,10 @@ public static class DomeAquariumSetup
         // 실측: floorY=-7.2, ceilY=+7.5, span=14.7 이므로 bandCenter 0.85 는 y=+5.3 (밴드 2.7~7.5)이다.
         // 플레이어 눈은 y≈1.36 이라 상어가 머리 위로만 다녀 "어디 갔는지 모르겠다"가 된다.
         // 0.60 = y≈1.62 로 눈앞을 가로지른다. 폭도 넓혀 위아래로 오간다.
+        // 전자리상어는 바닥에 납작 엎드려 지내는 상어 — 다른 상어보다 낮게 다닌다. 실제 바닥(눈 8m 아래)까지 내리면
+        // 관찰기 거리(6m) 밖이라 기록할 수 없어, 눈 아래 2m 안팎으로.
+        if (s.Contains("angelshark"))
+            return new Band { center = 0.35f, width = 0.20f };
         if (s.Contains("shark") || s.Contains("dolphin") || s.Contains("dophin") || s.Contains("turtle"))
             return new Band { center = 0.60f, width = 0.50f };
         if (s.Contains("tuna") || s.Contains("ray"))
