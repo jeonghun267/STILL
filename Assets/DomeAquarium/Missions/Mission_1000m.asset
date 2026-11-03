@@ -21,12 +21,22 @@ MonoBehaviour:
   targets:
   - {fileID: 11400000, guid: 5829f78b2a83b1f44bffb2b832bc2fc4, type: 2}
   targetClue: 
-  species: []
+  species:
+  - {fileID: 11400000, guid: 1137793626b9c024591a565a450d3361, type: 2}
+  - {fileID: 11400000, guid: 64c7164644bb87c42a8b180a0ddd36b4, type: 2}
+  - {fileID: 11400000, guid: acb5232adce9a2c4c99081de5f012cdc, type: 2}
+  - {fileID: 11400000, guid: f4c706ad5f747ff468672c404279d1b5, type: 2}
+  - {fileID: 11400000, guid: 0ac90bed513193b4cb3a14330cfb22dc, type: 2}
+  - {fileID: 11400000, guid: 46593b60f0b29a8488505916ebc7ed25, type: 2}
   rotation: []
   rotationInterval: {x: 100, y: 160}
-  passers: []
-  passInterval: {x: 60, y: 90}
-  firstPassDelay: 14
+  passers:
+  - fish: {fileID: 11400000, guid: 3b4d43731cb0e3441af0f2b1eb966446, type: 2}
+    group: {x: 1, y: 1}
+    seconds: 36
+    weight: 1
+  passInterval: {x: 120, y: 180}
+  firstPassDelay: 40
   seabed: 2
   marineSnow: 0
   bioluminescence: 1

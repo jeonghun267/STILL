@@ -25,17 +25,17 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: bee1652ecc1c50d4695dc48444c275e3, type: 3}
+        m_Texture: {fileID: 2800000, guid: ab29bee8bd49c1342b8ca285acdacac8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Exposure: 1
+    - _Exposure: 0.3
     - _ImageType: 0
     - _Layout: 0
     - _Mapping: 1
     - _MirrorOnBack: 0
-    - _Rotation: 0
+    - _Rotation: 341.4
     m_Colors:
     - _Tint: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
   m_BuildTextureStacks: []

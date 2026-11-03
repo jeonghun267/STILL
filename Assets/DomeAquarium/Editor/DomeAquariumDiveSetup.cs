@@ -11,7 +11,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 층 단위 하강 (기획 문서 "의뢰와 하강 연결") — 24m 산호초 → 200m 박광층 입구 → 1,000m 심해(3막).
-///  1. 98종 FishData 에 서식 층을 적는다. 2막 8종은 200m, 강에 사는 돌고래 3종은 어느 층에도 넣지 않는다.
+///  1. FishData 에 서식 층을 적는다. 2막 9종(대왕고래 포함)은 200m, 심해 생물 6종 · 향유고래는 1,000m(DomeAquarium/21),
+///     강에 사는 돌고래 3종은 어느 층에도 넣지 않는다.
 ///  2. 층마다 DiveMission 에셋을 만든다: 할 일 두 줄, 등장 생물, 조명, 관측소장 대사.
 ///  3. 씬에 DiveDirector 를 두고 관찰기 위 할 일 판, 돔의 "엘리베이터 타기" 판을 만든다.
 /// 칸 안 깊이 버튼은 엘리베이터와 같이 로비 빌드(9)가 만든다. 순서: 9 → 18. 18 을 먼저 돌려도 런타임에 서로 찾는다.
@@ -31,6 +32,19 @@ public static class DomeAquariumDiveSetup
         ("SkipjackTuna", 4, 6, 22f), ("YellowfinTuna", 3, 4, 24f), ("BluefinTuna", 2, 3, 26f),
         ("CommonThresherShark", 1, 1, 30f), ("GreateWhiteShark", 1, 1, 30f), ("MantaRay", 1, 1, 34f),
         ("LeatherbackTurtle", 1, 1, 32f), ("RightWhaleDolphin", 2, 3, 24f),
+        ("BlueWhale", 1, 1, 38f),   // 대왕고래 — 먹이(크릴)를 따라 100~200m 를 오르내린다 (DomeAquarium/21)
+    };
+
+    // 3막 심해 — 1,000m 안팎에 실제로 사는 생물 6종 (DomeAquarium/21). 늘 천천히 떠다니지만 빛이 없어
+    // 관찰기 조명(5.5m)에 비칠 때만 보인다. 할 일(신호의 주인)과 상관없이 관찰 일지에 덤으로 기록된다.
+    static readonly string[] Midnight =
+        { "Anglerfish", "VampireSquid", "DumboOctopus", "Viperfish", "Telescopefish", "Hatchetfish" };
+
+    // 1,000m 를 가끔 지나가는 큰 생물 — 향유고래는 오징어를 사냥하러 1,000~2,000m 까지 잠수한다.
+    // 신호의 주인이 다가오는 동안은 오지 않는다 (DiveDirector — "가만히"를 깨지 않게).
+    static readonly (string name, int min, int max, float seconds)[] MidnightPassers =
+    {
+        ("SpermWhale", 1, 1, 36f),
     };
 
     // 강에 사는 종 — 바다 관찰 기록에 나오면 사실 오류다 (분홍돌고래=아마존강, 투쿠시돌고래, 인더스강돌고래).
@@ -47,6 +61,7 @@ public static class DomeAquariumDiveSetup
         "GreenChromis", "DominoDamsel",
         "FireGoby", "BlackSeahorse", "RedSeahorse", "BlueLobster",
         "QueenAngelfish", "CopperbandButterflyfish",
+        "Pufferfish", "Cuttlefish", "Octopus",          // Pixit3D (DomeAquarium/21)
     };
 
     // 관찰기 상태 화면과 같은 색 (가장 어두운 채널도 13/255 위 — Meta 디스플레이 가이드)
@@ -81,7 +96,7 @@ public static class DomeAquariumDiveSetup
         DiveMission reef = BuildReefMission(all, lobby);
         DiveMission twilight = BuildTwilightMission(all);
         FishData unknownFish = BuildUnknownFish();
-        DiveMission midnight = BuildMidnightMission(unknownFish);
+        DiveMission midnight = BuildMidnightMission(all, unknownFish);
         AssetDatabase.SaveAssets();
 
         var director = Object.FindFirstObjectByType<DiveDirector>(FindObjectsInactive.Include);
@@ -153,7 +168,9 @@ public static class DomeAquariumDiveSetup
                   $"관찰 일지 {journal?.allFish?.Length ?? 0}종, 할 일은 아무 생물이나 {reef.recordCount}종, " +
                   $"200m 큰 생물 {twilight.passers.Length}종이 {twilight.passInterval.x:0}~{twilight.passInterval.y:0}초마다 한 무리씩 " +
                   $"(할 일은 큰 생물 {twilight.recordCount}종), 바닥 {twilight.seabed}, 바다눈 {(twilight.marineSnow ? "켬" : "끔")}. " +
-                  $"1,000m: 신호의 주인({unknownFish.DisplayName}) — 조명을 끄고 {director.unknown?.stillNeeded ?? 5f:0}초 가만히.");
+                  $"1,000m: 신호의 주인({unknownFish.DisplayName}) — 조명을 끄고 {director.unknown?.stillNeeded ?? 5f:0}초 가만히. " +
+                  $"덤으로 심해 생물 {midnight.species.Length}종 {midnight.species.Sum(f => f.schoolCount)}마리, " +
+                  $"큰 생물 {midnight.passers.Length}종이 {midnight.passInterval.x:0}~{midnight.passInterval.y:0}초마다.");
         return director;
     }
 
@@ -173,10 +190,12 @@ public static class DomeAquariumDiveSetup
     static void AssignHabitats(List<FishData> all)
     {
         var twilight = new HashSet<string>(Twilight.Select(t => t.name));
+        var midnight = new HashSet<string>(Midnight.Concat(MidnightPassers.Select(t => t.name)));
         var fresh = new HashSet<string>(Freshwater);
         foreach (var f in all)
         {
-            DiveDepth habitat = twilight.Contains(f.name) ? DiveDepth.Twilight200 : DiveDepth.Reef24;
+            DiveDepth habitat = midnight.Contains(f.name) ? DiveDepth.Midnight1000
+                : twilight.Contains(f.name) ? DiveDepth.Twilight200 : DiveDepth.Reef24;
             bool freshwater = fresh.Contains(f.name);
             if (f.habitat == habitat && f.freshwater == freshwater) continue;
             f.habitat = habitat;
@@ -222,13 +241,18 @@ public static class DomeAquariumDiveSetup
             if (m.targets != null) meetable.UnionWith(m.targets);
             if (m.passers != null) meetable.UnionWith(m.passers.Select(p => p.fish));
         }
+        // 로비 연습 수조 · 해변 조수 웅덩이에서 만나는 종도 일지에 든다
+        foreach (var tank in Object.FindObjectsByType<PracticeTank>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (tank.fish != null) meetable.UnionWith(tank.fish);
         meetable.Remove(null);
         return meetable;
     }
 
     static DiveMission BuildReefMission(List<FishData> all, LobbySequence lobby)
     {
-        var reef = all.Where(f => f.habitat == DiveDepth.Reef24 && !f.freshwater && f.prefab != null).ToList();
+        // 해변 조수 웅덩이 종(게 · 불가사리 · 성게 · 새우, DomeAquarium/24)은 돔에 넣지 않는다
+        var shore = new HashSet<string>(DomeAquariumDeepSeaSetup.Shore.Select(s => s.name));
+        var reef = all.Where(f => f.habitat == DiveDepth.Reef24 && !f.freshwater && f.prefab != null && !shore.Contains(f.name)).ToList();
         var byName = reef.ToDictionary(f => f.name);
 
         // 씬 빌드(4)의 전시 종 선정과 같은 방식: 볼거리를 먼저 넣고, 남은 예산을 수직 층위 순으로 고르게 채운다.
@@ -377,8 +401,22 @@ public static class DomeAquariumDiveSetup
         return f;
     }
 
-    static DiveMission BuildMidnightMission(FishData unknownFish)
+    static DiveMission BuildMidnightMission(List<FishData> all, FishData unknownFish)
     {
+        var byName = all.ToDictionary(f => f.name);
+        var species = new List<FishData>();
+        foreach (string name in Midnight)
+        {
+            if (byName.TryGetValue(name, out var f) && f.prefab != null) species.Add(f);
+            else Debug.LogWarning($"[층 하강] 1,000m 종을 찾지 못했습니다: {name} — '21. 심해 생물 · 고래 만들기'를 먼저 실행하세요.");
+        }
+        var passers = new List<DiveMission.PassingCreature>();
+        foreach (var (name, min, max, seconds) in MidnightPassers)
+        {
+            if (!byName.TryGetValue(name, out var f) || f.prefab == null) { Debug.LogWarning($"[층 하강] 1,000m 큰 생물을 찾지 못했습니다: {name}"); continue; }
+            passers.Add(new DiveMission.PassingCreature { fish = f, group = new Vector2Int(min, max), seconds = seconds, weight = 1f });
+        }
+
         var m = LoadOrCreate("Mission_1000m");
         m.depth = DiveDepth.Midnight1000;
         m.meters = 1000f;
@@ -389,9 +427,12 @@ public static class DomeAquariumDiveSetup
         m.targets = new[] { unknownFish };
         m.targetClue = "";
         m.taskLine = "신호의 정체 확인하기";
-        m.species = new FishData[0];
-        m.passers = new DiveMission.PassingCreature[0];
-        m.seabed = SeabedDressing.Bare;         // 3막은 거의 비운다 — 모래 바닥과 어둠뿐
+        m.species = species.ToArray();          // 조명에 비칠 때만 보이는 심해 생물 — 마릿수는 FishData.schoolCount
+        m.rotation = new FishData[0];
+        m.passers = passers.ToArray();
+        m.passInterval = new Vector2(120f, 180f);
+        m.firstPassDelay = 40f;                 // 도착 안내 · 신호를 먼저 보고 나서
+        m.seabed = SeabedDressing.Bare;         // 3막은 거의 비운다 — 모래 바닥과 어둠, 가끔 지나가는 그림자뿐
         m.marineSnow = false;
         m.bioluminescence = true;
         m.encounter = true;
@@ -893,13 +934,20 @@ public static class DomeAquariumDiveSetup
     // 엔딩 크레딧
     // ─────────────────────────────────────────────────────────────
 
-    // CC-BY 세 줄은 반드시 들어가야 한다 (Assets/ThirdParty/CREDITS.md). 이름(만든 사람)은 씬의 CreditsRoll.body 에서 고친다.
+    // CC-BY 줄(로비 세 모델 · 심해 생물 · 고래)은 반드시 들어가야 한다 (Assets/ThirdParty/CREDITS.md). 이름(만든 사람)은 씬의 CreditsRoll.body 에서 고친다.
     const string CreditsBody =
         "<size=72><b>STILL</b></size>\n" +
         "<size=30><color=#8FE6FF>해양 관측소 STILL · 1,000m 의 신호</color></size>\n\n\n" +
         "<size=26><color=#8FB0C0>만든 사람</color></size>\nSTILL 제작팀\n\n" +
         "<size=26><color=#8FB0C0>관측소장의 목소리 · 생물 설명</color></size>\nGoogle Gemini\n(일지에 없는 생물은 고정 대본)\n\n" +
         "<size=26><color=#8FB0C0>바다 생물 · 산호 모델</color></size>\nLayer Lab · 3D Characters - Fish (Unity Asset Store)\n\n" +
+        "<size=26><color=#8FB0C0>심해 생물 · 고래</color></size>\n" +
+        "\"Angler Fish - Inktober Day 3\" by lesliestowe\n" +
+        "\"Vampire Squid\" · \"Gigantura Chuni\" · \"Hatchet Fish\" by Razan Negm\n" +
+        "\"Dumbo Octopus\" by Erik\n" +
+        "\"Pacific Viperfish\" by redsonder1000\n" +
+        "\"Sperm Whale\" · \"Humpback Whale\" · \"Blue Rorqual\" by nolanfa\n" +
+        "<size=24>Sketchfab, CC BY 4.0 (modified: materials and scale)</size>\n\n" +
         "<size=26><color=#8FB0C0>로비</color></size>\n" +
         "\"Elevator - Low Poly Animated\" by JeffK, CC BY 4.0\n" +
         "\"Animated Ticket Gate\" by €r!c, CC BY 4.0\n" +
@@ -1040,6 +1088,7 @@ public static class DomeAquariumDiveSetup
         panel.side = -0.08f;
         var aimForAvoid = Object.FindFirstObjectByType<ObservationAim>(FindObjectsInactive.Include);
         panel.avoid = aimForAvoid != null ? aimForAvoid.statusRoot : null;
+        DomeAquariumOverlayUi.Apply(go);          // 지나가는 물고기 · 바위에 가려지지 않게 맨 위에 그린다
         EditorUtility.SetDirty(panel);
         return panel;
     }

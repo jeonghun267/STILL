@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: Shrimp
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: Shrimp
+  koreanName: "\uC0C8\uC6B0"
+  englishName: Rockpool shrimp
+  scientificName: Caridea
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 1
+  habitat: 0
+  freshwater: 0
+  unnamed: 0
+  prefab: {fileID: 4771869331595132481, guid: a1cf197b9f50be440b03307e4543ba62, type: 3}
+  swimScale: 0.07
+  revealScale: 0.22
+  bandCenter: 0.3
+  bandWidth: 0.2
+  bodyLength: 0.07
+  swimSpeed: 0.1
+  schoolCount: 1

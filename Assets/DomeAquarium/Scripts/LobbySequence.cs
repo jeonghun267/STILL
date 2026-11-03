@@ -66,8 +66,14 @@ public sealed class LobbySequence : MonoBehaviour
     [Header("자막")]
     public CanvasGroup captionGroup;
     public TMP_Text captionText;
-    public float captionDistance = 1.5f;
-    public float captionDrop = 0.34f;
+    // 시선에서 20° 아래, 0.9m — 시선 한가운데(대화하는 사람의 얼굴, 관찰하는 생물)를 비워 두고,
+    // 그보다 가까이 오는 물체가 드물어 두 눈이 느끼는 거리가 어긋나지 않는다. 그래도 겹치면 맨 위에 그린다(DomeAquariumOverlayUi).
+    // 고개를 숙이면 같이 내려간다 — 예전처럼 가슴 높이에 고정하면 장비대 · 조수 웅덩이를 내려다볼 때 자막이 그 위(간판 글씨)에 겹쳤다.
+    public float captionDistance = 0.9f;
+    [Tooltip("시선에서 자막까지 내려 보는 각도(°)")]
+    public float captionBelowGaze = 20f;
+    [Tooltip("시선을 따라가는 위아래 범위(°, 수평 기준) — 하늘이나 발밑을 볼 때 자막이 너무 멀리 가지 않게")]
+    public Vector2 captionGazePitch = new Vector2(-55f, 25f);
     [Tooltip("엘리베이터 칸 안쪽 반폭(m). 칸이 3m 라 1.5m 앞 자막은 벽 속에 묻힌다 — 칸 안에서는 바라보는 쪽 벽 앞에 세운다")]
     public float cabinHalfSize = 1.4f;
     public float cabinCaptionMargin = 0.25f;   // 벽(과 벽의 수심 계기판)에서 띄우는 거리
@@ -649,6 +655,8 @@ public sealed class LobbySequence : MonoBehaviour
     IEnumerator Say(string line)
     {
         if (string.IsNullOrWhiteSpace(line)) yield break;
+        // 한 번에 한 사람만 말한다 — NPC 와 대화하는 동안은 관측소장 자막 · 목소리가 끼어들지 않는다(대화 판과 자막이 겹쳤다).
+        while (NpcDialogue.AnyTalking) yield return null;
         ShowCaption(line);
 
         var tts = FishNarrationService.Instance;
@@ -662,6 +670,17 @@ public sealed class LobbySequence : MonoBehaviour
         yield return null;
         while (Time.time - start < timeout)
         {
+            if (NpcDialogue.AnyTalking)
+            {
+                // 말하는 도중 NPC 에게 말을 걸었다 — 자막을 내렸다가 대화가 끝나면 이 줄을 처음부터 다시 말한다
+                HideCaption();
+                while (NpcDialogue.AnyTalking) yield return null;
+                ShowCaption(line);
+                if (tts != null) tts.Speak(string.Empty, line);
+                start = Time.time;
+                yield return null;
+                continue;
+            }
             bool speaking = tts != null && tts.IsSpeaking;
             if (!speaking && Time.time - start >= readTime) break;
             yield return null;
@@ -701,14 +720,18 @@ public sealed class LobbySequence : MonoBehaviour
         captionGroup.alpha = Mathf.MoveTowards(captionGroup.alpha, captionVisible ? 1f : 0f, Time.deltaTime * 2.5f);
         if (captionGroup.alpha <= 0.001f || viewCamera == null) return;
 
-        // 시작 패널과 같은 방식으로 정면 아래를 천천히 따라온다 — 고개를 돌려도 자막을 놓치지 않는다.
+        // 시선 아래를 천천히 따라온다 — 고개를 돌리거나 숙여도 자막을 놓치지 않고, 보고 있는 것 위에는 올라오지 않는다.
         Transform cam = viewCamera.transform;
         Vector3 forward = Flat(cam.forward);
+        if (forward.sqrMagnitude < 0.0001f) forward = Flat(-cam.up);              // 바로 아래 · 위를 볼 때는 머리 윗방향의 반대가 앞
         if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward; else forward.Normalize();
-        // 가까이 세울 때는 내리는 높이와 크기를 같은 비율로 줄인다 — 시야에서는 같은 자리, 같은 크기다.
+        float gaze = Mathf.Asin(Mathf.Clamp(cam.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+        float pitch = (Mathf.Clamp(gaze, captionGazePitch.x, captionGazePitch.y) - captionBelowGaze) * Mathf.Deg2Rad;
+        Vector3 dir = forward * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
+        // 가까이 세울 때는 크기를 같은 비율로 줄인다 — 시야에서는 같은 자리, 같은 크기다.
         float near = CaptionDistance(cam.position, forward) / captionDistance;
-        Vector3 pos = cam.position + forward * (captionDistance * near) + Vector3.down * (captionDrop * near);
-        Quaternion rot = Quaternion.LookRotation(forward, Vector3.up);
+        Vector3 pos = cam.position + dir * (captionDistance * near);
+        Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);               // 시선에 수직으로 — 기울여도 글자가 찌그러지지 않는다
 
         Transform tr = captionGroup.transform;
         float k = captionSnap ? 1f : 1f - Mathf.Exp(-3f * Time.deltaTime);

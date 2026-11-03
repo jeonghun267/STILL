@@ -106,6 +106,9 @@ public sealed class DepthWallPreview : MonoBehaviour
     int active = -1;
     float holdUntil;
     bool applied;                              // 로비 조명을 바꿔 둔 상태인지
+
+    /// <summary>미리보기가 로비 조명을 쥐고 있는 동안 — 로비의 시간 흐름(LobbyDusk)은 그동안 빛을 칠하지 않는다.</summary>
+    public bool Busy => applied;
     Look current;
     Color skyTintBase = new Color(0.5f, 0.5f, 0.5f, 0.5f);
     float skyExposureBase = 1f;

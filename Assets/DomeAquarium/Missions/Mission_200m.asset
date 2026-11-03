@@ -56,6 +56,10 @@ MonoBehaviour:
     group: {x: 2, y: 3}
     seconds: 24
     weight: 1
+  - fish: {fileID: 11400000, guid: 829958c9624692f4b9509b71e6e9e9fa, type: 2}
+    group: {x: 1, y: 1}
+    seconds: 38
+    weight: 1
   passInterval: {x: 60, y: 90}
   firstPassDelay: 14
   seabed: 1

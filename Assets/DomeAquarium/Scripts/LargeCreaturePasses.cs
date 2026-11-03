@@ -43,6 +43,8 @@ public sealed class LargeCreaturePasses : MonoBehaviour, IObservationTargets
     [NonSerialized] public Predicate<FishData> isRecorded;
     /// <summary>지목 생물. 두 번째 무리로 반드시 오고, 기록하기 전까지는 한 번 걸러 한 번씩 다시 온다.</summary>
     [NonSerialized] public FishData priority;
+    /// <summary>참이면 다음 무리를 미룬다 — 1,000m 에서 신호의 주인이 다가오는 동안 (가만히 있어야 하는 때에 고개를 돌리게 하지 않는다).</summary>
+    [NonSerialized] public Func<bool> hold;
 
     sealed class Body
     {
@@ -185,7 +187,9 @@ public sealed class LargeCreaturePasses : MonoBehaviour, IObservationTargets
         switch (phase)
         {
             case Phase.Waiting:
-                if (timer <= 0f) Warn();
+                if (timer > 0f) break;
+                if (hold != null && hold()) timer = 5f;
+                else Warn();
                 break;
             case Phase.Warning:
                 if (timer <= 0f) StartPass();

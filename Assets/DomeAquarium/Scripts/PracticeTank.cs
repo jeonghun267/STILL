@@ -6,6 +6,9 @@ using UnityEngine;
 /// 무리 시뮬레이션(BoidManager)은 월드 원점의 돔을 전제로 짜여 있어 작은 수조에 쓸 수 없다.
 /// 여기서는 개체마다 서로 다른 타원 궤도를 돌린다 — 아이들이 처음 겨눠 보는 자리라
 /// 예측할 수 있게 천천히, 유리 가까이로 지나가는 편이 낫다.
+///
+/// 해변의 조수 웅덩이도 이것을 쓴다. 수직 층위(bandCenter)가 crawlBand 이하인 종(게 · 불가사리 · 성게)은
+/// 바닥을 기어 다닌다 — 위아래로 들썩이지 않고 몸을 수평으로 둔다.
 /// </summary>
 public sealed class PracticeTank : MonoBehaviour, IObservationTargets
 {
@@ -14,10 +17,12 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
     [Tooltip("수조 안쪽 반 크기(m). 로컬 축 기준 — x 폭, y 높이, z 길이")]
     public Vector3 innerHalfSize = new Vector3(0.28f, 0.32f, 0.82f);
     public float speedScale = 0.55f;          // 종별 swimSpeed 대비 — 연습용이라 느리게
+    [Range(0f, 1f)] public float crawlBand = 0.05f;
 
     Transform[] bodies;
     FishAnimatorSync[] anims;
     float[] radiusX, radiusZ, height, phase, angularSpeed, bob;
+    bool[] crawl;
     Vector3[] lastPos;
     int count;
 
@@ -35,6 +40,7 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
         phase = new float[count];
         angularSpeed = new float[count];
         bob = new float[count];
+        crawl = new bool[count];
         lastPos = new Vector3[count];
 
         for (int i = 0; i < count; i++)
@@ -45,7 +51,8 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
             float margin = Mathf.Max(0.06f, f.bodyLength * 0.6f);
             radiusX[i] = Mathf.Max(0.05f, innerHalfSize.x - margin) * Random.Range(0.55f, 1f);
             radiusZ[i] = Mathf.Max(0.1f, innerHalfSize.z - margin) * Random.Range(0.6f, 1f);
-            height[i] = Random.Range(-0.35f, 0.35f) * innerHalfSize.y;
+            crawl[i] = f.bandCenter <= crawlBand;
+            height[i] = crawl[i] ? -innerHalfSize.y + f.bodyLength * 0.25f : Random.Range(-0.35f, 0.35f) * innerHalfSize.y;
             phase[i] = i * 2.4f + Random.Range(0f, 1f);
             bob[i] = Random.Range(0.4f, 0.9f);
             float speed = Mathf.Max(0.08f, f.swimSpeed * speedScale);
@@ -70,9 +77,8 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
     Vector3 LocalOrbit(int i, float time)
     {
         float a = phase[i] + angularSpeed[i] * time;
-        return new Vector3(Mathf.Cos(a) * radiusX[i],
-                           height[i] + Mathf.Sin(a * bob[i] * 1.3f) * innerHalfSize.y * 0.18f,
-                           Mathf.Sin(a) * radiusZ[i]);
+        float lift = crawl[i] ? 0f : Mathf.Sin(a * bob[i] * 1.3f) * innerHalfSize.y * 0.18f;
+        return new Vector3(Mathf.Cos(a) * radiusX[i], height[i] + lift, Mathf.Sin(a) * radiusZ[i]);
     }
 
     void Update()
@@ -87,7 +93,8 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
             Vector3 pos = transform.TransformPoint(LocalOrbit(i, t));
             Vector3 vel = (pos - lastPos[i]) / dt;
             lastPos[i] = pos;
-            Quaternion rot = vel.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(vel, Vector3.up) : body.rotation;
+            Vector3 heading = crawl[i] ? Vector3.ProjectOnPlane(vel, transform.up) : vel;
+            Quaternion rot = heading.sqrMagnitude > 1e-8f ? Quaternion.LookRotation(heading, transform.up) : body.rotation;
             body.SetPositionAndRotation(pos, Quaternion.Slerp(body.rotation, rot, 1f - Mathf.Exp(-8f * dt)));
             if (anims[i] != null) anims[i].SetVelocity(vel);
         }

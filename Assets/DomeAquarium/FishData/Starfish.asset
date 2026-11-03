@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: Starfish
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: Starfish
+  koreanName: "\uBD88\uAC00\uC0AC\uB9AC"
+  englishName: Sea star
+  scientificName: Asteroidea
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 0
+  habitat: 0
+  freshwater: 0
+  unnamed: 0
+  prefab: {fileID: 5476946676307600408, guid: ed03ffbbc15ab3f41ab28fdfc7b2d3d6, type: 3}
+  swimScale: 0.16
+  revealScale: 0.22
+  bandCenter: 0
+  bandWidth: 0
+  bodyLength: 0.16
+  swimSpeed: 0.02
+  schoolCount: 1

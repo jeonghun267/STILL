@@ -242,6 +242,175 @@ public static class DomeAquariumDepthSounds
         return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
     }
 
+    /// <summary>
+    /// 먼바다 배의 뱃고동 — 낮은 두 음(G2 98Hz · D3 147Hz)을 겹친 3초 남짓의 긴 한 번.
+    /// 배음 많은 톱니파를 낮게 거르고(먼 소리는 높은 소리가 먼저 사라진다) 곶에 부딪혀 돌아오는 메아리 두 번을 얹는다.
+    /// ShipHorn 이 3D 소리로 아주 작게 튼다.
+    /// </summary>
+    public static AudioClip EnsureShipHorn(bool force = false)
+    {
+        string path = $"{LobbyDir}/ShipHorn.wav";
+        if (force || !File.Exists(path))
+        {
+            Directory.CreateDirectory(LobbyDir);
+            File.WriteAllBytes(path, ToWav(SynthesizeHorn()));
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        }
+        if (AssetImporter.GetAtPath(path) is AudioImporter imp && imp.defaultSampleSettings.loadType != AudioClipLoadType.DecompressOnLoad)
+        {
+            var s = imp.defaultSampleSettings;
+            s.loadType = AudioClipLoadType.DecompressOnLoad;
+            s.compressionFormat = AudioCompressionFormat.Vorbis;
+            s.quality = 0.5f;
+            imp.defaultSampleSettings = s;
+            imp.forceToMono = true;
+            imp.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+    }
+
+    static float[] SynthesizeHorn()
+    {
+        const float seconds = 6f, blast = 3.2f;
+        int n = (int)(seconds * Rate);
+        var dry = new float[n];
+        float[] tones = { 98f, 146.8f };
+        var phase = new double[tones.Length];
+        float lp1 = 0f, lp2 = 0f, k = OnePole(650f);
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float env = t < blast ? Mathf.Clamp01(t / 0.35f) * Mathf.Clamp01((blast - t) / 0.6f) : 0f;
+            float vib = 1f + 0.004f * Mathf.Sin(2f * Mathf.PI * 4.5f * t);
+            float s = 0f;
+            for (int j = 0; j < tones.Length; j++)
+            {
+                phase[j] += 2.0 * Math.PI * tones[j] * vib / Rate;
+                for (int h = 1; h <= 8; h++) s += Mathf.Sin((float)(phase[j] * h)) / h;   // 톱니파 배음
+            }
+            lp1 += (s * env - lp1) * k;
+            lp2 += (lp1 - lp2) * k;
+            dry[i] = lp2;
+        }
+        var buf = new float[n];
+        int e1 = (int)(0.55f * Rate), e2 = (int)(1.3f * Rate);
+        float peak = 1e-4f;
+        for (int i = 0; i < n; i++)
+        {
+            float s = dry[i] + (i >= e1 ? 0.28f * dry[i - e1] : 0f) + (i >= e2 ? 0.15f * dry[i - e2] : 0f);
+            buf[i] = s;
+            peak = Mathf.Max(peak, Mathf.Abs(s));
+        }
+        for (int i = 0; i < n; i++) buf[i] *= 0.8f / peak;
+        return buf;
+    }
+
+    /// <summary>혹등고래 숨소리 — "푸우". 넓은 잡음이 확 터졌다가 낮아지며 잦아들고, 그 밑에 낮은 울림이 한 번.</summary>
+    public static AudioClip EnsureWhaleBlow(bool force = false) => EnsureEffect("WhaleBlow", SynthesizeBlow, force);
+
+    /// <summary>
+    /// 테라스 부두 벽에 부딪히는 파도 — 12초 고리(끝 1.5초를 처음과 겹침). 낮게 거른 물소리가 4초 남짓 간격으로 밀려왔다 빠지고,
+    /// 밀려올 때마다 벽에 부딪히는 철썩 소리. 부두 벽 앞 3D 소리라 테라스에 나가야 크게 들린다.
+    /// </summary>
+    public static AudioClip EnsureSurfLoop(bool force = false)
+    {
+        string path = $"{LobbyDir}/TerraceSurf.wav";
+        if (force || !File.Exists(path))
+        {
+            Directory.CreateDirectory(LobbyDir);
+            File.WriteAllBytes(path, ToWav(SynthesizeSurf()));
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        }
+        Configure(path);   // 12초 고리 — 수심 벽 물소리와 같은 설정
+        return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+    }
+
+    static AudioClip EnsureEffect(string id, Func<float[]> synth, bool force)
+    {
+        string path = $"{LobbyDir}/{id}.wav";
+        if (force || !File.Exists(path))
+        {
+            Directory.CreateDirectory(LobbyDir);
+            File.WriteAllBytes(path, ToWav(synth()));
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        }
+        if (AssetImporter.GetAtPath(path) is AudioImporter imp && imp.defaultSampleSettings.loadType != AudioClipLoadType.DecompressOnLoad)
+        {
+            var s = imp.defaultSampleSettings;
+            s.loadType = AudioClipLoadType.DecompressOnLoad;
+            s.compressionFormat = AudioCompressionFormat.Vorbis;
+            s.quality = 0.5f;
+            imp.defaultSampleSettings = s;
+            imp.forceToMono = true;
+            imp.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+    }
+
+    static float[] SynthesizeBlow()
+    {
+        const float seconds = 2.2f;
+        int n = (int)(seconds * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(731);
+        float lp = 0f, hp = 0f, prev = 0f, peak = 1e-4f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float env = Mathf.Clamp01(t / 0.06f) * Mathf.Exp(-t * 1.9f);
+            float cutoff = Mathf.Lerp(1600f, 380f, Mathf.Clamp01(t / 1.4f));   // 확 터졌다가 낮아진다
+            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+            lp += (noise - lp) * OnePole(cutoff);
+            hp = lp - prev * 0.97f;                                             // 웅웅거림을 덜어 숨결처럼
+            prev = lp;
+            float thump = Mathf.Sin(2f * Mathf.PI * 68f * t) * Mathf.Exp(-t * 7f) * 0.6f;
+            buf[i] = hp * env * 1.4f + thump * Mathf.Clamp01(t / 0.02f);
+            peak = Mathf.Max(peak, Mathf.Abs(buf[i]));
+        }
+        for (int i = 0; i < n; i++) buf[i] *= 0.8f / peak;
+        return buf;
+    }
+
+    static float[] SynthesizeSurf()
+    {
+        int loop = (int)(Seconds * Rate), over = (int)(Overlap * Rate), n = loop + over;
+        var raw = new float[n];
+        var rng = new System.Random(5150);
+        float lp = 0f, lp2 = 0f;
+        // 4.2초 남짓 간격으로 밀려온다 — 철썩 시각을 미리 뽑아 둔다
+        var hits = new System.Collections.Generic.List<float>();
+        for (float h = 0.8f; h < Seconds + Overlap; h += 3.6f + (float)rng.NextDouble() * 1.4f) hits.Add(h);
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+            lp += (noise - lp) * OnePole(700f);
+            lp2 += (noise - lp2) * OnePole(2400f);
+            float wash = 0.35f, crash = 0f;
+            foreach (float h in hits)
+            {
+                float d = t - h;
+                if (d < -1.6f || d > 2.5f) continue;
+                wash += d < 0f ? 0.65f * Mathf.SmoothStep(0f, 1f, (d + 1.6f) / 1.6f)   // 밀려오며 커지고
+                                : 0.65f * Mathf.Exp(-d * 1.4f);                       // 빠지며 잦아든다
+                if (d >= 0f) crash += Mathf.Exp(-d * 9f);                              // 벽에 부딪히는 순간
+            }
+            raw[i] = lp * wash * 1.6f + lp2 * crash * 0.9f;
+        }
+        // 끝 Overlap 을 처음과 겹쳐 이음매 없는 고리로
+        var buf = new float[loop];
+        for (int i = 0; i < loop; i++) buf[i] = raw[i];
+        for (int i = 0; i < over; i++)
+        {
+            float k = i / (float)over;
+            buf[i] = raw[i] * k + raw[loop + i] * (1f - k);
+        }
+        float peak = 1e-4f;
+        foreach (float s in buf) peak = Mathf.Max(peak, Mathf.Abs(s));
+        for (int i = 0; i < loop; i++) buf[i] *= 0.7f / peak;
+        return buf;
+    }
+
     static float[] SynthesizeSplash(bool big)
     {
         float seconds = big ? 1.8f : 1.1f;

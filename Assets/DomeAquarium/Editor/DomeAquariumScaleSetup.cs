@@ -18,6 +18,7 @@ public static class DomeAquariumScaleSetup
 {
     const string FishRoot = "Assets/Layer Lab/3D Characters-Fish/Fish";
     const string DataDir = "Assets/DomeAquarium/FishData";
+    const string CreatureDir = "Assets/DomeAquarium/Creatures/";
 
     // 눈앞 연출에서의 길이 한계. 만타가 실물 3m 로 얼굴 1.2m 앞에 오면 아무것도 안 보인다.
     const float RevealMin = 0.22f;
@@ -137,6 +138,8 @@ public static class DomeAquariumScaleSetup
             string path = AssetDatabase.GUIDToAssetPath(guid);
             var data = AssetDatabase.LoadAssetAtPath<FishData>(path);
             if (data == null || data.prefab == null) continue;
+            // 심해 생물 · 고래(DomeAquarium/21)는 그 빌더가 몸길이 1 로 맞춘 프리팹에 실제 크기를 적는다 — 여기서 다시 재지 않는다.
+            if (AssetDatabase.GetAssetPath(data.prefab).StartsWith(CreatureDir)) continue;
 
             string n = Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(data.prefab));
 
