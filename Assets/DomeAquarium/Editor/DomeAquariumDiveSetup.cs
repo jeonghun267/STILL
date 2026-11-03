@@ -36,7 +36,7 @@ public static class DomeAquariumDiveSetup
     // 강에 사는 종 — 바다 관찰 기록에 나오면 사실 오류다 (분홍돌고래=아마존강, 투쿠시돌고래, 인더스강돌고래).
     static readonly string[] Freshwater = { "PinkDolphin", "TucuxiDophin", "IndusRiverDolphin" };
 
-    // 1막 볼거리. 산호초를 찾는 상어·가오리·거북·돌고래와 관람객이 기대하는 산호초 어종, 지목 생물인 해마류.
+    // 1막 볼거리. 산호초를 찾는 상어·가오리·거북·돌고래와 관람객이 기대하는 산호초 어종, 해마류.
     // 이 종들과 해마류는 늘 돔에 남고, 나머지 산호초 종은 몇 분마다 무리 단위로 바뀐다(rotation).
     static readonly string[] ReefMustHave =
     {
@@ -150,10 +150,9 @@ public static class DomeAquariumDiveSetup
 
         Debug.Log($"[층 하강] 적용 완료 — 24m {reef.species.Length}종 {reef.species.Sum(f => f.schoolCount)}마리 " +
                   $"(교체 후보 {reef.rotation.Length}종, {reef.rotationInterval.x:0}~{reef.rotationInterval.y:0}초마다 한 무리), " +
-                  $"관찰 일지 {journal?.allFish?.Length ?? 0}종 " +
-                  $"(지목: {string.Join(", ", reef.targets.Select(f => f.DisplayName))}), " +
+                  $"관찰 일지 {journal?.allFish?.Length ?? 0}종, 할 일은 아무 생물이나 {reef.recordCount}종, " +
                   $"200m 큰 생물 {twilight.passers.Length}종이 {twilight.passInterval.x:0}~{twilight.passInterval.y:0}초마다 한 무리씩 " +
-                  $"(지목: {twilight.targets[0].DisplayName}), 바닥 {twilight.seabed}, 바다눈 {(twilight.marineSnow ? "켬" : "끔")}. " +
+                  $"(할 일은 큰 생물 {twilight.recordCount}종), 바닥 {twilight.seabed}, 바다눈 {(twilight.marineSnow ? "켬" : "끔")}. " +
                   $"1,000m: 신호의 주인({unknownFish.DisplayName}) — 조명을 끄고 {director.unknown?.stillNeeded ?? 5f:0}초 가만히.");
         return director;
     }
@@ -233,7 +232,7 @@ public static class DomeAquariumDiveSetup
         var byName = reef.ToDictionary(f => f.name);
 
         // 씬 빌드(4)의 전시 종 선정과 같은 방식: 볼거리를 먼저 넣고, 남은 예산을 수직 층위 순으로 고르게 채운다.
-        // 해마류는 지목 생물이라 모두 늘 남는다 — 교체로 들어온 해마를 기록해도 할 일이 안 채워지면 안 된다.
+        // 해마류는 모두 늘 남는다 — 산호 가지를 붙잡고 있는 모습이 24m 의 볼거리다.
         var picked = new List<FishData>();
         foreach (string n in ReefMustHave)
             if (byName.TryGetValue(n, out var f) && !picked.Contains(f)) picked.Add(f);
@@ -264,8 +263,9 @@ public static class DomeAquariumDiveSetup
         m.rideSeconds = lobby != null ? lobby.descentSeconds : 9f;
         m.countSubject = "아무 생물이나";
         m.recordCount = 4;
-        m.targets = picked.Where(f => f.name.Contains("Seahorse")).ToArray();
-        m.targetClue = "산호 가지를 꼬리로 붙잡고 거의 움직이지 않는 생물";
+        // 첫 층은 "아무 생물이나 4종"만 한다. 예전의 지목 생물(해마 — 단서만 보고 찾기)은 무엇을 찍어야 하는지 몰라 막혔다.
+        m.targets = new FishData[0];
+        m.targetClue = "";
         m.species = picked.ToArray();
         // 처음부터 헤엄치는 종 중 볼거리가 아닌 것 + 예산에 못 든 종. 150마리 예산 안에서 무리째 바뀐다.
         m.rotation = reef.Where(f => !stay.Contains(f)).ToArray();
@@ -279,7 +279,7 @@ public static class DomeAquariumDiveSetup
             ? lobby.descentLine
             : "햇빛은 수심 200m까지만 닿습니다. 그 아래는, 우리가 거의 모르는 세계입니다.";
         m.arrivalLine = "여기가 수심 24m 산호초예요. 관찰기를 생물에 겨누고 지켜보면 기록돼요. " +
-                        "4종을 기록하고, 꼬리로 산호를 붙잡는 생물도 찾아 주세요.";
+                        "아무 생물이나 4종을 기록해 주세요.";
         m.completeLine = "24m 기록 완료! 이제 200m로 내려갈 수 있어요. 준비되면 엘리베이터를 타세요.";
         EditorUtility.SetDirty(m);
         return m;
@@ -302,8 +302,10 @@ public static class DomeAquariumDiveSetup
         m.rideSeconds = 12f;
         m.countSubject = "큰 생물";
         m.recordCount = 2;
-        m.targets = byName.TryGetValue("MantaRay", out var manta) ? new[] { manta } : new FishData[0];
-        m.targetClue = "가장 큰 그림자";
+        // 24m 처럼 "큰 생물 2종"만 한다. 예전의 지목 생물("가장 큰 그림자" — 쥐가오리)은 단서만으로는 무엇인지 알기 어려웠다.
+        // 지목이 없으면 아직 기록하지 않은 종이 먼저 지나간다 (LargeCreaturePasses).
+        m.targets = new FishData[0];
+        m.targetClue = "";
         m.species = new FishData[0];             // 늘 헤엄치는 무리는 없다 — 바다눈 속에서 기다린다
         m.passers = passers.ToArray();
         m.passInterval = new Vector2(60f, 90f);
@@ -318,7 +320,7 @@ public static class DomeAquariumDiveSetup
         m.lighting = TwilightLighting();
         m.descentLine = "200m부터는 햇빛이 거의 닿지 않아요. 여기서는 생물이 가끔씩만 지나가요. 기다리는 것도 관찰이에요.";
         m.arrivalLine = "수심 200m예요. 여기서는 큰 생물이 가끔씩만 지나가요. 관찰기에 '다가와요'가 뜨면 그쪽을 보세요. " +
-                        "큰 생물 2종, 그리고 가장 큰 그림자를 찾아 주세요.";
+                        "큰 생물 2종을 기록해 주세요.";
         m.completeLine = "200m 기록 완료! 끝까지 기다려 줬네요. 신호가 더 강해졌어요. 이제 1,000m로 내려갈 수 있어요.";
         EditorUtility.SetDirty(m);
         return m;

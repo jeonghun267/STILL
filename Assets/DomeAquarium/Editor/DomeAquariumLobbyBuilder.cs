@@ -27,14 +27,14 @@ using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 ///   z=15   앞벽: STILL 간판 · 71% / 80% 데이터 월(나무색 강조 벽) · 가운데 아치 너머 엘리베이터
 ///   z=17.5 엘리베이터 칸 중심 — 안쪽 벽에 수심 계기판
 ///
-/// 로비는 수조(원점, 반지름 12m)에서 150m 떨어져 있다. 카메라 원경이 60m 라 서로 보이지 않고,
+/// 수조(원점, 반지름 12m · 돔 꼭대기 y=8)가 기준이다. 로비는 그 바로 위 — 엘리베이터 칸이 수조 정중앙 24m 위에 와서,
+/// 칸이 곧장 아래로 내려가는 배치다. 로비에서는 바닥과 바다 수면(불투명)이 아래의 수조를 가리고,
 /// 수중 돔에 도착하면 LobbySet 을 통째로 꺼 비용이 0 이 된다.
 /// 여러 번 실행해도 안전하다(기존 LobbyRoot 를 지우고 다시 세움).
 /// </summary>
 public static class DomeAquariumLobbyBuilder
 {
     const string RootName = "LobbyRoot";
-    static readonly Vector3 LobbyOrigin = new Vector3(0f, 0f, 150f);
 
     const string Kit = "Assets/Barking_Dog/3D Free Modular Kit/Prefabs";
     const string Kenney = "Assets/ThirdParty/Kenney_FurnitureKit/Models";
@@ -62,6 +62,11 @@ public static class DomeAquariumLobbyBuilder
     static readonly Vector3 WalkStartLocal = new Vector3(0f, 0f, 8.6f);   // 개찰구 2.4m 앞
     static readonly Vector3 CabinLocal = new Vector3(0f, 0f, HallLength + 2.5f);
     static readonly Vector3 SphereLocal = new Vector3(-3.4f, 0f, 6.2f);
+
+    // 엘리베이터 칸이 수조 정중앙(원점) 바로 위, 바닥이 24m 위에 오게 로비를 놓는다 (예전에는 수조에서 z 로 150m 떨어져 있었다).
+    // 바다 수면(로비 y=-1.2)과 부두 받침(y=-3.2)도 돔 꼭대기(y=8)보다 한참 위다. CabinLocal 보다 아래에 두어야 초기화 순서가 맞는다.
+    const float LobbyHeight = 24f;
+    static readonly Vector3 LobbyOrigin = new Vector3(0f, LobbyHeight, 0f) - CabinLocal;
 
     [MenuItem("DomeAquarium/9. 육지 로비 빌드", priority = 9)]
     public static void BuildMenu()

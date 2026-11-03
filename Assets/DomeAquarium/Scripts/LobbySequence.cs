@@ -68,6 +68,10 @@ public sealed class LobbySequence : MonoBehaviour
     public TMP_Text captionText;
     public float captionDistance = 1.5f;
     public float captionDrop = 0.34f;
+    [Tooltip("엘리베이터 칸 안쪽 반폭(m). 칸이 3m 라 1.5m 앞 자막은 벽 속에 묻힌다 — 칸 안에서는 바라보는 쪽 벽 앞에 세운다")]
+    public float cabinHalfSize = 1.4f;
+    public float cabinCaptionMargin = 0.25f;   // 벽(과 벽의 수심 계기판)에서 띄우는 거리
+    public float cabinCaptionMin = 0.6f;       // 벽에 바짝 붙어 서도 이보다 가까이 세우지 않는다
 
     [Header("시작 패널")]
     public StartPanel startPanel;
@@ -122,6 +126,7 @@ public sealed class LobbySequence : MonoBehaviour
     ClipScrubber gateDoors;
     bool captionVisible;
     bool captionSnap;
+    Vector3 captionScale;                  // captionDistance 에서의 크기. 가까이 세우면 그만큼 줄여 같은 크기로 보이게 한다
     bool lobbyAudioOn;
     bool doorsOpen;
     bool arrivedOnce;
@@ -178,7 +183,7 @@ public sealed class LobbySequence : MonoBehaviour
             rig.rotation = Quaternion.Euler(0f, spawnPoint.eulerAngles.y, 0f);
         }
 
-        if (captionGroup != null) captionGroup.alpha = 0f;
+        if (captionGroup != null) { captionGroup.alpha = 0f; captionScale = captionGroup.transform.localScale; }
         if (depthText != null) depthText.text = FormatDepth(0f);
     }
 
@@ -700,13 +705,34 @@ public sealed class LobbySequence : MonoBehaviour
         Transform cam = viewCamera.transform;
         Vector3 forward = Flat(cam.forward);
         if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward; else forward.Normalize();
-        Vector3 pos = cam.position + forward * captionDistance + Vector3.down * captionDrop;
+        // 가까이 세울 때는 내리는 높이와 크기를 같은 비율로 줄인다 — 시야에서는 같은 자리, 같은 크기다.
+        float near = CaptionDistance(cam.position, forward) / captionDistance;
+        Vector3 pos = cam.position + forward * (captionDistance * near) + Vector3.down * (captionDrop * near);
         Quaternion rot = Quaternion.LookRotation(forward, Vector3.up);
 
         Transform tr = captionGroup.transform;
         float k = captionSnap ? 1f : 1f - Mathf.Exp(-3f * Time.deltaTime);
         captionSnap = false;
         tr.SetPositionAndRotation(Vector3.Lerp(tr.position, pos, k), Quaternion.Slerp(tr.rotation, rot, k));
+        tr.localScale = Vector3.Lerp(tr.localScale, captionScale * near, k);
+    }
+
+    /// <summary>
+    /// 자막을 세울 거리. 엘리베이터 칸은 안쪽이 3m 라 칸 가운데에서 1.5m 앞이 곧 벽이다 — 깊이 버튼을 누르면 뜨는 하강 대사가
+    /// 계기판 벽 뒤에 묻혀, 고개를 옆으로 돌려야 겨우 보였다. 칸 안에서는 바라보는 쪽 벽보다 cabinCaptionMargin 앞에 세운다.
+    /// </summary>
+    float CaptionDistance(Vector3 eye, Vector3 forward)
+    {
+        if (cabinPoint == null || cabinSet == null || !cabinSet.activeInHierarchy) return captionDistance;
+        Vector3 p = cabinPoint.InverseTransformPoint(eye);
+        float h = cabinHalfSize;
+        if (Mathf.Abs(p.x) > h || Mathf.Abs(p.z) > h) return captionDistance;   // 칸 밖 (로비 홀)
+
+        Vector3 d = cabinPoint.InverseTransformDirection(forward);
+        float wall = float.PositiveInfinity;
+        if (Mathf.Abs(d.x) > 1e-4f) wall = Mathf.Min(wall, ((d.x > 0f ? h : -h) - p.x) / d.x);
+        if (Mathf.Abs(d.z) > 1e-4f) wall = Mathf.Min(wall, ((d.z > 0f ? h : -h) - p.z) / d.z);
+        return Mathf.Clamp(wall - cabinCaptionMargin, cabinCaptionMin, captionDistance);
     }
 
     static string FormatDepth(float meters) => $"수심  {meters:0} m";
