@@ -18,6 +18,7 @@ public sealed class ScreenFader : MonoBehaviour
 
     Image black;
     Image vignette;
+    Image white;                            // 플래시 사진 — 잠깐 하얗게 (FlashOrWatch)
     float vignetteTarget;
     float vignetteValue;
 
@@ -53,7 +54,10 @@ public sealed class ScreenFader : MonoBehaviour
 
         vignette = NewImage("Vignette", MakeVignetteSprite());
         black = NewImage("Black", null);
+        white = NewImage("Flash", null);
+        white.color = new Color(1f, 1f, 1f, 0f);
         SetAlpha(black, 0f);
+        SetAlpha(white, 0f);
         SetAlpha(vignette, 0f);
     }
 
@@ -113,6 +117,20 @@ public sealed class ScreenFader : MonoBehaviour
     public void SetVignette(float strength) => vignetteTarget = Mathf.Clamp01(strength);
 
     public void SetFadeImmediate(float alpha) => SetAlpha(black, Mathf.Clamp01(alpha));
+
+    /// <summary>카메라 플래시처럼 눈앞이 잠깐 하얗게 됐다가 빠르게 빠진다.</summary>
+    public IEnumerator Flash(float peak, float seconds)
+    {
+        if (white == null) yield break;
+        float duration = Mathf.Max(0.01f, seconds);
+        for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / duration)
+        {
+            float k = 1f - t;
+            SetAlpha(white, peak * k * k);
+            yield return null;
+        }
+        SetAlpha(white, 0f);
+    }
 
     public IEnumerator FadeTo(float target, float seconds)
     {

@@ -1,3 +1,4 @@
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -6,7 +7,10 @@ using UnityEngine;
 /// 손으로 들 필요가 없어 손 추적 · 컨트롤러 · 에디터에서 똑같이 쓴다.
 ///
 ///  - 확대 화면: 꺼 둔 보조 카메라가 렌더 텍스처에 그리고, 눈앞 0.6m 의 쌍안경 모양 판(빌더가 만든 두 원 메시)에 띄운다.
-///    판은 UI 레이어 — 보조 카메라는 UI 레이어를 그리지 않아 자기 화면을 다시 비추지 않는다. 둘레는 화면 비네트로 어둡게.
+///    판은 UI 레이어 — 보조 카메라는 UI 레이어를 그리지 않아 자기 화면을 다시 비추지 않는다.
+///  - 두 원 밖은 깜깜하다 — 머리를 감싼 검은 공(blackout, 안쪽 면)이 맨 먼저 깊이를 써서 그보다 먼 것은 하나도 그려지지 않는다.
+///    둘레만 비네트로 어둡게 했더니 데크 · 하늘 · 바다가 원 둘레로 그대로 보여 시선이 흩어졌다. 공은 확대 화면 · 이름표(0.7m 안)보다 바깥,
+///    관측소장 자막은 맨 위에 그려 보인다. NPC 대화 판은 들여다보는 동안 숨는다(AnyEngaged).
 ///  - 보는 방향은 고개 방향이지만 부드럽게 따라간다 — 7배 확대에서는 머리의 작은 떨림도 크게 흔들려 멀미가 난다.
 ///    쌍안경 몸도 같은 방향으로 돈다. 기둥 정면에서 좌우 75°, 위아래 -15~20° 까지.
 ///  - 화면 한가운데에 BinocularSubject 가 dwell 초 머무르면 이름표가 뜨고, line 이 있으면 처음 한 번 관측소장이 말한다.
@@ -19,6 +23,7 @@ public sealed class BinocularViewer : MonoBehaviour
     public Camera zoomCamera;                           // 꺼 둔 보조 카메라
     public Transform screen;                            // 눈앞 확대 화면 (렌더 텍스처를 입힌 두 원 메시)
     public TMP_Text label;                              // 확대 화면 아래 이름표 (screen 의 자식)
+    public Renderer blackout;                           // 머리를 감싼 검은 공 — 들여다보는 동안 두 원 밖을 가린다
 
     [Header("들여다보기")]
     public float engageRadius = 0.38f;                  // 머리와 접안부의 수평 거리
@@ -48,13 +53,26 @@ public sealed class BinocularViewer : MonoBehaviour
     float watchedFor;
 
     public bool Engaged => engaged;
+    /// <summary>확대 화면 한가운데에 dwell 초 넘게 머물러 이름표가 뜬 것 (없으면 null) — 꼬리 사진(FlukePhotoId)이 쓴다.</summary>
+    public BinocularSubject Named => engaged && watching != null && watchedFor >= dwell ? watching : null;
+
+    static int engagedCount;
+    /// <summary>누군가 쌍안경을 들여다보는 중 — 맨 위에 그리는 다른 판(NPC 대화)이 깜깜한 화면 위에 뜨지 않게 숨는다.</summary>
+    public static bool AnyEngaged => engagedCount > 0;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => engagedCount = 0;
 
     void Start()
     {
         if (zoomCamera != null) zoomCamera.enabled = false;
         if (screen != null) screen.gameObject.SetActive(false);
+        if (blackout != null) blackout.enabled = false;
         look = head != null ? head.rotation : transform.rotation;
-        body = head != null ? head.GetComponentsInChildren<Renderer>(true) : new Renderer[0];
+        // 쌍안경 몸과 기둥 — 들여다보는 동안 숨긴다. 기둥 꼭대기는 눈 바로 아래(검은 공 안쪽)라 깜깜한 화면 아래에 회색으로 보였다.
+        body = GetComponentsInChildren<Renderer>(true)
+            .Where(r => r != blackout && (screen == null || !r.transform.IsChildOf(screen)))
+            .ToArray();
     }
 
     // 들여다보는 채로 로비가 꺼지면(엘리베이터 · 장면 전환) 화면 비네트가 남지 않게
@@ -83,6 +101,7 @@ public sealed class BinocularViewer : MonoBehaviour
         if (head != null) head.rotation = look;
 
         if (zoomCamera != null) zoomCamera.transform.SetPositionAndRotation(view.position, look);
+        if (blackout != null) blackout.transform.position = view.position;
         if (screen != null)
         {
             Vector3 lift = view.up * (viewDistance * Mathf.Tan(viewLift * Mathf.Deg2Rad));
@@ -105,9 +124,15 @@ public sealed class BinocularViewer : MonoBehaviour
 
     void SetEngaged(bool on)
     {
+        if (on != engaged) engagedCount = Mathf.Max(0, engagedCount + (on ? 1 : -1));
         engaged = on;
         if (zoomCamera != null) zoomCamera.enabled = on;
         if (screen != null) screen.gameObject.SetActive(on);
+        if (blackout != null)
+        {
+            blackout.enabled = on;
+            if (on && view != null) blackout.transform.position = view.position;
+        }
         if (body != null) foreach (var r in body) if (r != null) r.enabled = !on;
         if (fader == null) fader = view != null ? view.GetComponentInChildren<ScreenFader>(true) : null;
         if (fader == null && Camera.main != null) fader = ScreenFader.Ensure(Camera.main);

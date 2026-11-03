@@ -28,8 +28,8 @@ public static class DomeAquariumBeachBuilder
     internal static readonly Vector3 PoolLocal = new Vector3(8.0f, 0f, -10.5f);
     internal static readonly Vector3 PoolInnerHalf = new Vector3(0.38f, 0.09f, 0.58f);      // 생물이 다니는 상자 — 웅덩이 바닥 타원 안에 든다
     // 웅덩이: 바위 턱(위 0.26m)이 물을 두르고, 물은 턱보다 조금 낮게(0.2m) 담긴다. 바닥 0.02m.
-    const float PoolRimTop = 0.26f, PoolWater = 0.2f, PoolBed = 0.02f, PoolRimWidth = 0.34f;
-    static readonly Vector2 PoolInnerRadius = new Vector2(PoolInnerHalf.x * 1.55f, PoolInnerHalf.z * 1.55f);   // 상자 모서리까지 품는 타원
+    internal const float PoolRimTop = 0.26f, PoolWater = 0.2f, PoolBed = 0.02f, PoolRimWidth = 0.34f;
+    internal static readonly Vector2 PoolInnerRadius = new Vector2(PoolInnerHalf.x * 1.55f, PoolInnerHalf.z * 1.55f);   // 상자 모서리까지 품는 타원
     internal static readonly Vector3 TableLocal = new Vector3(6.0f, 0f, -12.6f);
     internal static readonly Vector3 NolantLocal = new Vector3(6.75f, 0f, -11.5f);          // 웅덩이 턱 바로 바깥
     internal static readonly Vector3 SpawnLocal = new Vector3(5.2f, 0f, -15.8f);

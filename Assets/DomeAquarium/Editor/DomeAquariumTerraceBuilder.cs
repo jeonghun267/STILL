@@ -197,6 +197,46 @@ public static class DomeAquariumTerraceBuilder
         viewer.zoomCamera = cam;
         viewer.screen = screen.transform;
         viewer.label = label;
+        // 두 원 밖을 가리는 검은 공 — 화면 가장자리(0.67m) · 이름표(0.70m)보다 조금 바깥. 보조 카메라가 그리지 않게 UI 레이어
+        viewer.blackout = BuildBlackout(root, 0.72f);
+    }
+
+    /// <summary>
+    /// 안쪽 면만 그리는 검은 공. 다른 불투명 물체보다 먼저(대기열 1950) 깊이를 써서, 공 밖의 땅 · 하늘 · 바다는 깊이 검사에서 떨어져
+    /// 그려지지도 않는다. 공 안의 확대 화면 · 이름표 · 손은 보이고, 맨 위에 그리는 자막은 그대로 보인다.
+    /// </summary>
+    static Renderer BuildBlackout(Transform root, float radius)
+    {
+        const string path = "Assets/DomeAquarium/Materials/Mat_BinocularBlackout.mat";
+        var shader = Shader.Find("Universal Render Pipeline/Unlit");
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat == null) { mat = new Material(shader); AssetDatabase.CreateAsset(mat, path); }
+        mat.shader = shader;
+        mat.SetColor("_BaseColor", Color.black);
+        mat.SetFloat("_Surface", 0f);                                              // 불투명 — 깊이를 쓴다
+        mat.SetOverrideTag("RenderType", "Opaque");
+        mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+        mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+        mat.SetFloat("_ZWrite", 1f);
+        mat.SetShaderPassEnabled("ShadowCaster", false);
+        if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Front);   // 공 안에서 본다
+        if (mat.HasProperty("_QueueOffset")) mat.SetFloat("_QueueOffset", -50f);
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry - 50;
+        EditorUtility.SetDirty(mat);
+
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = "Blackout";
+        Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.layer = UiLayer;
+        go.transform.SetParent(root, false);
+        go.transform.localScale = Vector3.one * radius * 2f;                      // 기본 공은 반지름 0.5
+        var r = go.GetComponent<Renderer>();
+        r.sharedMaterial = mat;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        r.receiveShadows = false;
+        r.enabled = false;
+        return r;
     }
 
     static RenderTexture ViewTexture(int w, int h)

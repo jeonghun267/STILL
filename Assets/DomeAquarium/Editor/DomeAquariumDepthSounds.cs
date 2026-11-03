@@ -309,6 +309,257 @@ public static class DomeAquariumDepthSounds
     public static AudioClip EnsureWhaleBlow(bool force = false) => EnsureEffect("WhaleBlow", SynthesizeBlow, force);
 
     /// <summary>
+    /// 200m 수중 마이크 — 대왕고래 노래를 10배 빠르게. 실제 노래는 15~20Hz 라 사람 귀에 들리지 않는다(녹음도 빠르게 돌려 듣는다).
+    /// 북태평양 대왕고래처럼 A(웅웅 떨리는 소리) → B(길게 내려가는 낮은 신음, 셋째 배음이 가장 크다)를 두 번. 물속 메아리와 낮은 물소리를 깐다. 14초.
+    /// </summary>
+    public static AudioClip EnsureBlueWhaleSong(bool force = false) => EnsureEffect("Hydrophone_BlueWhale", SynthesizeBlueWhale, force);
+
+    /// <summary>
+    /// 1,000m 수중 마이크 — 향유고래 딸깍 소리. 날카로운 딸깍(한 번에 4ms 간격 메아리 셋)이 0.6~0.9초마다 이어지다가
+    /// 먹이를 찾으면 점점 빨라져 "드르륵"(크릭)이 된다. 12초.
+    /// </summary>
+    public static AudioClip EnsureSpermWhaleClicks(bool force = false) => EnsureEffect("Hydrophone_SpermWhale", SynthesizeSpermWhale, force);
+
+    /// <summary>
+    /// 밤바다 연구선 엔진 — 2초 고리. 낮은 "통통통" (38Hz 와 배음, 초당 8번 털털거림)에 거른 잡음.
+    /// 주파수가 모두 2초에 딱 맞아떨어지게 골라 고리 이음매가 튀지 않고, 잡음은 끝 0.2초를 처음과 겹쳐 잇는다.
+    /// </summary>
+    public static AudioClip EnsureEngineIdle(bool force = false) => EnsureEffect("BoatEngineIdle", SynthesizeEngine, force);
+
+    static float[] SynthesizeEngine()
+    {
+        const float loop = 2f, over = 0.2f;
+        int n = (int)(loop * Rate), o = (int)(over * Rate);
+        var raw = new float[n + o];
+        var rng = new System.Random(3838);
+        float lp = 0f;
+        for (int i = 0; i < raw.Length; i++)
+        {
+            float t = i / (float)Rate;
+            float chug = 0.55f + 0.45f * Mathf.Pow(0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * 8f * t), 3f);
+            float tone = Mathf.Sin(2f * Mathf.PI * 38f * t) + 0.6f * Mathf.Sin(2f * Mathf.PI * 76f * t) + 0.3f * Mathf.Sin(2f * Mathf.PI * 114f * t);
+            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+            lp += (noise - lp) * OnePole(300f);
+            raw[i] = (tone * 0.45f + lp * 1.2f) * chug;
+        }
+        var buf = new float[n];
+        float peak = 1e-4f;
+        for (int i = 0; i < n; i++)
+        {
+            buf[i] = raw[i];
+            if (i < o) { float k = i / (float)o; buf[i] = raw[i] * k + raw[n + i] * (1f - k); }
+            peak = Mathf.Max(peak, Mathf.Abs(buf[i]));
+        }
+        for (int i = 0; i < n; i++) buf[i] *= 0.6f / peak;
+        return buf;
+    }
+
+    /// <summary>바시스피어 전화 — 옛날 전화벨 "따르릉" 한 번 (두 음이 초당 20번 떨리며 0.8초).</summary>
+    public static AudioClip EnsurePhoneRing(bool force = false) => EnsureEffect("PhoneRing1934", SynthesizeRing, force);
+
+    static float[] SynthesizeRing()
+    {
+        const float seconds = 0.9f;
+        int n = (int)(seconds * Rate);
+        var buf = new float[n];
+        float peak = 1e-4f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float gate = Mathf.Sin(2f * Mathf.PI * 20f * t) > 0f ? 1f : 0.25f;   // 종을 때리는 망치가 떨린다
+            float env = Mathf.Clamp01(t / 0.01f) * Mathf.Clamp01((0.8f - t) / 0.08f);
+            buf[i] = (Mathf.Sin(2f * Mathf.PI * 1100f * t) + 0.8f * Mathf.Sin(2f * Mathf.PI * 1370f * t)) * gate * env;
+            peak = Mathf.Max(peak, Mathf.Abs(buf[i]));
+        }
+        for (int i = 0; i < n; i++) buf[i] *= 0.45f / peak;
+        return buf;
+    }
+
+    /// <summary>쌍안경 꼬리 사진 — 카메라 셔터 "찰칵" (짧은 딸깍 두 번).</summary>
+    public static AudioClip EnsureShutter(bool force = false) => EnsureEffect("Shutter", SynthesizeShutter, force);
+
+    static float[] SynthesizeBlueWhale()
+    {
+        const float seconds = 14f;
+        int n = (int)(seconds * Rate);
+        var dry = new float[n];
+        var rng = new System.Random(1515);
+        // (시작 초, 종류, 길이) — A: 떨림, B: 내려가는 신음
+        var calls = new[] { (0.4f, 'A', 1.7f), (2.6f, 'B', 2.4f), (6.2f, 'A', 1.6f), (8.3f, 'B', 2.6f) };
+        foreach (var (start, kind, len) in calls)
+        {
+            int i0 = (int)(start * Rate), i1 = Mathf.Min(n, (int)((start + len) * Rate));
+            float phase = 0f;
+            for (int i = i0; i < i1; i++)
+            {
+                float t = (i - i0) / (float)Rate, k = t / len;
+                float env = Mathf.Clamp01(t / 0.18f) * Mathf.Clamp01((len - t) / 0.45f);
+                float s;
+                if (kind == 'A')
+                {
+                    float f = 330f + 6f * Mathf.Sin(2f * Mathf.PI * 0.7f * t);
+                    phase += 2f * Mathf.PI * f / Rate;
+                    float pulse = 0.55f + 0.45f * Mathf.Sin(2f * Mathf.PI * 17f * t);                 // 웅웅 떨린다
+                    s = (Mathf.Sin(phase) + 0.4f * Mathf.Sin(2f * phase) + 0.2f * Mathf.Sin(3f * phase)) * pulse * 0.5f;
+                }
+                else
+                {
+                    float f = Mathf.Lerp(164f, 148f, k) * (1f + 0.004f * Mathf.Sin(2f * Mathf.PI * 3f * t));
+                    phase += 2f * Mathf.PI * f / Rate;
+                    s = 0.45f * Mathf.Sin(phase) + 0.25f * Mathf.Sin(2f * phase) + 0.9f * Mathf.Sin(3f * phase) + 0.15f * Mathf.Sin(4f * phase);
+                    s *= 0.5f;
+                }
+                dry[i] += s * env;
+            }
+        }
+        // 물속 메아리 + 낮은 물소리
+        var buf = new float[n];
+        int[] taps = { (int)(0.11f * Rate), (int)(0.23f * Rate), (int)(0.41f * Rate), (int)(0.67f * Rate) };
+        float[] gains = { 0.35f, 0.22f, 0.13f, 0.07f };
+        float lp = 0f, peak = 1e-4f;
+        for (int i = 0; i < n; i++)
+        {
+            float s = dry[i];
+            for (int j = 0; j < taps.Length; j++) if (i >= taps[j]) s += dry[i - taps[j]] * gains[j];
+            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+            lp += (noise - lp) * OnePole(260f);
+            buf[i] = s + lp * 0.35f;
+            peak = Mathf.Max(peak, Mathf.Abs(buf[i]));
+        }
+        float fade = 0.6f * Rate;
+        for (int i = 0; i < n; i++)
+        {
+            float g = Mathf.Clamp01(i / fade) * Mathf.Clamp01((n - i) / fade);
+            buf[i] *= 0.75f / peak * g;
+        }
+        return buf;
+    }
+
+    static float[] SynthesizeSpermWhale()
+    {
+        const float seconds = 12f;
+        int n = (int)(seconds * Rate);
+        var dry = new float[n];
+        var rng = new System.Random(808);
+        // 딸깍 시각 — 0.6~0.9초 간격으로 8초, 그다음 점점 빨라지는 크릭 2.4초
+        var times = new System.Collections.Generic.List<float>();
+        for (float t = 0.5f; t < 8.5f; t += 0.6f + (float)rng.NextDouble() * 0.3f) times.Add(t);
+        for (float t = 8.9f, gap = 0.12f; t < 11.3f; t += gap, gap = Mathf.Max(0.022f, gap * 0.9f)) times.Add(t);
+        foreach (float at in times)
+        {
+            float amp = at > 8.8f ? 0.55f : 0.9f + (float)rng.NextDouble() * 0.1f;
+            for (int p = 0; p < 3; p++)                                        // 머릿속에서 되울리는 메아리 셋 (4ms 간격)
+            {
+                int i0 = (int)((at + p * 0.004f) * Rate);
+                float a = amp * (p == 0 ? 1f : p == 1 ? 0.45f : 0.2f);
+                for (int i = i0; i < Mathf.Min(n, i0 + (int)(0.004f * Rate)); i++)
+                {
+                    float t = (i - i0) / (float)Rate;
+                    dry[i] += a * (float)(rng.NextDouble() * 2.0 - 1.0) * Mathf.Exp(-t / 0.0005f);
+                }
+            }
+        }
+        var buf = new float[n];
+        int echo = (int)(0.018f * Rate);
+        float lpLow = 0f, lpHi = 0f, rumble = 0f, peak = 1e-4f;
+        for (int i = 0; i < n; i++)
+        {
+            float x = dry[i] + (i >= echo ? dry[i - echo] * 0.25f : 0f);
+            lpHi += (x - lpHi) * OnePole(6000f);                                // 너무 쨍하지 않게
+            lpLow += (lpHi - lpLow) * OnePole(900f);
+            float band = lpHi - lpLow * 0.7f;                                   // 낮은 쪽을 덜어 "딸깍"을 또렷하게
+            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+            rumble += (noise - rumble) * OnePole(180f);
+            buf[i] = band + rumble * 0.25f;
+            peak = Mathf.Max(peak, Mathf.Abs(buf[i]));
+        }
+        for (int i = 0; i < n; i++) buf[i] *= 0.8f / peak;
+        return buf;
+    }
+
+    static float[] SynthesizeShutter()
+    {
+        const float seconds = 0.25f;
+        int n = (int)(seconds * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(77);
+        float lp = 0f, peak = 1e-4f;
+        foreach (float at in new[] { 0f, 0.075f })
+        {
+            int i0 = (int)(at * Rate);
+            for (int i = i0; i < n; i++)
+            {
+                float t = (i - i0) / (float)Rate;
+                float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp += (noise - lp) * OnePole(3500f);
+                buf[i] += (lp * 1.2f + 0.4f * Mathf.Sin(2f * Mathf.PI * 1800f * t)) * Mathf.Exp(-t / 0.012f);
+            }
+        }
+        foreach (float v in buf) peak = Mathf.Max(peak, Mathf.Abs(v));
+        for (int i = 0; i < n; i++) buf[i] *= 0.7f / peak;
+        return buf;
+    }
+
+    /// <summary>조수 웅덩이에 손을 넣는 소리 — 얕은 물 "찰방". 물을 가르는 짧은 잡음 위에 공기 방울 "뽁" 두 개(올라가는 사인)와 물방울 몇 개.</summary>
+    public static AudioClip EnsureWaterDip(bool force = false) => EnsureEffect("WaterDip", SynthesizeWaterDip, force);
+
+    static float[] SynthesizeWaterDip()
+    {
+        const float seconds = 0.7f;
+        int n = (int)(seconds * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(2626);
+        float lpA = 0f, lpB = 0f, peak = 1e-4f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+            lpA += (noise - lpA) * OnePole(3200f);
+            lpB += (lpA - lpB) * OnePole(500f);
+            buf[i] = (lpA - lpB) * Mathf.Exp(-t * 18f) * Mathf.Clamp01(t / 0.004f) * 0.9f;     // 물을 가르는 "촤"
+        }
+        // 공기 방울 — 짧게 올라가는 사인 (크기가 작을수록 높다)
+        foreach (var (at, f0, len, amp) in new[] { (0.03f, 520f, 0.07f, 0.8f), (0.09f, 760f, 0.05f, 0.55f), (0.22f, 1150f, 0.035f, 0.35f), (0.31f, 900f, 0.04f, 0.3f), (0.44f, 1400f, 0.03f, 0.22f) })
+        {
+            int i0 = (int)(at * Rate), i1 = Mathf.Min(n, i0 + (int)(len * Rate));
+            float phase = 0f;
+            for (int i = i0; i < i1; i++)
+            {
+                float t = (i - i0) / (float)Rate, k = t / len;
+                phase += 2f * Mathf.PI * f0 * (1f + 0.9f * k) / Rate;
+                buf[i] += amp * Mathf.Sin(phase) * Mathf.Exp(-k * 3.5f) * Mathf.Clamp01(t / 0.002f);
+            }
+        }
+        foreach (float v in buf) peak = Mathf.Max(peak, Mathf.Abs(v));
+        for (int i = 0; i < n; i++) buf[i] *= 0.7f / peak;
+        return buf;
+    }
+
+    /// <summary>해변 수거함에 쓰레기가 들어가는 소리 — 속 빈 통에 "통". 낮은 울림 두 개와 짧은 부딪힘 잡음.</summary>
+    public static AudioClip EnsureBinDrop(bool force = false) => EnsureEffect("BinDrop", SynthesizeBinDrop, force);
+
+    static float[] SynthesizeBinDrop()
+    {
+        const float seconds = 0.6f;
+        int n = (int)(seconds * Rate);
+        var buf = new float[n];
+        var rng = new System.Random(4242);
+        float lp = 0f, peak = 1e-4f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Rate;
+            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+            lp += (noise - lp) * OnePole(2400f);
+            float knock = lp * Mathf.Exp(-t * 60f);                                         // 부딪히는 순간
+            float body = (Mathf.Sin(2f * Mathf.PI * 190f * t) + 0.5f * Mathf.Sin(2f * Mathf.PI * 310f * t)) * Mathf.Exp(-t * 11f);
+            buf[i] = (knock * 0.9f + body * 0.7f) * Mathf.Clamp01(t / 0.002f);
+            peak = Mathf.Max(peak, Mathf.Abs(buf[i]));
+        }
+        for (int i = 0; i < n; i++) buf[i] *= 0.7f / peak;
+        return buf;
+    }
+
+    /// <summary>
     /// 테라스 부두 벽에 부딪히는 파도 — 12초 고리(끝 1.5초를 처음과 겹침). 낮게 거른 물소리가 4초 남짓 간격으로 밀려왔다 빠지고,
     /// 밀려올 때마다 벽에 부딪히는 철썩 소리. 부두 벽 앞 3D 소리라 테라스에 나가야 크게 들린다.
     /// </summary>

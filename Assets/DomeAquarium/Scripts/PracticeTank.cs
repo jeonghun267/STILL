@@ -9,6 +9,8 @@ using UnityEngine;
 ///
 /// 해변의 조수 웅덩이도 이것을 쓴다. 수직 층위(bandCenter)가 crawlBand 이하인 종(게 · 불가사리 · 성게)은
 /// 바닥을 기어 다닌다 — 위아래로 들썩이지 않고 몸을 수평으로 둔다.
+/// 웅덩이에 손을 넣으면(Scare) 게는 가장자리 바위 밑으로 숨고 새우는 휙 달아난다. 불가사리 · 성게는 그대로 — 손을 빼고
+/// 가만히 있으면 하나둘 다시 나온다. 숨은 동안은 관찰기로 겨눌 수 없다.
 /// </summary>
 public sealed class PracticeTank : MonoBehaviour, IObservationTargets
 {
@@ -19,10 +21,21 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
     public float speedScale = 0.55f;          // 종별 swimSpeed 대비 — 연습용이라 느리게
     [Range(0f, 1f)] public float crawlBand = 0.05f;
 
+    [Header("손을 넣으면 (조수 웅덩이)")]
+    [Tooltip("손이 이만큼 가까이 오면 놀라 달아나는 종 (speciesId)")]
+    public string[] skittish = { "Crab", "Shrimp" };
+    [Tooltip("숨는 자리 — 수조 반 크기의 몇 배 바깥(바위 턱 밑)까지")]
+    public float hideReach = 1.3f;
+    [Tooltip("숨을 때 바닥보다 이만큼 낮게 — 바위 턱 그늘 밑으로")]
+    public float hideSink = 0.05f;
+    public Vector2 hideSeconds = new Vector2(5f, 8f);
+
     Transform[] bodies;
     FishAnimatorSync[] anims;
     float[] radiusX, radiusZ, height, phase, angularSpeed, bob;
-    bool[] crawl;
+    bool[] crawl, flees;
+    float[] hide, hideUntil;
+    Vector3[] hideLocal;
     Vector3[] lastPos;
     int count;
 
@@ -41,6 +54,10 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
         angularSpeed = new float[count];
         bob = new float[count];
         crawl = new bool[count];
+        flees = new bool[count];
+        hide = new float[count];
+        hideUntil = new float[count];
+        hideLocal = new Vector3[count];
         lastPos = new Vector3[count];
 
         for (int i = 0; i < count; i++)
@@ -52,6 +69,7 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
             radiusX[i] = Mathf.Max(0.05f, innerHalfSize.x - margin) * Random.Range(0.55f, 1f);
             radiusZ[i] = Mathf.Max(0.1f, innerHalfSize.z - margin) * Random.Range(0.6f, 1f);
             crawl[i] = f.bandCenter <= crawlBand;
+            flees[i] = skittish != null && System.Array.IndexOf(skittish, f.speciesId) >= 0;
             height[i] = crawl[i] ? -innerHalfSize.y + f.bodyLength * 0.25f : Random.Range(-0.35f, 0.35f) * innerHalfSize.y;
             phase[i] = i * 2.4f + Random.Range(0f, 1f);
             bob[i] = Random.Range(0.4f, 0.9f);
@@ -90,7 +108,16 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
         {
             Transform body = bodies[i];
             if (body == null) continue;
-            Vector3 pos = transform.TransformPoint(LocalOrbit(i, t));
+            Vector3 local = LocalOrbit(i, t);
+            if (hideUntil[i] > 0f)
+            {
+                // 숨는 건 재빠르게(게 0.6초), 다시 나오는 건 천천히(3초)
+                bool scared = t < hideUntil[i];
+                hide[i] = Mathf.MoveTowards(hide[i], scared ? 1f : 0f, dt / (scared ? 0.6f : 3f));
+                if (!scared && hide[i] <= 0f) hideUntil[i] = 0f;
+                local = Vector3.Lerp(local, hideLocal[i], Mathf.SmoothStep(0f, 1f, hide[i]));
+            }
+            Vector3 pos = transform.TransformPoint(local);
             Vector3 vel = (pos - lastPos[i]) / dt;
             lastPos[i] = pos;
             Vector3 heading = crawl[i] ? Vector3.ProjectOnPlane(vel, transform.up) : vel;
@@ -99,6 +126,39 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
             if (anims[i] != null) anims[i].SetVelocity(vel);
         }
     }
+
+    /// <summary>
+    /// 손(worldPoint)이 물에 들어왔다 — radius 안의 겁 많은 종이 손에서 먼 쪽 가장자리로 달아난다.
+    /// 손이 물에 있는 동안 계속 부르면 숨은 채로 있는다. 달아나기 시작한 마릿수를 돌려준다.
+    /// </summary>
+    public int Scare(Vector3 worldPoint, float radius)
+    {
+        int started = 0;
+        float now = Time.time;
+        Vector3 hand = transform.InverseTransformPoint(worldPoint);
+        for (int i = 0; i < count; i++)
+        {
+            if (bodies == null || bodies[i] == null || !flees[i]) continue;
+            Vector3 at = transform.InverseTransformPoint(bodies[i].position);
+            Vector2 away = new Vector2(at.x - hand.x, at.z - hand.z);
+            if (away.magnitude > radius) continue;
+            bool fresh = hideUntil[i] <= 0f || now >= hideUntil[i];
+            hideUntil[i] = now + Random.Range(hideSeconds.x, hideSeconds.y) * (crawl[i] ? 1f : 0.4f);
+            if (!fresh && hide[i] > 0.05f) continue;                         // 이미 숨은 곳에 그대로
+            // 손에서 먼 쪽 — 타원 둘레로 정규화한 방향
+            Vector2 n = new Vector2(away.x / Mathf.Max(0.01f, innerHalfSize.x), away.y / Mathf.Max(0.01f, innerHalfSize.z));
+            if (n.sqrMagnitude < 1e-4f) n = Random.insideUnitCircle;
+            n.Normalize();
+            float reach = crawl[i] ? hideReach : 0.85f;                        // 새우는 반대편 물속으로 휙
+            float y = crawl[i] ? height[i] - hideSink : height[i];              // 게는 턱 밑 그늘로 살짝 낮게
+            hideLocal[i] = new Vector3(n.x * innerHalfSize.x * reach, y, n.y * innerHalfSize.z * reach);
+            started++;
+        }
+        return started;
+    }
+
+    /// <summary>바위 밑에 숨어 있는 동안은 겨눌 수 없다.</summary>
+    bool Hidden(int i) => hide != null && hide[i] > 0.6f && crawl[i];
 
     public bool TryGetAgent(int index, out Vector3 position, out FishData f)
     {
@@ -118,7 +178,7 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
         float bestAngle = float.MaxValue;
         for (int i = 0; i < count; i++)
         {
-            if (bodies == null || bodies[i] == null) continue;
+            if (bodies == null || bodies[i] == null || Hidden(i)) continue;
             if (!ObservationCone.Contains(origin, direction, bodies[i].position, fish[i], maxDistance, coneDegrees, out float angle)) continue;
             if (angle < bestAngle) { bestAngle = angle; best = i; }
         }
@@ -127,7 +187,7 @@ public sealed class PracticeTank : MonoBehaviour, IObservationTargets
 
     public bool IsAgentInCone(int index, Vector3 origin, Vector3 direction, float maxDistance, float coneDegrees)
     {
-        if (bodies == null || index < 0 || index >= count || bodies[index] == null) return false;
+        if (bodies == null || index < 0 || index >= count || bodies[index] == null || Hidden(index)) return false;
         if (direction.sqrMagnitude < 1e-8f) return false;
         return ObservationCone.Contains(origin, direction.normalized, bodies[index].position, fish[index], maxDistance, coneDegrees, out _);
     }

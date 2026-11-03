@@ -69,6 +69,12 @@ public sealed class DiveMission : ScriptableObject
     public SeabedDressing seabed = SeabedDressing.CoralReef;
     public bool marineSnow;                    // 위에서 천천히 가라앉는 바다눈 (햇빛이 끝나는 200m 부터)
     public bool bioluminescence;               // 어둠 속에서 잠깐씩 반짝이는 푸른 빛 알갱이 (1,000m)
+    public bool migration;                     // 밤의 대이동 — 돔 둘레로 빛 알갱이 기둥이 천천히 솟는다 (200m)
+    public bool oarfish;                       // 아주 드문 만남 — 산갈치가 세로로 서서 지나간다 (200m, OarfishEncounter)
+
+    [Header("신호 예고 — 1,000m 만남 전에, 이 층에서 한 번 (SignalTease)")]
+    [Min(0f)] public float signalTeaseAfter;   // 도착 뒤 이만큼(초) 지나 한 번 — 먼 어둠에서 푸른 빛이 세 번 깜빡인다. 0 이면 없다
+    [TextArea(1, 3)] public string signalTeaseLine;
 
     [Header("3막 — 신호의 주인 (UnknownCreature)")]
     public bool encounter;                     // 이 층에서 미확인 생물을 깨운다

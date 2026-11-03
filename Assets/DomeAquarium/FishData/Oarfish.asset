@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: Oarfish
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: Oarfish
+  koreanName: "\uC0B0\uAC08\uCE58"
+  englishName: Giant oarfish
+  scientificName: Regalecus glesne
+  description: "\uBF08 \uC788\uB294 \uBB3C\uACE0\uAE30 \uC911 \uAC00\uC7A5 \uAE38\uAC8C
+    \uC790\uB77C\uB294 \uBB3C\uACE0\uAE30\uC608\uC694. \uBAB8\uC740 \uB9AC\uBCF8\uCC98\uB7FC
+    \uB0A9\uC791\uD558\uACE0, \uBA38\uB9AC \uC704\uB85C \uBCCF\uCC98\uB7FC \uC19F\uC740
+    \uC9C0\uB290\uB7EC\uBBF8\uBD80\uD130 \uAF2C\uB9AC\uAE4C\uC9C0 \uB4F1\uC9C0\uB290\uB7EC\uBBF8\uAC00
+    \uC774\uC5B4\uC838\uC694. \uBA38\uB9AC\uB97C \uC704\uB85C \uD558\uACE0 \uC138\uB85C\uB85C
+    \uC120 \uCC44 \uB4F1\uC9C0\uB290\uB7EC\uBBF8\uB97C \uBB3C\uACB0\uCC98\uB7FC \uD754\uB4E4\uBA70
+    \uCC9C\uCC9C\uD788 \uD5E4\uC5C4\uCCD0\uC694. \uAE4A\uC740 \uBC14\uB2E4\uC5D0
+    \uC0B4\uC544\uC11C \uC0B4\uC544 \uC788\uB294 \uBAA8\uC2B5\uC744 \uBCF8 \uC0AC\uB78C\uC740
+    \uC544\uC8FC \uB4DC\uBB3C\uC5B4\uC694."
+  sizeTag: "\uBAB8\uAE38\uC774 \uC218 m"
+  habitatTag: 200~1,000m
+  rarity: 4
+  habitat: 2
+  freshwater: 0
+  unnamed: 0
+  prefab: {fileID: 3850026654547277710, guid: a99f8c52aecc17446b6f7f665b546089, type: 3}
+  swimScale: 1
+  revealScale: 0.2
+  bandCenter: 0.48
+  bandWidth: 0.25
+  bodyLength: 4.5
+  swimSpeed: 0.2
+  schoolCount: 1

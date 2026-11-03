@@ -32,6 +32,12 @@ STILL 육지 인트로(아쿠아리움 로비 → 엘리베이터 → 수중 돔
 | `Sketchfab/Whales/SpermWhale.glb` | https://sketchfab.com/3d-models/sperm-whale-animated-marine-mammals-series-37dd875ead1b44318b682a978ed53983 | nolanfa | **CC-BY 4.0** — 1,000m 향유고래. 재질 · 크기 조정, 물보라 판 제거 |
 | `Sketchfab/Whales/BlueWhale.glb` | https://sketchfab.com/3d-models/blue-rorqual-d2adf28a014647be97b593d442ffd602 | nolanfa | **CC-BY 4.0** — 200m 대왕고래. 재질 · 크기 조정, 물보라 판 제거 |
 | `Sketchfab/Whales/HumpbackWhale.glb` | https://sketchfab.com/3d-models/humpback-whale-animated-marine-mammals-219ed629c9394d869bbf19d443188423 | nolanfa | **CC-BY 4.0** — 로비 앞바다 혹등고래. 재질 · 크기 조정, 물보라 판 제거 |
+| `Sketchfab/DeepSea/WhaleSkeleton.glb` | https://sketchfab.com/3d-models/whale-skeleton-fa181a9dddf8452b9c9d8daf0740e700 | 20lux (anne.truongxx) | **CC-BY 4.0** — 1,000m 고래 낙하. 11.5만 → 4만 삼각형(Blender), 재질을 심해 생물 셰이더로 · 10m 로 줄여 눕힘 |
+| `Sketchfab/DeepSea/Oarfish.glb` | https://sketchfab.com/3d-models/oarfish-7a60a4df5af940e58ff1f300609e7ee2 | TheoBaldeteBRID (timmygeorgy) | **CC-BY 4.0** (제작자 표기: AI 로 만든 모델) — 200m 산갈치. 8만 → 1.2만 삼각형, 세워서 4.5m 로 · 몸 물결은 코드 |
+| `Sketchfab/Vent/SequoiaVent.glb` | https://sketchfab.com/3d-models/sequoia-vent-mariana-islands-d40f9fc171c743df8efbad2118adf58f | DeepSeaBEE | **CC-BY 4.0** — 밤 이야기 ⑤ 2,500m 검은 굴뚝. 원본 75만 삼각형(1k 텍스처 GLB)을 Blender 로 꼭짓점 합친 뒤 5만으로 축소, 재질을 심해 생물 셰이더로 |
+| `Sketchfab/Vent/Riftia.glb` | https://sketchfab.com/3d-models/riftia-pachyptila-7ed57202b36843c08b2340bd8ac50442 | Scientart (AnnabelS) | **CC-BY 4.0** — 밤 이야기 ⑤ 관벌레 무리. 3.9만 → 2만 삼각형, 재질 · 크기 조정 |
+| `Sketchfab/Vent/CrabWalking.glb` | https://sketchfab.com/3d-models/crab-walking-3f28a26d4565451a8c7f7e19ea403efa | majidakbarimoganjogi | **CC-BY 4.0** — 밤 이야기 ⑤ 열수구 게. 텍스처를 흑백으로 밝게(흰 열수구 게), 걷기 애니메이션 고리 · 재질 · 크기 조정 |
+| `PolyHaven/Models/VentRocks/rock_0{7,9}_low.glb` | https://polyhaven.com/a/rock_07 · https://polyhaven.com/a/rock_09 | Poly Haven | CC0 — 밤 이야기 ⑤ 현무암. 1k 바위를 1,500 삼각형으로 축소 |
 | `PolyPizza/PirateCaptain.glb` | https://poly.pizza/m/sN18LyyHAU | Quaternius | CC0 1.0 — 로비 테라스의 보리 선장(NPC). 칼은 숨기고 재질을 URP Simple Lit 으로 바꿈 |
 | `../Stylized NPC - Peasant Nolant/` | https://assetstore.unity.com/packages/3d/characters/humanoids/fantasy/stylized-npc-peasant-nolant-demo-252440 | Winged Boots Studio | Unity Asset Store Standard EULA — 해변 조수 웅덩이의 놀란(NPC). 재질을 URP Simple Lit 으로 바꿈 |
 | `../PixitGames/Pixit3D/` | Unity Asset Store "Pixit3D - Fish Free Pack" | Pixit Games | Unity Asset Store Standard EULA — 24m 복어 · 갑오징어 · 문어(일지 종)와 산호초 바닥 꾸밈 |
@@ -50,6 +56,11 @@ STILL 육지 인트로(아쿠아리움 로비 → 엘리베이터 → 수중 돔
 - "Dumbo Octopus" by Erik, CC BY 4.0 (modified: materials and scale)
 - "Pacific Viperfish" by redsonder1000, CC BY 4.0 (modified: materials and scale)
 - "Sperm Whale - animated - marine mammals series", "Humpback Whale - animated - marine mammals", "Blue Rorqual" by nolanfa, CC BY 4.0 (modified: materials and scale)
+- "Whale Skeleton" by 20lux, CC BY 4.0 (modified: reduced polygons, materials and scale)
+- "Oarfish" by TheoBaldeteBRID, CC BY 4.0 (modified: reduced polygons, materials, pose and scale)
+- "Sequoia Vent - Mariana Islands" by DeepSeaBEE, CC BY 4.0 (modified: reduced polygons, materials and scale)
+- "Riftia pachyptila" by Scientart, CC BY 4.0 (modified: reduced polygons, materials and scale)
+- "Crab_Walking" by majidakbarimoganjogi, CC BY 4.0 (modified: colors, materials and scale)
 
 ## 라이선스 메모
 

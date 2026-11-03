@@ -65,6 +65,13 @@ MonoBehaviour:
   seabed: 1
   marineSnow: 1
   bioluminescence: 0
+  migration: 1
+  oarfish: 1
+  signalTeaseAfter: 50
+  signalTeaseLine: "\uBC29\uAE08\u2026 \uC800 \uC544\uB798 \uC5B4\uB460\uC5D0\uC11C
+    \uD478\uB978 \uBE5B\uC774 \uC138 \uBC88 \uAE5C\uBE61\uC600\uC5B4\uC694. \uC2E0\uD638\uAC00
+    \uC7A0\uAE50 \uC7A1\uD614\uB2E4\uAC00 \uC0AC\uB77C\uC84C\uC5B4\uC694. 1,000m\uC5D0\uC11C
+    \uAE30\uB2E4\uB9AC\uB294 \uADF8 \uC2E0\uD638\uC77C\uAE4C\uC694?"
   encounter: 0
   taskLine: 
   showSignal: 0

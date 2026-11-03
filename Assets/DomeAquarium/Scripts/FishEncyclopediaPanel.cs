@@ -49,6 +49,11 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
     public GameObject narrationButtonRoot;
     public float previewForwardOffset = 0.11f;
 
+    [Header("내가 찍은 사진 (ObservationPhotos — 기록하는 순간 관찰기 사진)")]
+    public GameObject photoRow;                 // 사진이 있을 때만 켠다 — 없으면 설명 칸이 그만큼 넓어진다
+    public RawImage photo;
+    public TMP_Text photoCaption;
+
     [Header("관찰 모델 가시성")]
     [Tooltip("관찰창 모델은 낮에도 살짝 또렷하게 — 시간대와 무관하게 항상 더하는 발광(알베도 배수). 작게 유지")]
     [Min(0f)] public float previewBaseGlow = 0.05f;
@@ -380,6 +385,7 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         }
         if (detailCountText != null) detailCountText.text = $"관찰 {store.GetDiscoveryCount(fish)}회";
         if (narrationButtonRoot != null) narrationButtonRoot.SetActive(true);
+        ShowPhoto(fish);
 
         int token = ++detailRequestToken;
         selectedDescription = fish.HasDescription ? fish.description : fish.FallbackDescription;
@@ -420,6 +426,16 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         if (detailDescriptionText != null) detailDescriptionText.text = "카드를 선택하면 생김새와 설명이 여기에 표시됩니다.";
         if (detailCountText != null) detailCountText.text = "";
         if (narrationButtonRoot != null) narrationButtonRoot.SetActive(false);
+        ShowPhoto(null);
+    }
+
+    void ShowPhoto(FishData fish)
+    {
+        bool has = ObservationPhotos.TryGet(fish, out Texture tex, out string caption);
+        if (photoRow != null) photoRow.SetActive(has);
+        if (!has) return;
+        if (photo != null) photo.texture = tex;
+        if (photoCaption != null) photoCaption.text = "<b>내가 찍은 사진</b>\n" + caption;
     }
 
     void BuildPreview(FishData fish)
@@ -602,6 +618,7 @@ public sealed class FishEncyclopediaPanel : MonoBehaviour
         if (detailDescriptionText != null) detailDescriptionText.text = detailFish.FallbackDescription;
         if (detailCountText != null) detailCountText.text = "관찰 1회";
         if (narrationButtonRoot != null) narrationButtonRoot.SetActive(true);
+        ShowPhoto(detailFish);
     }
 
     public void EndPreview()

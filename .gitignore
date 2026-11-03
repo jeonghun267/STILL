@@ -6,6 +6,12 @@
 Assets/DomeAquarium/Resources/GeminiSettings.asset
 Assets/DomeAquarium/Resources/GeminiSettings.asset.meta
 
+# 구매한 에셋 — 비공개 저장소 jeonghun267/BUY_Asset 에 따로 둔다 (Unity Asset Store 재배포 금지, README "구매한 에셋")
+/Assets/Layer Lab/
+/Assets/Layer Lab.meta
+/Assets/3D Characters - Fish/
+/Assets/3D Characters - Fish.meta
+
 # Unity generated
 [Ll]ibrary/
 [Tt]emp/

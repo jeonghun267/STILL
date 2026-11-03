@@ -35,6 +35,9 @@ public sealed class ObservationLight : MonoBehaviour
     public float beamRadius = 0.8f;
     public Material beamMaterial;
 
+    /// <summary>돔 밖(밤 해변 이야기)에서도 A/X 로 켜고 끈다 — 평소에는 관찰기를 겨누는 동안(aim.armed)만 받는다.</summary>
+    [NonSerialized] public bool allowOutside;
+
     public bool Unlocked { get; private set; }
     public bool On { get; private set; }
 
@@ -91,7 +94,7 @@ public sealed class ObservationLight : MonoBehaviour
     /// <summary>입력이 부른다. 관찰기를 들고 있을 때(돔 안)만 받는다.</summary>
     public void Toggle()
     {
-        if (!Unlocked || (aim != null && !aim.armed)) return;
+        if (!Unlocked || (aim != null && !aim.armed && !allowOutside)) return;
         // 손가락으로 찌르면 물리 트리거(PokeSelector)와 UI 찌르기(Button)가 같은 순간에 둘 다 온다 — 두 번 바뀌면 그대로다.
         if (Time.unscaledTime - lastToggle < 0.4f) return;
         lastToggle = Time.unscaledTime;

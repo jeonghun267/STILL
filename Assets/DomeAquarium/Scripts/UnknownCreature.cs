@@ -11,7 +11,7 @@ using UnityEngine;
 ///   떠남      기록이 끝나면 어둠 속으로 사라진다.
 ///
 /// 모습: 실존 종을 흉내 내지 않은 창작 생물. 빗해파리에서 착안한 반투명한 타원 몸에 무지갯빛 띠 8줄이 흐르고,
-/// 뒤로 가는 실 두 가닥이 늘어진다. 메시는 코드로 만든다(외부 모델 없음). 셰이더: Glow Jelly · Glow Bands.
+/// 뒤로 가는 실 두 가닥이 늘어진다. 메시는 코드로 만든다(외부 모델 없음, SignalCreatureLook). 셰이더: Glow Jelly · Glow Bands.
 /// </summary>
 public sealed class UnknownCreature : MonoBehaviour, IObservationTargets
 {
@@ -51,6 +51,7 @@ public sealed class UnknownCreature : MonoBehaviour, IObservationTargets
     public float resumeNeeded = 2.5f;          // 한 번 다가왔다 물러난 뒤 다시 다가오기까지
     public float lightForgetSeconds = 2.5f;    // 빛이 사라지고 이만큼 지나야 신호 자리로 돌아온다
     public float hintAfterSeconds = 45f;       // 조명을 켠 채 이만큼 아무 일도 없으면 알려 준다
+    public float startleSeconds = 6f;          // 플래시에 놀라면 이만큼 더 어둠 속에 머문다 (FlashOrWatch)
 
     [Header("신호")]
     public float blinkPeriod = 4.5f;
@@ -71,12 +72,7 @@ public sealed class UnknownCreature : MonoBehaviour, IObservationTargets
     /// <summary>조명을 켠 채 한참 아무 일도 없을 때 한 번.</summary>
     public event Action HintDue;
 
-    Transform body, core, bands, halo;
-    Renderer bodyR, coreR, bandsR, haloR;
-    LineRenderer[] filaments;
-    MaterialPropertyBlock mpb;
-    static readonly int IntensityId = Shader.PropertyToID("_Intensity");
-    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    SignalCreatureLook look;                   // 몸 · 띠 · 빛무리 · 실 — 밤 이야기의 SignalCreaturePuppet 과 같은 모습
 
     Vector3 anchor;                            // 눈 위치(도착 때). 돔 안에서는 걸어 다니지 않는다
     Vector3 dir;                               // 눈 → 생물 수평 방향
@@ -93,8 +89,7 @@ public sealed class UnknownCreature : MonoBehaviour, IObservationTargets
         if (deviceLight == null) deviceLight = FindFirstObjectByType<ObservationLight>(FindObjectsInactive.Include);
         if (stillness == null) stillness = FindFirstObjectByType<StillnessDetector>(FindObjectsInactive.Include);
         if (aim == null) aim = FindFirstObjectByType<ObservationAim>(FindObjectsInactive.Include);
-        mpb = new MaterialPropertyBlock();
-        BuildVisuals();
+        look = new SignalCreatureLook(transform, LookStyle);
         SetVisible(false);
     }
 
@@ -193,6 +188,18 @@ public sealed class UnknownCreature : MonoBehaviour, IObservationTargets
         UpdateSignal(dt);
     }
 
+    /// <summary>
+    /// 플래시에 놀랐다(FlashOrWatch) — 어둠 속으로 물러난다. 실패로 세지 않는다(관측소장이 따로 말한다).
+    /// 빛이 사라지고 다시 가만히 있으면 돌아온다 (Retreating → Signal → Approaching, 한 번 다가온 뒤라 짧게 기다린다).
+    /// </summary>
+    public void Startle()
+    {
+        if (State == Mode.Hidden || State == Mode.Gone || State == Mode.Leaving) return;
+        State = Mode.Retreating;
+        lastLitTime = Time.time + startleSeconds;                            // 비춰진 것보다 오래 — 끝까지 물러났다가 돌아온다
+        glow = 1.2f;                                                        // 번쩍 비친 순간 — 곧 흐려진다
+    }
+
     void StartRetreat()
     {
         State = Mode.Retreating;
@@ -239,16 +246,7 @@ public sealed class UnknownCreature : MonoBehaviour, IObservationTargets
     }
 
     /// <summary>blinkPeriod 마다 0.18초씩 세 번 켜진다.</summary>
-    float Blink(float time)
-    {
-        float t = Mathf.Repeat(time, blinkPeriod);
-        for (int i = 0; i < 3; i++)
-        {
-            float start = i * 0.4f;
-            if (t >= start && t <= start + 0.18f) return Mathf.Sin((t - start) / 0.18f * Mathf.PI);
-        }
-        return 0f;
-    }
+    float Blink(float time) => SignalCreatureLook.Blink(time, blinkPeriod);
 
     void UpdateSignal(float dt)
     {
@@ -306,190 +304,30 @@ public sealed class UnknownCreature : MonoBehaviour, IObservationTargets
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 모습 만들기 (코드로 만든 메시)
+    // 모습 (SignalCreatureLook)
     // ─────────────────────────────────────────────────────────────
 
-    void BuildVisuals()
+    /// <summary>밤 이야기의 꼭두각시(SignalCreaturePuppet)도 이 값을 그대로 받아 같은 모습이 된다.</summary>
+    public SignalCreatureLook.Style LookStyle => new SignalCreatureLook.Style
     {
-        if (bodyMaterial == null) return;
-        body = Part("Body", Ellipsoid(bodyRadii, 28, 18), bodyMaterial, out bodyR);
-        core = Part("Core", Ellipsoid(bodyRadii * 0.38f, 16, 10), coreMaterial != null ? coreMaterial : bodyMaterial, out coreR);
-        if (bandMaterial != null) bands = Part("Bands", BandMesh(), bandMaterial, out bandsR);
-        if (haloMaterial != null) halo = Part("Halo", Quad(), haloMaterial, out haloR);
-
-        if (filamentMaterial != null)
-        {
-            filaments = new LineRenderer[2];
-            for (int i = 0; i < 2; i++)
-            {
-                var go = new GameObject("Filament" + i);
-                go.transform.SetParent(transform, false);
-                var lr = go.AddComponent<LineRenderer>();
-                lr.useWorldSpace = true;
-                lr.positionCount = 18;
-                lr.sharedMaterial = filamentMaterial;
-                lr.widthCurve = new AnimationCurve(new Keyframe(0f, 0.035f), new Keyframe(1f, 0.004f));
-                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                lr.receiveShadows = false;
-                lr.numCapVertices = 2;
-                filaments[i] = lr;
-            }
-        }
-    }
-
-    Transform Part(string name, Mesh mesh, Material mat, out Renderer renderer)
-    {
-        var go = new GameObject(name);
-        go.transform.SetParent(transform, false);
-        go.AddComponent<MeshFilter>().sharedMesh = mesh;
-        var r = go.AddComponent<MeshRenderer>();
-        r.sharedMaterial = mat;
-        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        r.receiveShadows = false;
-        renderer = r;
-        return go.transform;
-    }
+        body = bodyMaterial, core = coreMaterial, bands = bandMaterial, halo = haloMaterial, filament = filamentMaterial,
+        radii = bodyRadii, bandCount = bandCount, filamentLength = filamentLength, haloSize = haloSize, haloColor = haloColor,
+    };
 
     void SetVisible(bool on)
     {
         foreach (var r in GetComponentsInChildren<Renderer>(true)) r.enabled = on;
     }
 
-    void ApplyGlow(float g, bool bandsAwake)
-    {
-        if (bodyR != null) { bodyR.GetPropertyBlock(mpb); mpb.SetFloat(IntensityId, 0.25f + g * 1.1f); bodyR.SetPropertyBlock(mpb); }
-        if (coreR != null) { coreR.GetPropertyBlock(mpb); mpb.SetFloat(IntensityId, g * 1.4f); coreR.SetPropertyBlock(mpb); }
-        if (bandsR != null) { bandsR.GetPropertyBlock(mpb); mpb.SetFloat(IntensityId, (bandsAwake ? 0.4f : 0.12f) + g * (bandsAwake ? 1.3f : 0.5f)); bandsR.SetPropertyBlock(mpb); }
-        if (haloR != null)
-        {
-            haloR.GetPropertyBlock(mpb);
-            mpb.SetColor(BaseColorId, new Color(haloColor.r, haloColor.g, haloColor.b, Mathf.Clamp01(0.08f + g * 0.55f)));
-            haloR.SetPropertyBlock(mpb);
-        }
-        if (filaments != null)
-            foreach (var lr in filaments)
-            {
-                if (lr == null) continue;
-                lr.startColor = new Color(0.55f, 0.85f, 1f, 0.15f + g * 0.6f);
-                lr.endColor = new Color(0.55f, 0.85f, 1f, 0f);
-            }
-    }
+    void ApplyGlow(float g, bool bandsAwake) => look?.Apply(g, bandsAwake);
 
     void LateUpdate()
     {
-        if (halo == null || State == Mode.Hidden || State == Mode.Gone) return;
-        Transform v = ResolveView();
-        if (v == null) return;
-        halo.SetPositionAndRotation(transform.position, Quaternion.LookRotation(transform.position - v.position, Vector3.up));
-        halo.localScale = Vector3.one * haloSize;
+        if (look == null || State == Mode.Hidden || State == Mode.Gone) return;
+        look.FaceHalo(ResolveView());
     }
 
-    void UpdateFilaments()
-    {
-        if (filaments == null) return;
-        float t = Time.time;
-        Vector3 back = -transform.forward;
-        for (int k = 0; k < filaments.Length; k++)
-        {
-            LineRenderer lr = filaments[k];
-            if (lr == null) continue;
-            float side = k == 0 ? 1f : -1f;
-            Vector3 start = transform.TransformPoint(new Vector3(side * bodyRadii.x * 0.6f, -0.05f, -bodyRadii.z * 0.55f));
-            int n = lr.positionCount;
-            for (int i = 0; i < n; i++)
-            {
-                float u = i / (float)(n - 1);
-                Vector3 sway = transform.right * (Mathf.Sin(t * 1.3f + i * 0.45f + k) * 0.18f * u)
-                             + transform.up * (Mathf.Sin(t * 0.9f + i * 0.35f + k * 2f) * 0.12f * u - 0.25f * u * u);
-                lr.SetPosition(i, start + back * (filamentLength * u) + transform.right * side * 0.25f * u + sway);
-            }
-        }
-    }
-
-    static Mesh Ellipsoid(Vector3 r, int lon, int lat)
-    {
-        var mesh = new Mesh { name = "UnknownEllipsoid" };
-        var v = new Vector3[(lon + 1) * (lat + 1)];
-        var n = new Vector3[v.Length];
-        var tris = new int[lon * lat * 6];
-        int idx = 0;
-        for (int y = 0; y <= lat; y++)
-        {
-            float theta = Mathf.PI * y / lat;                   // 0 = 앞 끝(+Z)
-            for (int x = 0; x <= lon; x++)
-            {
-                float phi = 2f * Mathf.PI * x / lon;
-                var unit = new Vector3(Mathf.Sin(theta) * Mathf.Cos(phi), Mathf.Sin(theta) * Mathf.Sin(phi), Mathf.Cos(theta));
-                v[idx] = Vector3.Scale(unit, r);
-                n[idx] = new Vector3(unit.x / r.x, unit.y / r.y, unit.z / r.z).normalized;
-                idx++;
-            }
-        }
-        int t = 0;
-        for (int y = 0; y < lat; y++)
-            for (int x = 0; x < lon; x++)
-            {
-                int a = y * (lon + 1) + x, b = a + lon + 1;
-                tris[t++] = a; tris[t++] = a + 1; tris[t++] = b;
-                tris[t++] = a + 1; tris[t++] = b + 1; tris[t++] = b;
-            }
-        mesh.vertices = v;
-        mesh.normals = n;
-        mesh.triangles = tris;
-        mesh.RecalculateBounds();
-        return mesh;
-    }
-
-    /// <summary>앞 끝에서 뒤 끝으로 몸을 따라 흐르는 띠 bandCount 줄. 몸 표면보다 3% 밖, 가운데가 넓고 끝이 가늘다.</summary>
-    Mesh BandMesh()
-    {
-        const int steps = 26;
-        int rows = Mathf.Max(1, bandCount);
-        var mesh = new Mesh { name = "UnknownBands" };
-        var v = new Vector3[rows * (steps + 1) * 2];
-        var uv0 = new Vector2[v.Length];
-        var uv1 = new Vector2[v.Length];
-        var tris = new int[rows * steps * 6];
-        int vi = 0, ti = 0;
-        for (int k = 0; k < rows; k++)
-        {
-            float phi = 2f * Mathf.PI * k / rows;
-            var east = new Vector3(-Mathf.Sin(phi), Mathf.Cos(phi), 0f);
-            int baseIndex = vi;
-            for (int s = 0; s <= steps; s++)
-            {
-                float u = s / (float)steps;
-                float theta = Mathf.Lerp(0.1f, 0.9f, u) * Mathf.PI;
-                var unit = new Vector3(Mathf.Sin(theta) * Mathf.Cos(phi), Mathf.Sin(theta) * Mathf.Sin(phi), Mathf.Cos(theta));
-                Vector3 p = Vector3.Scale(unit, bodyRadii) * 1.03f;
-                float w = 0.008f + 0.03f * Mathf.Sin(theta);
-                v[vi] = p - east * w; uv0[vi] = new Vector2(k / (float)rows, u); uv1[vi] = new Vector2(0f, 0f); vi++;
-                v[vi] = p + east * w; uv0[vi] = new Vector2(k / (float)rows, u); uv1[vi] = new Vector2(1f, 0f); vi++;
-            }
-            for (int s = 0; s < steps; s++)
-            {
-                int a = baseIndex + s * 2;
-                tris[ti++] = a; tris[ti++] = a + 2; tris[ti++] = a + 1;
-                tris[ti++] = a + 1; tris[ti++] = a + 2; tris[ti++] = a + 3;
-            }
-        }
-        mesh.vertices = v;
-        mesh.uv = uv0;
-        mesh.uv2 = uv1;
-        mesh.triangles = tris;
-        mesh.RecalculateBounds();
-        return mesh;
-    }
-
-    static Mesh Quad()
-    {
-        var mesh = new Mesh { name = "UnknownHalo" };
-        mesh.vertices = new[] { new Vector3(-0.5f, -0.5f, 0f), new Vector3(0.5f, -0.5f, 0f), new Vector3(-0.5f, 0.5f, 0f), new Vector3(0.5f, 0.5f, 0f) };
-        mesh.uv = new[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f) };
-        mesh.triangles = new[] { 0, 2, 1, 1, 2, 3 };
-        mesh.RecalculateBounds();
-        return mesh;
-    }
+    void UpdateFilaments() => look?.UpdateFilaments();
 
     Transform ResolveView()
     {

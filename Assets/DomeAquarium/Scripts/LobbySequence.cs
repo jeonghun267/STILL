@@ -69,6 +69,10 @@ public sealed class LobbySequence : MonoBehaviour
     [Header("자막")]
     public CanvasGroup captionGroup;
     public TMP_Text captionText;
+    // 관측소장은 모습 없이 무전으로만 말하는 해설자 — 선장 · 글로리아처럼 자막 앞에 이름을 붙여 누가 말하는지 알게 한다.
+    // 사람 이름(금빛)과 구별되게 무전 화면 같은 푸른빛으로, 조금 작게.
+    public string chiefTag = "관측소장";
+    public string chiefTagColor = "#8FD3E8";
     // 시선에서 20° 아래, 0.9m — 시선 한가운데(대화하는 사람의 얼굴, 관찰하는 생물)를 비워 두고,
     // 그보다 가까이 오는 물체가 드물어 두 눈이 느끼는 거리가 어긋나지 않는다. 그래도 겹치면 맨 위에 그린다(DomeAquariumOverlayUi).
     // 고개를 숙이면 같이 내려간다 — 예전처럼 가슴 높이에 고정하면 장비대 · 조수 웅덩이를 내려다볼 때 자막이 그 위(간판 글씨)에 겹쳤다.
@@ -163,6 +167,8 @@ public sealed class LobbySequence : MonoBehaviour
     EnvSnapshot dome;
 
     public bool InLobby => phase != Phase.Dome;
+    /// <summary>엘리베이터 칸 계기판의 지금 수심(m) — 칸의 작은 창 · 수압 컵이 따라간다 (CabinDepthView).</summary>
+    public float CabinMeters { get; private set; }
     public bool IsNight => phase == Phase.Night;
 
     // --- 로비 활동(수심 벽 등)이 쓰는 것 ---
@@ -274,6 +280,16 @@ public sealed class LobbySequence : MonoBehaviour
     public IEnumerator SayLine(string line)
     {
         yield return Say(line);
+        HideCaption();
+    }
+
+    /// <summary>
+    /// 관측소장 자리(시선을 따라오는 자막)에 다른 사람이 말할 때 — 자막 앞에 이름을 붙이고 그 사람 목소리로 읽는다.
+    /// 밤바다 장면의 선장처럼 바다를 보며 들어야 할 때 쓴다 (NPC 옆 판은 시선을 가렸다).
+    /// </summary>
+    public IEnumerator SayLine(string line, string voice, string speaker)
+    {
+        yield return Say(line, voice, speaker);
         HideCaption();
     }
 
@@ -436,7 +452,8 @@ public sealed class LobbySequence : MonoBehaviour
         {
             t += Time.deltaTime / duration;
             float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t));
-            if (depthText != null) depthText.text = FormatDepth(Mathf.Lerp(fromMeters, toMeters, k));
+            CabinMeters = Mathf.Lerp(fromMeters, toMeters, k);
+            if (depthText != null) depthText.text = FormatDepth(CabinMeters);
             RenderSettings.ambientSkyColor = Color.Lerp(sky0, sky1, k);
             RenderSettings.ambientEquatorColor = Color.Lerp(eq0, eq1, k);
             RenderSettings.ambientGroundColor = Color.Lerp(gr0, gr1, k);
@@ -536,6 +553,7 @@ public sealed class LobbySequence : MonoBehaviour
         if (sun != null) sun.intensity = sunLevel;
         if (elevatorDoors != null) elevatorDoors.Sample(0f);
         doorsOpen = false;
+        CabinMeters = meters;
         if (depthText != null) depthText.text = FormatDepth(meters);
         if (cabinPoint != null) AlignRig(cabinPoint.position, Vector3.forward);
 
@@ -574,6 +592,7 @@ public sealed class LobbySequence : MonoBehaviour
         if (sun != null) sun.intensity = sunLevel;
         if (elevatorDoors != null) elevatorDoors.Sample(0f);
         doorsOpen = false;
+        CabinMeters = fromMeters;
         if (depthText != null) depthText.text = FormatDepth(fromMeters);
         if (cabinPoint != null) AlignRig(cabinPoint.position, Vector3.forward);
         yield return new WaitForSeconds(0.3f);
@@ -636,6 +655,15 @@ public sealed class LobbySequence : MonoBehaviour
     // 리그 이동
     // ─────────────────────────────────────────────────────────────
 
+    /// <summary>밤 로비의 이야기 장면(NightStoryHub)이 검은 화면 뒤에서 부른다 — 머리가 spot 위에 오고 spot 정면을 본다.</summary>
+    public void MoveRigTo(Transform spot)
+    {
+        if (spot != null) AlignRig(spot.position, spot.forward);
+    }
+
+    /// <summary>화면 암전 (Start 에서 만든다). 이야기 장면을 오갈 때 쓴다.</summary>
+    public ScreenFader Fader => fader;
+
     /// <summary>머리(카메라)가 floorPoint 위에 오고, 정면이 forward 를 보도록 리그를 돌리고 옮긴다.</summary>
     void AlignRig(Vector3 floorPoint, Vector3 forward)
     {
@@ -665,15 +693,18 @@ public sealed class LobbySequence : MonoBehaviour
     // 나레이션·자막
     // ─────────────────────────────────────────────────────────────
 
-    IEnumerator Say(string line)
+    IEnumerator Say(string line, string voice = null, string speaker = null)
     {
         if (string.IsNullOrWhiteSpace(line)) yield break;
         // 한 번에 한 사람만 말한다 — NPC 와 대화하는 동안은 관측소장 자막 · 목소리가 끼어들지 않는다(대화 판과 자막이 겹쳤다).
         while (NpcDialogue.AnyTalking) yield return null;
-        ShowCaption(line);
+        string shown = !string.IsNullOrEmpty(speaker) ? $"<color=#F2C46D>{speaker}</color>  {line}"
+            : !string.IsNullOrEmpty(chiefTag) ? $"<size=85%><color={chiefTagColor}>{chiefTag}</color></size>  {line}"
+            : line;
+        ShowCaption(shown);
 
         var tts = FishNarrationService.Instance;
-        if (tts != null) tts.Speak(string.Empty, line);
+        if (tts != null) tts.Speak(string.Empty, line, voice);
 
         // 음성은 처음 한 번은 네트워크로 받아 오므로 늦게 시작할 수 있다.
         // 음성이 없거나(키 없음·오프라인) 늦으면 글자 수로 읽을 시간을 잡고, 무한정 기다리지는 않는다.
@@ -688,8 +719,8 @@ public sealed class LobbySequence : MonoBehaviour
                 // 말하는 도중 NPC 에게 말을 걸었다 — 자막을 내렸다가 대화가 끝나면 이 줄을 처음부터 다시 말한다
                 HideCaption();
                 while (NpcDialogue.AnyTalking) yield return null;
-                ShowCaption(line);
-                if (tts != null) tts.Speak(string.Empty, line);
+                ShowCaption(shown);
+                if (tts != null) tts.Speak(string.Empty, line, voice);
                 start = Time.time;
                 yield return null;
                 continue;
@@ -772,6 +803,28 @@ public sealed class LobbySequence : MonoBehaviour
     }
 
     static string FormatDepth(float meters) => $"수심  {meters:0} m";
+
+#if UNITY_EDITOR
+    /// <summary>헤드셋 없이 엔딩의 밤을 바로 볼 때 — 어디에 있든 밤 로비로 옮겨 서고 atLobby 를 부른다 (DiveDirector.DebugJumpToEnding).</summary>
+    public void DebugJumpToNight(System.Action atLobby)
+    {
+        StopAllCoroutines();
+        HideCaption(true);
+        if (cabinSet != null) cabinSet.SetActive(false);
+        if (lobbySet != null) lobbySet.SetActive(true);
+        SetDome(false);
+        ApplyLobbyEnvironment();
+        if (night != null) night.Apply();
+        if (elevatorDoors != null) { elevatorDoors.Sample(doorOpenEnd); doorsOpen = true; }
+        Transform spot = nightSpot != null ? nightSpot : walkStartPoint;
+        if (spot != null) AlignRig(spot.position, spot.forward);
+        lobbyAudioOn = false;
+        StartLobbyAudio();
+        phase = Phase.Night;
+        fader?.SetFadeImmediate(0f);
+        atLobby?.Invoke();
+    }
+#endif
 
     // ─────────────────────────────────────────────────────────────
     // 환경 (조명·하늘·안개)

@@ -69,6 +69,20 @@ public static class ObservationTerms
 
     // 엔딩 — 밤 로비 데이터 월의 새 줄, 크레딧 뒤 다시 하기
     public const string NewRecordTitle = "+1  처음 관측된 생물";
+    /// <summary>이름을 붙였으면 새 줄 제목에 — "+1 처음 관측된 생물 · 고요별".</summary>
+    public static string NewRecordNamed(string name) => string.IsNullOrWhiteSpace(name) ? NewRecordTitle : $"{NewRecordTitle}  ·  {name}";
+    public const string NameTitle = "이 생물에게 이름을 붙여 주세요";
+    public static readonly string[] SignalNames = { "고요별", "푸른등불", "세번깜빡이" };   // 가만히(STILL) · 푸른빛 · 세 번 깜빡이는 신호
+    public static string NamedLine(string name) => $"이제 이 생물의 이름은 '{name}'{Particle(name, "이에요", "예요")}. 오늘 밤 관측소 데이터 월에 그 이름이 새겨질 거예요.";
+
+    /// <summary>앞말 끝 글자에 받침이 있으면 withFinal, 없으면 withoutFinal ("고요별이에요" · "세번깜빡이예요").</summary>
+    public static string Particle(string word, string withFinal, string withoutFinal)
+    {
+        if (string.IsNullOrEmpty(word)) return withFinal;
+        char c = word[word.Length - 1];
+        if (c < 0xAC00 || c > 0xD7A3) return withFinal;
+        return (c - 0xAC00) % 28 != 0 ? withFinal : withoutFinal;
+    }
     public static string NewRecordDetail(string depth, string observer, System.DateTime when) =>
         $"수심 {depth}  ·  최초 관측자 {observer}  ·  {when:yyyy.MM.dd}";
     public const string EndTitle = "오늘 밤의 관측 끝";
