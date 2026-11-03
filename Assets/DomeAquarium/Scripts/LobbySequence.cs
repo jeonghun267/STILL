@@ -40,6 +40,9 @@ public sealed class LobbySequence : MonoBehaviour
     public Transform gatePoint;            // 개찰구 통로 중심 — 지나갈 때 문이 열린다
     public Transform domePoint;            // 수중 돔에서 설 자리. 비면 월드 원점(수조 정중앙)
     public GameObject cabinSet;            // 엘리베이터 칸·승강로·계기판·깊이 버튼. 로비 건물(lobbySet)과 따로 켜고 끈다
+    [Tooltip("수중 돔(물고기 떼 · 산호초 · 수조 · 바닥) — 물 위(해변 · 로비 · 엔딩의 밤)에 있는 동안은 끈다. 로비가 돔 24m 위라 보이지도 않는데 " +
+             "물고기 140여 마리의 애니메이션 · 무리 계산 · 그리기가 그대로 돌아 Quest 프레임을 깎았다. 처음 돔으로 내려갈 때(검은 화면) 켠다.")]
+    public GameObject[] domeSet;
 
     [Header("층 진행 (비면 런타임에 찾는다. 없으면 예전처럼 24m 로 바로 내려간다)")]
     public DiveDirector director;
@@ -66,8 +69,18 @@ public sealed class LobbySequence : MonoBehaviour
     [Header("자막")]
     public CanvasGroup captionGroup;
     public TMP_Text captionText;
-    public float captionDistance = 1.5f;
-    public float captionDrop = 0.34f;
+    // 시선에서 20° 아래, 0.9m — 시선 한가운데(대화하는 사람의 얼굴, 관찰하는 생물)를 비워 두고,
+    // 그보다 가까이 오는 물체가 드물어 두 눈이 느끼는 거리가 어긋나지 않는다. 그래도 겹치면 맨 위에 그린다(DomeAquariumOverlayUi).
+    // 고개를 숙이면 같이 내려간다 — 예전처럼 가슴 높이에 고정하면 장비대 · 조수 웅덩이를 내려다볼 때 자막이 그 위(간판 글씨)에 겹쳤다.
+    public float captionDistance = 0.9f;
+    [Tooltip("시선에서 자막까지 내려 보는 각도(°)")]
+    public float captionBelowGaze = 20f;
+    [Tooltip("시선을 따라가는 위아래 범위(°, 수평 기준) — 하늘이나 발밑을 볼 때 자막이 너무 멀리 가지 않게")]
+    public Vector2 captionGazePitch = new Vector2(-55f, 25f);
+    [Tooltip("엘리베이터 칸 안쪽 반폭(m). 칸이 3m 라 1.5m 앞 자막은 벽 속에 묻힌다 — 칸 안에서는 바라보는 쪽 벽 앞에 세운다")]
+    public float cabinHalfSize = 1.4f;
+    public float cabinCaptionMargin = 0.25f;   // 벽(과 벽의 수심 계기판)에서 띄우는 거리
+    public float cabinCaptionMin = 0.6f;       // 벽에 바짝 붙어 서도 이보다 가까이 세우지 않는다
 
     [Header("시작 패널")]
     public StartPanel startPanel;
@@ -122,6 +135,7 @@ public sealed class LobbySequence : MonoBehaviour
     ClipScrubber gateDoors;
     bool captionVisible;
     bool captionSnap;
+    Vector3 captionScale;                  // captionDistance 에서의 크기. 가까이 세우면 그만큼 줄여 같은 크기로 보이게 한다
     bool lobbyAudioOn;
     bool doorsOpen;
     bool arrivedOnce;
@@ -178,7 +192,7 @@ public sealed class LobbySequence : MonoBehaviour
             rig.rotation = Quaternion.Euler(0f, spawnPoint.eulerAngles.y, 0f);
         }
 
-        if (captionGroup != null) captionGroup.alpha = 0f;
+        if (captionGroup != null) { captionGroup.alpha = 0f; captionScale = captionGroup.transform.localScale; }
         if (depthText != null) depthText.text = FormatDepth(0f);
     }
 
@@ -189,6 +203,7 @@ public sealed class LobbySequence : MonoBehaviour
         sun = timeOfDay != null && timeOfDay.sun != null ? timeOfDay.sun : FindDirectionalLight();
         dome = CaptureEnvironment();
         ApplyLobbyEnvironment();
+        SetDome(false);                       // 모든 Awake 가 돔 물체를 찾아 둔 뒤 (DiveDirector 는 이름으로 ReefFloor 를 찾는다)
 
         AquariumAudioDirector.Instance?.SetAmbientMuted(true);
 
@@ -570,6 +585,7 @@ public sealed class LobbySequence : MonoBehaviour
         // 해수면 — 검은 화면 뒤에서 로비에 밤을 칠하고 데이터 월 앞으로 옮겨 선다.
         if (fader != null) yield return fader.FadeTo(1f, 1.0f);
         if (lobbySet != null) lobbySet.SetActive(true);
+        SetDome(false);
         ApplyLobbyEnvironment();
         if (night != null) night.Apply();
         if (elevatorDoors != null) { elevatorDoors.Sample(doorOpenEnd); doorsOpen = true; }
@@ -590,6 +606,7 @@ public sealed class LobbySequence : MonoBehaviour
         if (music != null) music.Stop();
         if (lobbySet != null) lobbySet.SetActive(false);
         if (cabinSet != null) cabinSet.SetActive(false);
+        SetDome(true);                        // 층 꾸미기(DiveDirector.PrepareLayer)보다 먼저
 
         RestoreEnvironment(dome);
         if (timeOfDay != null)
@@ -606,6 +623,13 @@ public sealed class LobbySequence : MonoBehaviour
             Vector3 target = domePoint != null ? domePoint.position : Vector3.zero;
             PlaceCameraOver(target);
         }
+    }
+
+    void SetDome(bool on)
+    {
+        if (domeSet == null) return;
+        foreach (var g in domeSet)
+            if (g != null && g.activeSelf != on) g.SetActive(on);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -644,6 +668,8 @@ public sealed class LobbySequence : MonoBehaviour
     IEnumerator Say(string line)
     {
         if (string.IsNullOrWhiteSpace(line)) yield break;
+        // 한 번에 한 사람만 말한다 — NPC 와 대화하는 동안은 관측소장 자막 · 목소리가 끼어들지 않는다(대화 판과 자막이 겹쳤다).
+        while (NpcDialogue.AnyTalking) yield return null;
         ShowCaption(line);
 
         var tts = FishNarrationService.Instance;
@@ -657,6 +683,17 @@ public sealed class LobbySequence : MonoBehaviour
         yield return null;
         while (Time.time - start < timeout)
         {
+            if (NpcDialogue.AnyTalking)
+            {
+                // 말하는 도중 NPC 에게 말을 걸었다 — 자막을 내렸다가 대화가 끝나면 이 줄을 처음부터 다시 말한다
+                HideCaption();
+                while (NpcDialogue.AnyTalking) yield return null;
+                ShowCaption(line);
+                if (tts != null) tts.Speak(string.Empty, line);
+                start = Time.time;
+                yield return null;
+                continue;
+            }
             bool speaking = tts != null && tts.IsSpeaking;
             if (!speaking && Time.time - start >= readTime) break;
             yield return null;
@@ -696,17 +733,42 @@ public sealed class LobbySequence : MonoBehaviour
         captionGroup.alpha = Mathf.MoveTowards(captionGroup.alpha, captionVisible ? 1f : 0f, Time.deltaTime * 2.5f);
         if (captionGroup.alpha <= 0.001f || viewCamera == null) return;
 
-        // 시작 패널과 같은 방식으로 정면 아래를 천천히 따라온다 — 고개를 돌려도 자막을 놓치지 않는다.
+        // 시선 아래를 천천히 따라온다 — 고개를 돌리거나 숙여도 자막을 놓치지 않고, 보고 있는 것 위에는 올라오지 않는다.
         Transform cam = viewCamera.transform;
         Vector3 forward = Flat(cam.forward);
+        if (forward.sqrMagnitude < 0.0001f) forward = Flat(-cam.up);              // 바로 아래 · 위를 볼 때는 머리 윗방향의 반대가 앞
         if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward; else forward.Normalize();
-        Vector3 pos = cam.position + forward * captionDistance + Vector3.down * captionDrop;
-        Quaternion rot = Quaternion.LookRotation(forward, Vector3.up);
+        float gaze = Mathf.Asin(Mathf.Clamp(cam.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+        float pitch = (Mathf.Clamp(gaze, captionGazePitch.x, captionGazePitch.y) - captionBelowGaze) * Mathf.Deg2Rad;
+        Vector3 dir = forward * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
+        // 가까이 세울 때는 크기를 같은 비율로 줄인다 — 시야에서는 같은 자리, 같은 크기다.
+        float near = CaptionDistance(cam.position, forward) / captionDistance;
+        Vector3 pos = cam.position + dir * (captionDistance * near);
+        Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);               // 시선에 수직으로 — 기울여도 글자가 찌그러지지 않는다
 
         Transform tr = captionGroup.transform;
         float k = captionSnap ? 1f : 1f - Mathf.Exp(-3f * Time.deltaTime);
         captionSnap = false;
         tr.SetPositionAndRotation(Vector3.Lerp(tr.position, pos, k), Quaternion.Slerp(tr.rotation, rot, k));
+        tr.localScale = Vector3.Lerp(tr.localScale, captionScale * near, k);
+    }
+
+    /// <summary>
+    /// 자막을 세울 거리. 엘리베이터 칸은 안쪽이 3m 라 칸 가운데에서 1.5m 앞이 곧 벽이다 — 깊이 버튼을 누르면 뜨는 하강 대사가
+    /// 계기판 벽 뒤에 묻혀, 고개를 옆으로 돌려야 겨우 보였다. 칸 안에서는 바라보는 쪽 벽보다 cabinCaptionMargin 앞에 세운다.
+    /// </summary>
+    float CaptionDistance(Vector3 eye, Vector3 forward)
+    {
+        if (cabinPoint == null || cabinSet == null || !cabinSet.activeInHierarchy) return captionDistance;
+        Vector3 p = cabinPoint.InverseTransformPoint(eye);
+        float h = cabinHalfSize;
+        if (Mathf.Abs(p.x) > h || Mathf.Abs(p.z) > h) return captionDistance;   // 칸 밖 (로비 홀)
+
+        Vector3 d = cabinPoint.InverseTransformDirection(forward);
+        float wall = float.PositiveInfinity;
+        if (Mathf.Abs(d.x) > 1e-4f) wall = Mathf.Min(wall, ((d.x > 0f ? h : -h) - p.x) / d.x);
+        if (Mathf.Abs(d.z) > 1e-4f) wall = Mathf.Min(wall, ((d.z > 0f ? h : -h) - p.z) / d.z);
+        return Mathf.Clamp(wall - cabinCaptionMargin, cabinCaptionMin, captionDistance);
     }
 
     static string FormatDepth(float meters) => $"수심  {meters:0} m";

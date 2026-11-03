@@ -724,6 +724,11 @@ public static class DomeAquariumSceneBuilder
             s.Contains("basslet") || s.Contains("dottyback") || s.Contains("dartfish") ||
             s.Contains("seahorse")) return 5;
 
+        // Pixit3D (DomeAquarium/21) — 문어는 혼자, 복어 · 갑오징어는 몇 마리
+        if (s.Contains("octopus")) return 1;
+        if (s.Contains("puffer")) return 2;
+        if (s.Contains("cuttlefish")) return 3;
+
         return 4;
     }
 

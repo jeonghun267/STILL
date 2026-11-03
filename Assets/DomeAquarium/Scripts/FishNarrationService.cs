@@ -89,7 +89,8 @@ public sealed class FishNarrationService : MonoBehaviour
         catch (Exception e) { Debug.LogWarning("[TTS] 캐시 폴더 생성 실패: " + e.Message); cacheDir = null; }
     }
 
-    public void Speak(string koreanName, string description)
+    /// <param name="voice">다른 목소리(Gemini 기본 음성 이름). 비우면 관측소장 목소리(settings.ttsVoice) — 로비 NPC 가 쓴다.</param>
+    public void Speak(string koreanName, string description, string voice = null)
     {
         string cleanName = (koreanName ?? string.Empty).Trim();
         string cleanDescription = (description ?? string.Empty).Trim();
@@ -105,7 +106,8 @@ public sealed class FishNarrationService : MonoBehaviour
         if (settings == null || !settings.IsUsable || !settings.enableNarration) return;
 
         int token = ++requestToken;
-        string key = CacheKey(settings.ttsVoice, text);
+        if (string.IsNullOrWhiteSpace(voice)) voice = settings.ttsVoice;
+        string key = CacheKey(voice, text);
 
         if (memoryCache.TryGetValue(key, out AudioClip cached) && cached != null)
         {
@@ -121,7 +123,7 @@ public sealed class FishNarrationService : MonoBehaviour
             return;
         }
 
-        fetchRoutine = StartCoroutine(Fetch(token, key, text));
+        fetchRoutine = StartCoroutine(Fetch(token, key, text, voice));
     }
 
     public void Stop()
@@ -140,12 +142,12 @@ public sealed class FishNarrationService : MonoBehaviour
         source.Play();
     }
 
-    IEnumerator Fetch(int token, string key, string text)
+    IEnumerator Fetch(int token, string key, string text, string voice)
     {
         fetching = true;
 
         string url = GeminiEndpoint + settings.ttsModel + ":generateContent";
-        string body = BuildRequestJson(text, settings.ttsVoice);
+        string body = BuildRequestJson(text, voice);
 
         using (var req = new UnityWebRequest(url, "POST"))
         {

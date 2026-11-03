@@ -27,19 +27,21 @@ using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 ///   z=15   앞벽: STILL 간판 · 71% / 80% 데이터 월(나무색 강조 벽) · 가운데 아치 너머 엘리베이터
 ///   z=17.5 엘리베이터 칸 중심 — 안쪽 벽에 수심 계기판
 ///
-/// 로비는 수조(원점, 반지름 12m)에서 150m 떨어져 있다. 카메라 원경이 60m 라 서로 보이지 않고,
+/// 수조(원점, 반지름 12m · 돔 꼭대기 y=8)가 기준이다. 로비는 그 바로 위 — 엘리베이터 칸이 수조 정중앙 24m 위에 와서,
+/// 칸이 곧장 아래로 내려가는 배치다. 로비에서는 바닥과 바다 수면(불투명)이 아래의 수조를 가리고,
 /// 수중 돔에 도착하면 LobbySet 을 통째로 꺼 비용이 0 이 된다.
 /// 여러 번 실행해도 안전하다(기존 LobbyRoot 를 지우고 다시 세움).
 /// </summary>
 public static class DomeAquariumLobbyBuilder
 {
     const string RootName = "LobbyRoot";
-    static readonly Vector3 LobbyOrigin = new Vector3(0f, 0f, 150f);
 
     const string Kit = "Assets/Barking_Dog/3D Free Modular Kit/Prefabs";
     const string Kenney = "Assets/ThirdParty/Kenney_FurnitureKit/Models";
     const string Sketchfab = "Assets/ThirdParty/Sketchfab";
-    const string SkyHdr = "Assets/ThirdParty/PolyHaven/secluded_beach_2k.hdr";
+    // 땅을 지운 하늘(Pure Sky). 예전 secluded_beach 는 바위섬 · 절벽이 사진에 박혀 있어 가까이 봐도 입체감이 없었다 —
+    // 이제 땅은 DomeAquariumCoastBuilder 가 진짜로 세운다.
+    const string SkyHdr = "Assets/ThirdParty/PolyHaven/qwantani_sunset_puresky_2k.hdr";
     const string SeasideClip = "Assets/ThirdParty/Audio/seaside_seagulls_distant.mp3";
     const string MusicClip = "Assets/ThirdParty/Audio/ExplorationTheme.ogg";
     const string MatDir = "Assets/DomeAquarium/Materials";
@@ -55,13 +57,23 @@ public static class DomeAquariumLobbyBuilder
     const float ArchHeight = 3.75f;
     const float ElevatorScale = 0.75f;      // 원본 4m 정육면체 → 3m, 문은 폭 1.5m · 높이 3m
     const float KenneyScale = 0.2f;         // Kenney 가구는 1/5 축척으로 들어온다
-    const float SkyRotation = 0f;           // 창(+X) 쪽에 바다 수평선이 오도록 맞추는 HDRI 회전
+    // HDRI 의 해(u=0.600, 고도 6°)를 로비 해(LobbySequence.sunEuler 32°, -35° — 창 기준 오른쪽 앞)와 같은 방위에 둔다.
+    // 그래야 바다에 비친 해 길과 하늘의 해가 한 줄에 선다. (Skybox/Panoramic 의 _Rotation 은 하늘을 -Y 방향으로 돌린다.)
+    const float SkyRotation = -18.6f;
+    // 새 하늘은 예전 사진보다 열 배 넘게 밝다(위쪽 반구 중앙값 0.53 vs 0.04) — 1.0 이면 로비가 하얗게 바랬다.
+    // 수심 벽 띠 · 밤 로비의 하늘 노출은 예전 하늘(1.0) 기준으로 정해 둔 값이라 이 배율을 곱해 쓴다.
+    internal const float SkyExposure = 0.3f;
 
     static readonly Vector3 SpawnLocal = new Vector3(0f, 0f, 2.6f);
     static readonly Vector3 GateLocal = new Vector3(0f, 0f, 11.0f);
     static readonly Vector3 WalkStartLocal = new Vector3(0f, 0f, 8.6f);   // 개찰구 2.4m 앞
     static readonly Vector3 CabinLocal = new Vector3(0f, 0f, HallLength + 2.5f);
     static readonly Vector3 SphereLocal = new Vector3(-3.4f, 0f, 6.2f);
+
+    // 엘리베이터 칸이 수조 정중앙(원점) 바로 위, 바닥이 24m 위에 오게 로비를 놓는다 (예전에는 수조에서 z 로 150m 떨어져 있었다).
+    // 바다 수면(로비 y=-1.2)과 부두 받침(y=-3.2)도 돔 꼭대기(y=8)보다 한참 위다. CabinLocal 보다 아래에 두어야 초기화 순서가 맞는다.
+    const float LobbyHeight = 24f;
+    static readonly Vector3 LobbyOrigin = new Vector3(0f, LobbyHeight, 0f) - CabinLocal;
 
     [MenuItem("DomeAquarium/9. 육지 로비 빌드", priority = 9)]
     public static void BuildMenu()
@@ -155,6 +167,11 @@ public static class DomeAquariumLobbyBuilder
         }
         SeaSurface sea = BuildSea(set, mats);
         BuildSeaLife(set, seq, depthWall, sea);
+        DomeAquariumCoastBuilder.Build(set, seq);           // 창밖 땅 · 바위 · 부표 · 배 · 등대 · 갈매기 · 고래
+        DomeAquariumTerraceBuilder.Build(set, seq, seq.tutorial);   // 테라스 문 · 데크 걷기 · 관망 쌍안경
+        DomeAquariumNpcBuilder.Build(set, seq);                     // 테라스 데크의 선장 · 해변의 놀란
+        DomeAquariumQuestPerformance.AssignDomeSet(seq);             // 물 위에 있는 동안 수중 돔을 끈다
+        DomeAquariumBeachBuilder.Build(root.transform, set, seq, seq.tutorial);   // 해변 시작 — 모래사장 · 계단 · 조수 웅덩이 · 장비대
         if (depthWall != null) depthWall.skyProbes = set.GetComponentsInChildren<ReflectionProbe>(true);   // 창밖 하늘 반사도 깊이에 맞춰 어둡게
         BuildNight(root.transform, set, seq, depthWall);
 
@@ -367,6 +384,29 @@ public static class DomeAquariumLobbyBuilder
     static readonly Vector3 NightSpotLocal = new Vector3(1.6f, 0f, 12.6f);
     const float NightSpotYaw = 42f;
 
+    // 수심 벽 띠와 밤 로비의 하늘 노출 — 예전 하늘(노출 1.0) 기준 값에 SkyExposure 를 곱한다.
+    static readonly Dictionary<string, float> BandSkyExposure = new Dictionary<string, float>
+    {
+        { "Sunlit", 0.55f * SkyExposure }, { "Twilight", 0.12f * SkyExposure }, { "Midnight", 0.02f * SkyExposure },
+    };
+    const float NightSkyExposure = 0.10f * SkyExposure;
+
+    /// <summary>하늘을 바꾼 씬에 수심 벽 띠 · 밤 로비의 하늘 노출을 새 하늘 밝기로 다시 맞춘다 (로비를 다시 세우지 않을 때).</summary>
+    internal static void ApplySkyExposure(DepthWallPreview wall, LobbyNight night)
+    {
+        if (wall != null && wall.bands != null)
+        {
+            for (int i = 0; i < wall.bands.Length; i++)
+                if (wall.bands[i] != null && BandSkyExposure.TryGetValue(wall.bands[i].id, out float e)) wall.bands[i].skyExposure = e;
+            EditorUtility.SetDirty(wall);
+        }
+        if (night != null)
+        {
+            night.skyExposure = NightSkyExposure;
+            EditorUtility.SetDirty(night);
+        }
+    }
+
     static void BuildNight(Transform root, Transform set, LobbySequence seq, DepthWallPreview wall)
     {
         Transform spot = NewPoint("NightSpot", root, NightSpotLocal);
@@ -376,6 +416,7 @@ public static class DomeAquariumLobbyBuilder
         var night = root.gameObject.AddComponent<LobbyNight>();
         night.lobby = seq;
         night.wall = wall;
+        night.skyExposure = NightSkyExposure;
         night.sky = BuildNightSky(set);
         BuildNewRecordLine(set, night);
         seq.night = night;
@@ -643,7 +684,7 @@ public static class DomeAquariumLobbyBuilder
                 ambientSky = new Color(0.30f, 0.62f, 0.78f), ambientEquator = new Color(0.20f, 0.48f, 0.62f), ambientGround = new Color(0.12f, 0.32f, 0.42f),
                 sunColor = new Color(0.70f, 0.93f, 1f), sunIntensity = 1.0f, caustics = true,
                 fogColor = new Color(0.16f, 0.45f, 0.58f), fogDensity = 0.035f,
-                skyTint = new Color(0.30f, 0.55f, 0.62f, 0.5f), skyExposure = 0.55f,
+                skyTint = new Color(0.30f, 0.55f, 0.62f, 0.5f), skyExposure = BandSkyExposure["Sunlit"],
                 lampLevel = 0.55f, scanTint = new Color(0.55f, 0.85f, 1f), reflectionLevel = 0.6f,
             },
             new DepthWallPreview.Band
@@ -653,7 +694,7 @@ public static class DomeAquariumLobbyBuilder
                 ambientSky = new Color(0.07f, 0.16f, 0.30f), ambientEquator = new Color(0.04f, 0.11f, 0.22f), ambientGround = new Color(0.02f, 0.06f, 0.12f),
                 sunColor = new Color(0.35f, 0.55f, 1f), sunIntensity = 0.18f,
                 fogColor = new Color(0.03f, 0.10f, 0.20f), fogDensity = 0.07f,
-                skyTint = new Color(0.20f, 0.35f, 0.50f, 0.5f), skyExposure = 0.12f,
+                skyTint = new Color(0.20f, 0.35f, 0.50f, 0.5f), skyExposure = BandSkyExposure["Twilight"],
                 lampLevel = 0.15f, scanTint = new Color(0.16f, 0.26f, 0.42f), reflectionLevel = 0.1f,
             },
             new DepthWallPreview.Band
@@ -663,7 +704,7 @@ public static class DomeAquariumLobbyBuilder
                 ambientSky = new Color(0.03f, 0.05f, 0.09f), ambientEquator = new Color(0.02f, 0.035f, 0.065f), ambientGround = new Color(0.012f, 0.02f, 0.04f),
                 sunColor = new Color(0.2f, 0.3f, 0.6f), sunIntensity = 0f,
                 fogColor = new Color(0.02f, 0.04f, 0.07f), fogDensity = 0.12f,
-                skyTint = new Color(0.15f, 0.25f, 0.4f, 0.5f), skyExposure = 0.02f,
+                skyTint = new Color(0.15f, 0.25f, 0.4f, 0.5f), skyExposure = BandSkyExposure["Midnight"],
                 lampLevel = 0.03f, scanTint = new Color(0.05f, 0.08f, 0.13f), reflectionLevel = 0.02f,
             },
         };
@@ -909,8 +950,10 @@ public static class DomeAquariumLobbyBuilder
     // 창밖의 실제 바다 — 수평선까지 이어진 수면 + 하늘 반사 + 부두 받침벽 (SeaSurface)
     // ─────────────────────────────────────────────────────────────
 
-    const float SeaLevel = -1.2f;           // 테라스(바닥 0)보다 1.2m 아래 — 부두에 선 높이
-    const float SeaSize = 1200f;            // 창(x=6)에서 1.2km — 로비 카메라 원경(1.3km) 안에서 수평선까지
+    internal const float SeaLevel = -1.2f;  // 테라스(바닥 0)보다 1.2m 아래 — 부두에 선 높이
+    // 창(x=6)에서 600m. 눈높이(수면 위 약 2.8m)에서 끝이 수평선 0.3° 아래라 하늘(HDRI)의 수평선과 붙어 보인다 —
+    // 1.2km 와 창밖 모습이 같다. 400m 부터는 끝과 수평선 사이에 HDRI 의 물이 띠로 보인다.
+    const float SeaSize = 600f;
     const float SeaSwellTile = 9f;          // 큰 물결 노멀맵 한 장이 덮는 크기(m)
     const float SeaRippleTile = 4.3f;       // 잔물결 — 큰 물결과 나누어떨어지지 않아 반복 무늬가 안 보인다
 
@@ -979,7 +1022,7 @@ public static class DomeAquariumLobbyBuilder
     }
 
     /// <summary>로비 하늘(HDRI)만 담은 반사 큐브맵을 굽는다. 장면 하늘은 수중 돔 것이라 잠시 로비 하늘로 바꿔 찍고 되돌린다.</summary>
-    static Texture LobbySkyReflection(ReflectionProbe probe)
+    internal static Texture LobbySkyReflection(ReflectionProbe probe)
     {
         string path = $"{MatDir}/LobbySkyReflection.exr";
         Material sky = SkyMaterial();
@@ -1129,7 +1172,7 @@ public static class DomeAquariumLobbyBuilder
     }
 
     /// <summary>물보라 — 뿌리는 위치가 매번 달라 스크립트가 Emit 한다. 흰 물방울이 솟았다가 중력으로 떨어진다.</summary>
-    static ParticleSystem SplashParticles(Transform parent)
+    internal static ParticleSystem SplashParticles(Transform parent)
     {
         var go = new GameObject("Splash");
         go.transform.SetParent(parent, false);
@@ -1260,10 +1303,10 @@ public static class DomeAquariumLobbyBuilder
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 준비 단계 — 장비대 · 연습 수조 · 안내 표시 · 텔레포트 바닥 · 엘리베이터 도착 지점
+    // 준비 단계 — 장비대 · 연습 수조 · 안내 표시 · 걷기 · 엘리베이터 도착 지점
     // ─────────────────────────────────────────────────────────────
 
-    static readonly Vector3 TableLocal = new Vector3(2.0f, 0f, 4.4f);                     // 시작 자리 오른쪽 앞 — 몇 걸음(첫 텔레포트 한 번)이면 닿는다
+    static readonly Vector3 TableLocal = new Vector3(2.0f, 0f, 4.4f);                     // 시작 자리 오른쪽 앞 — 몇 걸음이면 닿는다 (해변 시작에서는 해변으로 옮긴다)
     static readonly Vector3 TankLocal = new Vector3(HallHalfWidth - 0.75f, 0f, 9.3f);     // 창가 — 바다를 배경으로 물고기를 본다
 
     static LobbyTutorial BuildPrep(Transform root, Transform set, Mats mats, LobbySequence seq, XROrigin origin)
@@ -1325,8 +1368,7 @@ public static class DomeAquariumLobbyBuilder
         Box("Water", tank, new Vector3(0f, standH + tankH * 0.5f, 0f), new Vector3(tankW - 0.02f, tankH - 0.06f, tankL - 0.02f), WaterMaterial());
         Box("Glass", tank, new Vector3(0f, standH + tankH * 0.5f, 0f), new Vector3(tankW, tankH, tankL), mats.glass);
         Box("Rim", tank, new Vector3(0f, standH + tankH + 0.015f, 0f), new Vector3(tankW + 0.04f, 0.03f, tankL + 0.04f), mats.frame);
-        Label("TankSign", tank, new Vector3(-(tankW + 0.06f) * 0.5f - 0.01f, 0.5f, 0f), 90f, new Vector2(1.6f, 0.3f),
-              "<b>연습 수조</b>  ·  관찰기로 물고기를 겨눠 보세요", 0.075f, new Color(0.85f, 0.95f, 1f), TextAlignmentOptions.Center);
+        // 안내판은 없다 — 관찰기 연습은 해변 조수 웅덩이에서 하고(DomeAquariumBeachBuilder), 이 수조는 홀의 볼거리다.
 
         var fishRoot = Group("Fish", tank);
         fishRoot.localPosition = new Vector3(0f, standH + tankH * 0.5f, 0f);
@@ -1345,21 +1387,12 @@ public static class DomeAquariumLobbyBuilder
             Marker("Marker_Elevator", prep, new Vector3(0f, 2.55f, HallLength - 0.6f), "엘리베이터"),
         };
 
-        // ── 텔레포트: 개찰구 앞 홀 바닥 전체 + 엘리베이터 안 도착 지점 ──
+        // ── 이동: 막대로 걷기만 (순간이동 없음) + 엘리베이터 안 도착 지점 ──
+        // 도착 지점은 걸어 들어오면 탄 것으로 보는 자리(LobbyTutorial.cabinCenter)와 "여기로 오세요" 바닥 빛이다.
         tutorial.locomotionRoot = ConfigureLocomotion(origin, out TeleportationProvider provider);
         ConfigureWalkArea(tutorial);
         InteractionLayerMask teleportLayer = InteractionLayerMask.GetMask("Teleport");
         if (teleportLayer.value == 0) teleportLayer = -1;
-
-        var floor = new GameObject("TeleportFloor");
-        floor.transform.SetParent(prep, false);
-        floor.transform.localPosition = new Vector3(0f, -0.05f, GateLocal.z * 0.5f);
-        var floorCollider = floor.AddComponent<BoxCollider>();
-        floorCollider.size = new Vector3(HallHalfWidth * 2f - 0.6f, 0.1f, GateLocal.z - 0.8f);
-        var area = floor.AddComponent<TeleportationArea>();
-        area.interactionLayers = teleportLayer;
-        area.teleportationProvider = provider;
-        area.matchOrientation = MatchOrientation.WorldSpaceUp;
 
         var anchorGo = new GameObject("CabinAnchor");
         anchorGo.transform.SetParent(prep, false);
@@ -1388,8 +1421,9 @@ public static class DomeAquariumLobbyBuilder
     const float TurnSpeed = 60f;        // °/s — XRI 기본값
 
     /// <summary>
-    /// 리그의 이동 장치를 "왼쪽 막대 걷기 + 오른쪽 막대 부드러운 회전 + 오른쪽 막대 앞 텔레포트"로 맞춘다.
-    /// 스냅 회전·잡아 끌기·점프·중력은 끈다 (중력은 바닥 충돌체가 없는 수중 돔에서 리그를 떨어뜨린다).
+    /// 리그의 이동 장치를 "왼쪽 막대 걷기 + 오른쪽 막대 부드러운 회전"으로 맞춘다. 순간이동은 없다 — 해변에서 관측소까지 직접 걷는다.
+    /// 스냅 회전·잡아 끌기·점프·중력·텔레포트는 끈다 (중력은 바닥 충돌체가 없는 수중 돔에서 리그를 떨어뜨린다).
+    /// 텔레포트 제공자는 엘리베이터 도착 지점(TeleportationAnchor)이 가리키므로 지우지 않고 꺼 둔다.
     /// 이동 장치 묶음은 꺼 둔 채 저장하고 준비 단계가 켠다.
     /// </summary>
     static GameObject ConfigureLocomotion(XROrigin origin, out TeleportationProvider teleport)
@@ -1419,7 +1453,7 @@ public static class DomeAquariumLobbyBuilder
         var kept = new List<string>();
         foreach (var p in rootGo.GetComponentsInChildren<LocomotionProvider>(true))
         {
-            bool keep = p is TeleportationProvider || p is ContinuousMoveProvider || p is ContinuousTurnProvider;
+            bool keep = p is ContinuousMoveProvider || p is ContinuousTurnProvider;
             Undo.RecordObject(p, "Lobby locomotion");
             p.enabled = keep;
             if (keep)
@@ -1432,6 +1466,11 @@ public static class DomeAquariumLobbyBuilder
                 }
             }
             EditorUtility.SetDirty(p);
+        }
+        if (teleport.gameObject != rootGo && teleport.gameObject.activeSelf)
+        {
+            Undo.RecordObject(teleport.gameObject, "Lobby locomotion");
+            teleport.gameObject.SetActive(false);
         }
         Undo.RecordObject(rootGo, "Lobby locomotion");
         rootGo.SetActive(false);
@@ -1473,9 +1512,16 @@ public static class DomeAquariumLobbyBuilder
         tutorial.locomotionRoot = ConfigureLocomotion(origin, out _);
         tutorial.moveLine = LobbyTutorial.DefaultMoveLine;
         ConfigureWalkArea(tutorial);
+        // 예전 빌드가 깔아 둔 순간이동 바닥(홀 · 테라스 데크 · 해변)을 걷어 낸다
+        int removed = 0;
+        foreach (var area in tutorial.GetComponentsInChildren<TeleportationArea>(true))
+        {
+            Undo.DestroyObjectImmediate(area.gameObject);
+            removed++;
+        }
         EditorUtility.SetDirty(tutorial);
         EditorSceneManager.MarkSceneDirty(tutorial.gameObject.scene);   // 저장은 사람이 한다 — 다른 손작업이 섞여 있을 수 있다
-        Debug.Log("[Lobby] 이동 방식 다시 적용: 왼쪽 막대 걷기 · 오른쪽 막대 부드러운 회전 · 오른쪽 막대 앞 텔레포트.");
+        Debug.Log($"[Lobby] 이동 방식 다시 적용: 왼쪽 막대 걷기 · 오른쪽 막대 부드러운 회전 (순간이동 없음, 순간이동 바닥 {removed}개 걷어 냄).");
     }
 
     static GameObject ChildOf(Transform parent, string name)
@@ -1527,8 +1573,8 @@ public static class DomeAquariumLobbyBuilder
     }
 
     /// <summary>
-    /// 왼손은 걷기(텔레포트 끔), 오른손은 부드러운 회전 + 앞으로 밀어 텔레포트 — XRI 스타터 리그의 기본 배치.
-    /// 스타터 리그 기본은 오른손 스냅 회전이라 오른손만 바꾸면 되지만, 왼손도 명시해 둔다.
+    /// 왼손은 걷기, 오른손은 부드러운 회전. 스타터 리그는 걷지 않는 손의 막대를 앞으로 밀면 텔레포트 레이를 켠다 —
+    /// 그 손의 "텔레포트 모드" 입력을 비워 막대를 밀어도 아무 일이 없게 한다 (회전 입력은 그대로).
     /// 샘플 어셈블리를 참조하지 않으려고 이름으로 찾고 직렬화 필드로 고친다.
     /// </summary>
     static void SetControllerModes(XROrigin origin)
@@ -1541,6 +1587,11 @@ public static class DomeAquariumLobbyBuilder
             var so = new SerializedObject(m);
             so.FindProperty("m_SmoothMotionEnabled").boolValue = left;
             so.FindProperty("m_SmoothTurnEnabled").boolValue = !left;
+            foreach (string teleportInput in new[] { "m_TeleportMode", "m_TeleportModeCancel" })
+            {
+                var prop = so.FindProperty(teleportInput);
+                if (prop != null) prop.objectReferenceValue = null;
+            }
             so.ApplyModifiedProperties();
             found++;
         }
@@ -1694,6 +1745,8 @@ public static class DomeAquariumLobbyBuilder
     // 자막·소리
     // ─────────────────────────────────────────────────────────────
 
+    internal const float CaptionPanelAlpha = 0.94f;
+
     static CanvasGroup BuildCaption(Transform root, out TMP_Text text)
     {
         var go = new GameObject("LobbyCaption", typeof(RectTransform));
@@ -1704,7 +1757,7 @@ public static class DomeAquariumLobbyBuilder
         canvas.sortingOrder = 200;
         var rt = (RectTransform)go.transform;
         rt.sizeDelta = new Vector2(1100f, 210f);
-        rt.localScale = Vector3.one * 0.001f;    // 1.1m x 0.21m
+        rt.localScale = Vector3.one * 0.0006f;   // 66 x 12.6cm — 0.9m 앞(LobbySequence.captionDistance)에서 예전 1.5m 의 1.1m 판과 같은 크기로 보인다
         var group = go.AddComponent<CanvasGroup>();
         group.alpha = 0f;
         group.interactable = false;
@@ -1714,7 +1767,7 @@ public static class DomeAquariumLobbyBuilder
         var img = bg.gameObject.AddComponent<Image>();
         img.sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{UiSamples}/UIPanel.png");
         img.type = img.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-        img.color = new Color(0.02f, 0.07f, 0.12f, 0.80f);
+        img.color = new Color(0.02f, 0.07f, 0.12f, CaptionPanelAlpha);   // 맨 위에 그려지므로 뒤의 간판 글씨가 비치지 않게 거의 불투명
         img.raycastTarget = false;
 
         var t = NewUI("Text", go.transform, new Vector2(1020f, 180f)).gameObject.AddComponent<TextMeshProUGUI>();
@@ -1726,6 +1779,7 @@ public static class DomeAquariumLobbyBuilder
         t.raycastTarget = false;
         t.text = "";
         text = t;
+        DomeAquariumOverlayUi.Apply(go);   // 가까운 캐릭터 · 엘리베이터 벽 · 물고기에 가려지지 않게 맨 위에 그린다
         return group;
     }
 
@@ -1770,7 +1824,7 @@ public static class DomeAquariumLobbyBuilder
     // 하늘
     // ─────────────────────────────────────────────────────────────
 
-    static Material SkyMaterial()
+    internal static Material SkyMaterial()
     {
         if (AssetImporter.GetAtPath(SkyHdr) is TextureImporter imp)
         {
@@ -1796,8 +1850,8 @@ public static class DomeAquariumLobbyBuilder
         mat.SetTexture("_MainTex", tex);
         mat.SetFloat("_Mapping", 1f);            // Latitude-Longitude
         mat.SetFloat("_ImageType", 0f);          // 360°
-        mat.SetFloat("_Exposure", 1.0f);
-        mat.SetFloat("_Rotation", SkyRotation);
+        mat.SetFloat("_Exposure", SkyExposure);
+        mat.SetFloat("_Rotation", Mathf.Repeat(SkyRotation, 360f));
         mat.EnableKeyword("_MAPPING_LATITUDE_LONGITUDE_LAYOUT");
         mat.DisableKeyword("_MAPPING_6_FRAMES_LAYOUT");
         EditorUtility.SetDirty(mat);
@@ -2010,7 +2064,7 @@ public static class DomeAquariumLobbyBuilder
         public readonly Material wood = LitMaterial("Mat_LobbyWood", new Color(0.50f, 0.36f, 0.25f), 0.3f, 0f, false);
     }
 
-    static Material LitMaterial(string name, Color color, float smoothness, float metallic, bool transparent)
+    internal static Material LitMaterial(string name, Color color, float smoothness, float metallic, bool transparent)
     {
         string path = $"{MatDir}/{name}.mat";
         var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -2089,7 +2143,7 @@ public static class DomeAquariumLobbyBuilder
         return go;
     }
 
-    static GameObject Box(string name, Transform parent, Vector3 local, Vector3 size, Material mat, float yaw = 0f)
+    internal static GameObject Box(string name, Transform parent, Vector3 local, Vector3 size, Material mat, float yaw = 0f)
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = name;
@@ -2103,7 +2157,7 @@ public static class DomeAquariumLobbyBuilder
     }
 
     /// <summary>벽에 붙는 글자. 월드 캔버스 1장 + TMP. sizeMeters 는 글상자 크기, fontMeters 는 글자 높이.</summary>
-    static TMP_Text Label(string name, Transform parent, Vector3 local, float yaw, Vector2 sizeMeters,
+    internal static TMP_Text Label(string name, Transform parent, Vector3 local, float yaw, Vector2 sizeMeters,
                           string text, float fontMeters, Color color, TextAlignmentOptions align)
     {
         const float unitsPerMeter = 1000f;

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: SpermWhale
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: SpermWhale
+  koreanName: "\uD5A5\uC720\uACE0\uB798"
+  englishName: Sperm whale
+  scientificName: Physeter macrocephalus
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 4
+  habitat: 2
+  freshwater: 0
+  unnamed: 0
+  prefab: {fileID: 5585167364068820524, guid: eb01831fe3d3203488b2563578037001, type: 3}
+  swimScale: 7
+  revealScale: 0.85
+  bandCenter: 0.5
+  bandWidth: 0.4
+  bodyLength: 7
+  swimSpeed: 1
+  schoolCount: 1

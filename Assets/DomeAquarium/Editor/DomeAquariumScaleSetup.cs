@@ -18,6 +18,7 @@ public static class DomeAquariumScaleSetup
 {
     const string FishRoot = "Assets/Layer Lab/3D Characters-Fish/Fish";
     const string DataDir = "Assets/DomeAquarium/FishData";
+    const string CreatureDir = "Assets/DomeAquarium/Creatures/";
 
     // 눈앞 연출에서의 길이 한계. 만타가 실물 3m 로 얼굴 1.2m 앞에 오면 아무것도 안 보인다.
     const float RevealMin = 0.22f;
@@ -70,6 +71,19 @@ public static class DomeAquariumScaleSetup
     };
 
     const float DefaultMeters = 0.20f;   // 규칙에 안 걸리는 일반 어류
+
+    /// <summary>
+    /// 돔에서 보이는 몸길이 — 작은 종일수록 더 키운다: 10cm 이하는 2배, 3m 이상은 그대로, 그 사이는 로그 눈금으로 고르게
+    /// (자리돔 9 → 18cm, 쥐돔 26 → 45cm, 그루퍼 70cm → 1m, 백상아리 2.8 → 2.85m, 고래는 그대로).
+    /// 반지름 12m 수조 한가운데에서 3~6m 떨어져 보면 실물 크기의 작은 물고기는 시야각 1~2° 로 점처럼 보였다.
+    /// 정보 카드 · 관찰 일지의 몸길이(sizeTag)는 실물 그대로다.
+    /// </summary>
+    internal static float ShownLength(float real)
+    {
+        real = Mathf.Max(0.01f, real);
+        float t = Mathf.InverseLerp(Mathf.Log(0.1f), Mathf.Log(3f), Mathf.Log(real));
+        return real * Mathf.Lerp(2f, 1f, t);
+    }
 
     static float TargetLength(string name, out bool matched)
     {
@@ -137,6 +151,17 @@ public static class DomeAquariumScaleSetup
             string path = AssetDatabase.GUIDToAssetPath(guid);
             var data = AssetDatabase.LoadAssetAtPath<FishData>(path);
             if (data == null || data.prefab == null) continue;
+            // 심해 생물 · 고래(DomeAquarium/21)는 몸길이 1 로 맞춘 프리팹이다 — 재지 않고, 그 빌더의 실제 몸길이로 보일 크기만 다시 셈한다.
+            if (AssetDatabase.GetAssetPath(data.prefab).StartsWith(CreatureDir))
+            {
+                if (DomeAquariumDeepSeaSetup.TryRealLength(data.name, out float real))
+                {
+                    data.bodyLength = data.swimScale = ShownLength(real);
+                    EditorUtility.SetDirty(data);
+                    done++;
+                }
+                continue;
+            }
 
             string n = Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(data.prefab));
 
@@ -150,10 +175,11 @@ public static class DomeAquariumScaleSetup
             float target = TargetLength(n, out bool matched);
             if (!matched) unmatched.Add(n);
 
-            data.swimScale = target / native;
+            float shown = ShownLength(target);
+            data.swimScale = shown / native;
 
-            // 체장을 기록해 두면 BoidManager 가 개체별 분리 반경을 뽑아 쓴다.
-            data.bodyLength = target;
+            // 체장을 기록해 두면 BoidManager 가 개체별 분리 반경을 뽑아 쓴다 (보이는 크기로 — 커진 몸끼리 겹치지 않게).
+            data.bodyLength = shown;
             // 실제 어류 순항속도는 대략 2 체장/초. 전 종이 0.9 로 같으면
             // 고비는 18 체장/초로 발작하듯 움직이고 참다랑어는 0.5 체장/초로 미끄러진다.
             data.swimSpeed = Mathf.Clamp(target * 2.0f, 0.35f, 2.2f);
@@ -166,7 +192,7 @@ public static class DomeAquariumScaleSetup
             done++;
 
             if (report.Count < 12)
-                report.Add($"{n}: 모델 {native:0.00} -> 유영 {target:0.00}m (x{data.swimScale:0.000}), 연출 {revealLen:0.00}m");
+                report.Add($"{n}: 모델 {native:0.00} -> 실물 {target:0.00}m · 돔 {shown:0.00}m (x{data.swimScale:0.000}), 연출 {revealLen:0.00}m");
         }
 
         AssetDatabase.SaveAssets();

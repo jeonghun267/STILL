@@ -58,7 +58,7 @@ public static class ObservationTerms
     public const string LightOff = "조명 꺼짐";
     // 관찰기 화면 한 줄(약 16자)에 들어가게 짧게. 손 추적이면 바로 옆 "조명" 버튼이 보인다.
     public const string LightUnlocked = "조명이 생겼어요 · A 버튼";
-    public const string LightHint = "조명 끄기 · A 버튼";
+    public const string LightHint = "조명 끄기 · A/X 버튼 · 가만히";
 
     // 3막 — 신호의 주인. "미확인" 대신 기획 문서의 관찰기 표시 그대로 "일치하는 기록 없음".
     public const string SignalLabel = "신호";

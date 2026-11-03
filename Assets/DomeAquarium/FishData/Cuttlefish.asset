@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: Cuttlefish
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: Cuttlefish
+  koreanName: "\uAC11\uC624\uC9D5\uC5B4"
+  englishName: Cuttlefish
+  scientificName: Sepia
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 2
+  habitat: 0
+  freshwater: 0
+  unnamed: 0
+  prefab: {fileID: 6897234098332445473, guid: b419e6feb6fe2ed45a49d28e3acc2fa0, type: 3}
+  swimScale: 0.5030978
+  revealScale: 0.3
+  bandCenter: 0.42
+  bandWidth: 0.3
+  bodyLength: 0.5030978
+  swimSpeed: 0.35
+  schoolCount: 3

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: Octopus
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: Octopus
+  koreanName: "\uBB38\uC5B4"
+  englishName: Common octopus
+  scientificName: Octopus vulgaris
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 2
+  habitat: 0
+  freshwater: 0
+  unnamed: 0
+  prefab: {fileID: 4087148297729578192, guid: aa588a35bea6ccc41945fb6db188ae03, type: 3}
+  swimScale: 0.76340127
+  revealScale: 0.5
+  bandCenter: 0.32
+  bandWidth: 0.2
+  bodyLength: 0.76340127
+  swimSpeed: 0.25
+  schoolCount: 1

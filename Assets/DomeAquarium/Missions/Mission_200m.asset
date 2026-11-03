@@ -18,9 +18,8 @@ MonoBehaviour:
   rideSeconds: 12
   countSubject: "\uD070 \uC0DD\uBB3C"
   recordCount: 2
-  targets:
-  - {fileID: 11400000, guid: 4eed80c547590114a9162acbe2735a52, type: 2}
-  targetClue: "\uAC00\uC7A5 \uD070 \uADF8\uB9BC\uC790"
+  targets: []
+  targetClue: 
   species: []
   rotation: []
   rotationInterval: {x: 100, y: 160}
@@ -56,6 +55,10 @@ MonoBehaviour:
   - fish: {fileID: 11400000, guid: 86de3f869d3ffed44a27485ee52adb48, type: 2}
     group: {x: 2, y: 3}
     seconds: 24
+    weight: 1
+  - fish: {fileID: 11400000, guid: 829958c9624692f4b9509b71e6e9e9fa, type: 2}
+    group: {x: 1, y: 1}
+    seconds: 38
     weight: 1
   passInterval: {x: 60, y: 90}
   firstPassDelay: 14
@@ -93,9 +96,8 @@ MonoBehaviour:
     \uC9C0\uB098\uAC00\uC694. \uAE30\uB2E4\uB9AC\uB294 \uAC83\uB3C4 \uAD00\uCC30\uC774\uC5D0\uC694."
   arrivalLine: "\uC218\uC2EC 200m\uC608\uC694. \uC5EC\uAE30\uC11C\uB294 \uD070 \uC0DD\uBB3C\uC774
     \uAC00\uB054\uC529\uB9CC \uC9C0\uB098\uAC00\uC694. \uAD00\uCC30\uAE30\uC5D0 '\uB2E4\uAC00\uC640\uC694'\uAC00
-    \uB728\uBA74 \uADF8\uCABD\uC744 \uBCF4\uC138\uC694. \uD070 \uC0DD\uBB3C 2\uC885,
-    \uADF8\uB9AC\uACE0 \uAC00\uC7A5 \uD070 \uADF8\uB9BC\uC790\uB97C \uCC3E\uC544
-    \uC8FC\uC138\uC694."
+    \uB728\uBA74 \uADF8\uCABD\uC744 \uBCF4\uC138\uC694. \uD070 \uC0DD\uBB3C 2\uC885\uC744
+    \uAE30\uB85D\uD574 \uC8FC\uC138\uC694."
   completeLine: "200m \uAE30\uB85D \uC644\uB8CC! \uB05D\uAE4C\uC9C0 \uAE30\uB2E4\uB824
     \uC92C\uB124\uC694. \uC2E0\uD638\uAC00 \uB354 \uAC15\uD574\uC84C\uC5B4\uC694.
     \uC774\uC81C 1,000m\uB85C \uB0B4\uB824\uAC08 \uC218 \uC788\uC5B4\uC694."

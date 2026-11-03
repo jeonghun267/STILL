@@ -100,6 +100,10 @@ public class FishData : ScriptableObject
                 return subject + "바다거북류예요. 폐로 숨을 쉬기 때문에 수면으로 올라와요. 지느러미 모양의 앞다리로 헤엄쳐요.";
             if (key.Contains("dolphin") || key.Contains("dophin"))
                 return subject + "돌고래류에 속하는 해양 포유류예요. 폐로 숨을 쉬며 무리를 이루기도 해요. 몸의 움직임과 소리로 소통해요.";
+            if (key.Contains("whale"))
+                return subject + "고래류에 속하는 해양 포유류예요. 폐로 숨을 쉬기 때문에 수면으로 올라와요. 꼬리지느러미를 위아래로 움직여 헤엄쳐요.";
+            if (key.Contains("squid") || key.Contains("octopus"))
+                return subject + "두족류에 속하는 연체동물이에요. 머리 쪽에 팔이 모여 있어요. 몸을 오므리거나 물을 뿜어 이동해요.";
             if (key.Contains("ray"))
                 return subject + "가오리류에 속하는 연골어류예요. 넓은 가슴지느러미를 물결치듯 움직여요. 납작한 몸으로 물속을 유영해요.";
             if (key.Contains("tuna"))
@@ -119,6 +123,9 @@ public class FishData : ScriptableObject
             if (key.Contains("goby") || key.Contains("dottyback") || key.Contains("basslet") ||
                 key.Contains("cardinal") || key.Contains("dartfish") || key.Contains("tilefish"))
                 return subject + "작은 산호초 물고기류예요. 바위나 산호 주변을 은신처로 이용하는 종이 많아요. 지느러미로 섬세하게 방향을 바꿔요.";
+
+            if (habitat == DiveDepth.Midnight1000)
+                return subject + "햇빛이 닿지 않는 깊은 바다에 사는 생물이에요. 먹이가 드물어 천천히 움직이며 힘을 아껴요. 자세한 종 정보는 확인 중이에요.";
 
             return subject + "바다에 사는 생물이에요. 몸과 지느러미를 움직여 물속을 이동해요. 자세한 종 정보는 확인 중이에요.";
         }

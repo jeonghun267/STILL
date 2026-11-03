@@ -70,6 +70,7 @@ public sealed class ObservationLight : MonoBehaviour
 
     void OnDisable()
     {
+        if (lit) { Shader.SetGlobalVector(DevicePosId, Vector4.zero); lit = false; }
         if (toggle == null) return;
         toggle.performed -= OnToggle;
         toggle.Disable();
@@ -118,7 +119,11 @@ public sealed class ObservationLight : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!On) return;
+        if (!On)
+        {
+            if (lit) { Shader.SetGlobalVector(DevicePosId, Vector4.zero); lit = false; }
+            return;
+        }
         Vector3 origin, dir;
         if (aim != null && aim.HasAim) { origin = aim.AimOrigin; dir = aim.AimDirection; }
         else
@@ -133,6 +138,29 @@ public sealed class ObservationLight : MonoBehaviour
 #endif
         if (dir.sqrMagnitude < 1e-6f) return;
         transform.SetPositionAndRotation(origin + dir * 0.06f, Quaternion.LookRotation(dir, Vector3.up));
+        PublishToShaders();
+    }
+
+    // Quest 용 URP 설정은 추가 조명이 꺼져 있어 이 스포트라이트가 실제로는 아무것도 비추지 않는다.
+    // 심해 생물 셰이더(DomeAquarium/Deep Creature)가 이 값으로 직접 빛을 계산한다 — 조명에 비칠 때만 제 색이 보인다.
+    static readonly int DevicePosId = Shader.PropertyToID("_DeviceLightPos");
+    static readonly int DeviceDirId = Shader.PropertyToID("_DeviceLightDir");
+    static readonly int DeviceParamsId = Shader.PropertyToID("_DeviceLightParams");
+    static readonly int DeviceColorId = Shader.PropertyToID("_DeviceLightColor");
+    bool lit;
+
+    void PublishToShaders()
+    {
+        float range = spot != null ? spot.range : 5.5f;
+        float outer = (spot != null ? spot.spotAngle : 50f) * 0.5f;
+        float inner = (spot != null ? spot.innerSpotAngle : 28f) * 0.5f;
+        Vector3 p = transform.position;
+        Shader.SetGlobalVector(DevicePosId, new Vector4(p.x, p.y, p.z, 1f));
+        Shader.SetGlobalVector(DeviceDirId, transform.forward);
+        Shader.SetGlobalVector(DeviceParamsId, new Vector4(range, Mathf.Cos(outer * Mathf.Deg2Rad), Mathf.Cos(inner * Mathf.Deg2Rad),
+                                                          spot != null ? spot.intensity : 3f));
+        Shader.SetGlobalColor(DeviceColorId, spot != null ? spot.color : Color.white);
+        lit = true;
     }
 
     /// <summary>

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 513bed1f397489445a7709cb9753232c, type: 3}
+  m_Name: Anglerfish
+  m_EditorClassIdentifier: Assembly-CSharp::FishData
+  speciesId: Anglerfish
+  koreanName: "\uC2EC\uD574\uC544\uADC0"
+  englishName: Humpback anglerfish
+  scientificName: Melanocetus johnsonii
+  description: 
+  sizeTag: 
+  habitatTag: 
+  rarity: 3
+  habitat: 2
+  freshwater: 0
+  unnamed: 0
+  prefab: {fileID: 7697422612270172774, guid: c18ad44cabcf7654cb6a18d88e861025, type: 3}
+  swimScale: 0.32889286
+  revealScale: 0.22
+  bandCenter: 0.42
+  bandWidth: 0.2
+  bodyLength: 0.32889286
+  swimSpeed: 0.1
+  schoolCount: 1

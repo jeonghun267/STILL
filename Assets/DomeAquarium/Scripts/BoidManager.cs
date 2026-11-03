@@ -231,7 +231,8 @@ public class BoidManager : MonoBehaviour, IObservationTargets
     void Start()
     {
         // struct 배열과 Transform 참조는 직렬화되지 않는다. 에디터에서 미리 뽑아 뒀더라도 런타임엔 반드시 재생성.
-        Rebuild();
+        // 로비에 있는 동안 꺼 두었다가(LobbySequence.domeSet) 처음 내려갈 때 켜면, 층 꾸미기(DiveDirector)가 이미 Rebuild 했다 — 두 번 만들지 않는다.
+        if (agents == null || agentCount == 0) Rebuild();
     }
 
     void OnDestroy()

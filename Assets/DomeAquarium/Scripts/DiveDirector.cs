@@ -46,6 +46,7 @@ public sealed class DiveDirector : MonoBehaviour
     [Header("층 꾸미기 (비면 런타임에 이름으로 찾는다)")]
     public Transform reefProps;                // ReefFloor/Generated — 산호·바위·해초·조개
     public GameObject reefLights;              // ReefFloor/CoralAccentLights — 산호 군락 조명
+    public GameObject reefCritters;            // ReefFloor/Critters — 게 · 불가사리 · 해삼 같은 바닥 꾸밈 (DomeAquarium/21)
     public GameObject rockBed;                 // 암반 층에만 켜는 큰 바위 묶음
     public GameObject marineSnow;              // 바다눈 파티클
     public float noticeSeconds = 8f;           // 큰 생물 예고를 관찰기에 띄워 두는 시간
@@ -235,6 +236,10 @@ public sealed class DiveDirector : MonoBehaviour
             passes.Configure(m.passers, m.passInterval);
             passes.isRecorded = fish => p.recorded.Contains(fish);
             passes.priority = m.HasTarget && m.passers != null && m.passers.Any(c => c.fish == m.targets[0]) ? m.targets[0] : null;
+            passes.hold = m.encounter && unknown != null ? () => unknown.State == UnknownCreature.Mode.Approaching
+                                                                 || unknown.State == UnknownCreature.Mode.Close
+                                                                 || unknown.State == UnknownCreature.Mode.Leaving
+                                                         : (Func<bool>)null;
         }
         ApplyDressing(m.seabed);
         if (marineSnow != null) marineSnow.SetActive(m.marineSnow);
@@ -275,8 +280,12 @@ public sealed class DiveDirector : MonoBehaviour
         if (aim != null)
         {
             aim.knownOverride = fish => p.recorded.Contains(fish);
-            aim.layerTargets = m.encounter && unknown != null ? unknown
-                : passes != null && m.HasPassers ? new CompositeTargets(swarm, passes) : (IObservationTargets)null;
+            // 3막도 심해 생물 · 지나가는 큰 생물을 같이 겨눌 수 있다 — 기록은 덤이고, 층을 마치는 건 신호의 주인뿐이다.
+            IObservationTargets life = passes != null && m.HasPassers ? new CompositeTargets(swarm, passes) : null;
+            if (m.encounter && unknown != null)
+                aim.layerTargets = life != null ? new CompositeTargets(unknown, life)
+                    : swarm != null && swarm.species.Length > 0 ? new CompositeTargets(unknown, swarm) : unknown;
+            else aim.layerTargets = life;
             aim.ResetAim();
         }
     }
@@ -295,6 +304,7 @@ public sealed class DiveDirector : MonoBehaviour
             }
         }
         if (reefLights != null) reefLights.SetActive(dressing == SeabedDressing.CoralReef);
+        if (reefCritters != null) reefCritters.SetActive(dressing == SeabedDressing.CoralReef);
         if (rockBed != null) rockBed.SetActive(dressing == SeabedDressing.RockBed);
     }
 
