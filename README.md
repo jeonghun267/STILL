@@ -11,6 +11,18 @@ Unity 6 기반의 VR 수중 생태 관찰 프로젝트입니다. 해안가 해�
 - XR Interaction Toolkit 및 OpenXR
 - Gemini 기반 생물 설명과 Android 기본 TTS
 
+### 구매한 에셋 (따로 받기)
+
+24m 산호초 · 200m 물고기 모델(Layer Lab "3D Characters - Fish")은 구매한 Unity Asset Store 에셋이라 이 저장소에 넣지 않습니다(재배포 금지).
+비공개 저장소 [jeonghun267/BUY_Asset](https://github.com/jeonghun267/BUY_Asset) 에서 받아 `Assets/` 아래에 그대로 복사하세요 — `.meta` 까지 같이 두어야 FishData · 씬이 같은 GUID 로 찾습니다.
+
+```bash
+git clone https://github.com/jeonghun267/BUY_Asset.git
+cp -r "BUY_Asset/Layer Lab" "BUY_Asset/Layer Lab.meta" "BUY_Asset/3D Characters - Fish" "BUY_Asset/3D Characters - Fish.meta" Assets/
+```
+
+이 폴더들은 `.gitignore` 에 있어 복사해도 커밋에 섞이지 않습니다. 없으면 돔에 물고기가 나오지 않습니다.
+
 ## 개발 흐름
 
 - `jeonghun` 브랜치에서 작업하고, 에디터 실행과 Quest 빌드로 에러가 없는지 확인한 뒤 `main`에 머지합니다.
