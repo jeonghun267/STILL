@@ -751,7 +751,7 @@ public static class DomeAquariumNightStories
         sr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         story.snow = snow;
 
-        // 수심계 — 오른쪽 앞 벽 (바늘 · 글자)
+        // 수심계 — 오른쪽 앞 벽 (놋쇠 테 · 눈금 · 숫자 · 바늘 · 글자)
         var white = DomeAquariumLobbyBuilder.LitMaterial("Mat_BathysphereGaugeFace", new Color(0.92f, 0.9f, 0.82f), 0.3f, 0f, false);
         white.EnableKeyword("_EMISSION");
         white.SetColor("_EmissionColor", new Color(0.25f, 0.24f, 0.2f));
@@ -761,13 +761,28 @@ public static class DomeAquariumNightStories
         var gauge = new GameObject("Gauge").transform;
         gauge.SetParent(sphere, false);
         gauge.SetLocalPositionAndRotation(gaugeDir * (SphereRadius - 0.03f), Quaternion.LookRotation(gaugeDir, Vector3.up));   // +Z = 바깥 — 글자는 안쪽에서 읽힌다
-        Prim(PrimitiveType.Cylinder, "Face", gauge, Vector3.zero, Quaternion.Euler(90f, 0f, 0f), new Vector3(0.16f, 0.01f, 0.16f), white);
+        Prim(PrimitiveType.Cylinder, "Rim", gauge, new Vector3(0f, 0f, 0.004f), Quaternion.Euler(90f, 0f, 0f), new Vector3(0.196f, 0.012f, 0.196f), brass);   // 판 뒤 — 둘레만 보인다
+        Prim(PrimitiveType.Cylinder, "Face", gauge, Vector3.zero, Quaternion.Euler(90f, 0f, 0f), new Vector3(0.18f, 0.01f, 0.18f), white);
+        // 눈금 0~1,000m — 바늘처럼 왼쪽 아래(-135°)에서 위를 지나 오른쪽 아래(+135°)까지. 50m 마다 짧게, 250m 마다 길게 + 숫자
+        var ink = new Color(0.1f, 0.08f, 0.06f);
+        for (int meters = 0; meters <= 1000; meters += 50)
+        {
+            float ang = Mathf.Lerp(-135f, 135f, meters / 1000f);           // 위에서 시계 방향 — BathysphereStory.SetDepth 의 바늘과 같은 각
+            var dir = new Vector3(Mathf.Sin(ang * Mathf.Deg2Rad), Mathf.Cos(ang * Mathf.Deg2Rad), 0f);
+            bool major = meters % 250 == 0;
+            Prim(PrimitiveType.Cube, $"Tick_{meters}", gauge, dir * (major ? 0.074f : 0.078f) + new Vector3(0f, 0f, -0.0106f), Quaternion.Euler(0f, 0f, -ang),
+                major ? new Vector3(0.003f, 0.016f, 0.001f) : new Vector3(0.0015f, 0.008f, 0.001f), black);
+            if (major) DomeAquariumLobbyBuilder.Label($"Mark_{meters}", gauge, dir * 0.048f + new Vector3(0f, 0f, -0.0106f), 0f, new Vector2(0.05f, 0.02f),
+                meters == 1000 ? "1,000" : meters.ToString(), 0.012f, ink, TextAlignmentOptions.Center);
+        }
+        DomeAquariumLobbyBuilder.Label("Unit", gauge, new Vector3(0f, -0.045f, -0.0106f), 0f, new Vector2(0.03f, 0.02f), "m", 0.012f, ink, TextAlignmentOptions.Center);
         var needlePivot = new GameObject("Needle").transform;
         needlePivot.SetParent(gauge, false);
-        needlePivot.localPosition = new Vector3(0f, 0f, -0.012f);
-        Prim(PrimitiveType.Cube, "Hand", needlePivot, new Vector3(0f, 0.03f, 0f), Quaternion.identity, new Vector3(0.006f, 0.06f, 0.004f), black);
+        needlePivot.SetLocalPositionAndRotation(new Vector3(0f, 0f, -0.013f), Quaternion.Euler(0f, 0f, 135f));   // 0m 에서 시작
+        Prim(PrimitiveType.Cube, "Hand", needlePivot, new Vector3(0f, 0.026f, 0f), Quaternion.identity, new Vector3(0.005f, 0.076f, 0.003f), black);   // 끝은 긴 눈금 안쪽, 꼬리는 축 뒤로
+        Prim(PrimitiveType.Cylinder, "Hub", gauge, new Vector3(0f, 0f, -0.0155f), Quaternion.Euler(90f, 0f, 0f), new Vector3(0.012f, 0.002f, 0.012f), brass);
         story.needle = needlePivot;
-        story.depthText = DomeAquariumLobbyBuilder.Label("DepthText", gauge, new Vector3(0f, -0.11f, -0.045f), 0f, new Vector2(0.24f, 0.05f),
+        story.depthText = DomeAquariumLobbyBuilder.Label("DepthText", gauge, new Vector3(0f, -0.13f, -0.045f), 0f, new Vector2(0.24f, 0.05f),
             "수심 0m", 0.035f, new Color(1f, 0.92f, 0.7f), TextAlignmentOptions.Center);
 
         // 전화 — 왼쪽 벽 수화기 + 앞 왼쪽 아래 고르는 판
