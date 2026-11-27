@@ -3,11 +3,10 @@ using UnityEngine;
 /// <summary>
 /// Gemini 호출 설정. Resources 에 두어 빌드에 포함시킨다.
 ///
-/// 주의: 프로젝트 루트의 .env 는 에디터에서만 읽히고 Quest 빌드에는 들어가지 않는다.
-/// 그래서 에디터 메뉴(DomeAquarium/8)가 .env 의 키를 이 에셋에 복사한다.
-/// 이 에셋은 APK 안에 들어가므로 키가 기기에 실려 나간다 — 추출이 가능하다.
-/// 학내 시연 수준에서는 흔한 방식이지만, 외부 배포를 한다면 중계 서버를 두고
-/// 이 필드는 비워 두는 편이 맞다.
+/// API 키는 이 에셋에 두지 않는다(apiKey 는 비워 둔다). 에디터는 프로젝트 루트 .env 의 GEMINI_API_KEY 를 직접 읽고(ApiKey),
+/// 빌드(APK)에는 키가 들어가지 않는다 — 빌드 전 검사(DomeAquariumGeminiSetup)가 키가 남아 있으면 빌드를 멈춘다.
+/// 예전에는 메뉴 8 이 .env 의 키를 이 에셋에 복사해 APK 에 실었고, 같은 키가 다른 공개 저장소 기록에도 남아
+/// Google 이 '유출된 키'로 막았다(403). 그래서 해설 · NPC 목소리는 에디터에서 미리 녹음해 넣는다(VoiceBank).
 /// </summary>
 [CreateAssetMenu(fileName = "GeminiSettings", menuName = "DomeAquarium/Gemini Settings")]
 public class GeminiSettings : ScriptableObject
@@ -29,7 +28,7 @@ public class GeminiSettings : ScriptableObject
         "- 수치와 서식 범위를 추측하지 마. 인사말, 머리말, 목록 기호는 쓰지 마.";
 
     [Header("인증")]
-    public string apiKey = "";
+    public string apiKey = "";              // 비워 둔다 — 빌드에 실리지 않게. 에디터는 .env 를 읽는다(ApiKey)
 
     [Header("모델")]
     // 별칭을 쓴다. 버전을 박아두면 그 모델이 내려갈 때 404 가 나는데,
@@ -72,5 +71,34 @@ public class GeminiSettings : ScriptableObject
         return cached;
     }
 
-    public bool IsUsable => enableGemini && !string.IsNullOrWhiteSpace(apiKey);
+    /// <summary>요청에 쓰는 키 — 에셋에 남아 있으면 그것, 아니면 에디터에서만 .env 의 GEMINI_API_KEY. 빌드에서는 빈 값.</summary>
+    public string ApiKey => !string.IsNullOrWhiteSpace(apiKey) ? apiKey : EnvKey();
+
+    public bool IsUsable => enableGemini && !string.IsNullOrWhiteSpace(ApiKey);
+
+#if UNITY_EDITOR
+    static string envKey;
+    static bool envRead;
+
+    /// <summary>프로젝트 루트 .env 의 GEMINI_API_KEY (한 번만 읽는다). 키 자체는 로그에 찍지 않는다.</summary>
+    public static string EnvKey()
+    {
+        if (envRead) return envKey;
+        envRead = true;
+        string envPath = System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, ".env");
+        if (!System.IO.File.Exists(envPath)) return envKey = null;
+        foreach (string raw in System.IO.File.ReadAllLines(envPath))
+        {
+            string line = raw.Trim();
+            int eq = line.IndexOf('=');
+            if (line.StartsWith("#") || eq <= 0) continue;
+            if (!line.Substring(0, eq).Trim().Equals("GEMINI_API_KEY", System.StringComparison.OrdinalIgnoreCase)) continue;
+            string value = line.Substring(eq + 1).Trim().Trim('"', '\'');
+            return envKey = string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+        return envKey = null;
+    }
+#else
+    public static string EnvKey() => null;
+#endif
 }
