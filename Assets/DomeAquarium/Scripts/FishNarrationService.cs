@@ -16,7 +16,8 @@ using UnityEngine.Networking;
 ///  - 그래서 설명문을 만드는 것과 같은 Gemini API 키로 음성(PCM)을 받아 AudioSource 로 재생한다.
 ///
 /// 동작:
-///  - 문장(음성 이름 포함) 해시로 메모리 → 디스크(persistentDataPath/tts/*.wav) 순으로 캐시를 찾는다.
+///  - 먼저 미리 녹음한 대사(VoiceBank)에서 찾는다 — 기기(APK)에는 API 키가 없으니 기기에서 들리는 목소리는 모두 이것이다.
+///  - 없으면(에디터에서 .env 키가 있을 때만) 문장(음성 이름 포함) 해시로 메모리 → 디스크(persistentDataPath/tts/*.wav) 순으로 캐시를 찾는다.
 ///    같은 물고기를 다시 뽑거나 앱을 다시 켜도 네트워크를 다시 타지 않는다.
 ///  - 새 문장을 요청하면 진행 중이던 요청/재생은 버린다 (마지막 요청만 살아남는다).
 ///  - 에디터에서도 그대로 동작하므로 헤드셋 없이 해설을 들어 볼 수 있다.
@@ -29,6 +30,7 @@ public sealed class FishNarrationService : MonoBehaviour
     const string CacheFolder = "tts";
     const string GeminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/";
     const int DefaultSampleRate = 24000;   // Gemini TTS 는 16-bit mono 24kHz PCM 을 돌려준다
+    public const string DefaultVoice = "Kore";   // 관측소장 — GeminiSettings.ttsVoice 의 기본값과 같다(설정이 없어도 녹음을 찾게)
 
     /// <summary>
     /// 음성을 받아 오는 중이거나 재생 중이면 true. 배경음악 덕킹이 이 값을 본다.
@@ -40,6 +42,7 @@ public sealed class FishNarrationService : MonoBehaviour
 
     AudioSource source;
     GeminiSettings settings;
+    VoiceBank bank;
     string cacheDir;
 
     readonly Dictionary<string, AudioClip> memoryCache = new Dictionary<string, AudioClip>();
@@ -79,10 +82,11 @@ public sealed class FishNarrationService : MonoBehaviour
         source.volume = volume;
 
         settings = GeminiSettings.Load();
-        if (settings == null)
-            Debug.LogWarning("[TTS] Resources/GeminiSettings 를 찾지 못했다. 해설 음성이 꺼진다.");
-        else if (!settings.IsUsable)
-            Debug.LogWarning("[TTS] Gemini API 키가 비어 있거나 기능이 꺼져 있다. 해설 음성 없이 동작한다.");
+        bank = VoiceBank.Load();
+        if (bank == null)
+            Debug.LogWarning("[TTS] Resources/VoiceBank 가 없다 — 미리 녹음한 목소리가 없다 (DomeAquarium/음성 메뉴).");
+        if (settings != null && !settings.IsUsable && Application.isEditor)
+            Debug.Log("[TTS] .env 에 Gemini 키가 없어 녹음되지 않은 문장은 소리 없이 자막만 나온다.");
 
         cacheDir = Path.Combine(Application.persistentDataPath, CacheFolder);
         try { Directory.CreateDirectory(cacheDir); }
@@ -92,22 +96,28 @@ public sealed class FishNarrationService : MonoBehaviour
     /// <param name="voice">다른 목소리(Gemini 기본 음성 이름). 비우면 관측소장 목소리(settings.ttsVoice) — 로비 NPC 가 쓴다.</param>
     public void Speak(string koreanName, string description, string voice = null)
     {
-        string cleanName = (koreanName ?? string.Empty).Trim();
-        string cleanDescription = (description ?? string.Empty).Trim();
-        // 새 Gemini 프롬프트와 로컬 폴백은 설명 첫머리에 이름을 포함하므로 두 번 읽지 않는다.
-        string text = cleanDescription.StartsWith(cleanName, StringComparison.Ordinal)
-            ? cleanDescription
-            : (cleanName + ". " + cleanDescription).Trim();
+        string text = Compose(koreanName, description);
         if (string.IsNullOrWhiteSpace(text)) return;
 
         // 새 문장이 오면 이전 것은 재생이든 요청이든 전부 버린다.
         Stop();
 
-        if (settings == null || !settings.IsUsable || !settings.enableNarration) return;
+        if (settings != null && !settings.enableNarration) return;
+        voice = ResolveVoice(voice, settings);
+        string key = CacheKey(voice, text);
+
+        AudioClip baked = bank != null ? bank.Find(key, text) : null;
+        if (baked != null)
+        {
+            Play(baked);
+            return;
+        }
+#if UNITY_EDITOR
+        NoteMissing(voice, text);
+#endif
+        if (settings == null || !settings.IsUsable) return;
 
         int token = ++requestToken;
-        if (string.IsNullOrWhiteSpace(voice)) voice = settings.ttsVoice;
-        string key = CacheKey(voice, text);
 
         if (memoryCache.TryGetValue(key, out AudioClip cached) && cached != null)
         {
@@ -125,6 +135,42 @@ public sealed class FishNarrationService : MonoBehaviour
 
         fetchRoutine = StartCoroutine(Fetch(token, key, text, voice));
     }
+
+    /// <summary>읽을 문장 — 새 Gemini 프롬프트와 로컬 폴백은 설명 첫머리에 이름을 포함하므로 두 번 읽지 않는다. 녹음 목록도 이것으로 만든다.</summary>
+    public static string Compose(string koreanName, string description)
+    {
+        string cleanName = (koreanName ?? string.Empty).Trim();
+        string cleanDescription = (description ?? string.Empty).Trim();
+        return cleanDescription.StartsWith(cleanName, StringComparison.Ordinal)
+            ? cleanDescription
+            : (cleanName + ". " + cleanDescription).Trim();
+    }
+
+    /// <summary>비어 있으면 관측소장 목소리.</summary>
+    public static string ResolveVoice(string voice, GeminiSettings settings) =>
+        !string.IsNullOrWhiteSpace(voice) ? voice
+        : settings != null && !string.IsNullOrWhiteSpace(settings.ttsVoice) ? settings.ttsVoice
+        : DefaultVoice;
+
+    /// <summary>녹음 · 캐시를 찾는 열쇠 (목소리 + 문장).</summary>
+    public static string KeyFor(string voice, string text) => CacheKey(voice, text);
+
+#if UNITY_EDITOR
+    [Serializable] struct MissingLine { public string voice; public string text; }
+    static readonly HashSet<string> noted = new HashSet<string>();
+
+    /// <summary>녹음에 없던 문장을 Library/VoiceMissing.jsonl 에 적어 둔다 — 대사 목록 만들기(DomeAquarium/음성)가 함께 모은다.</summary>
+    static void NoteMissing(string voice, string text)
+    {
+        if (!noted.Add(CacheKey(voice, text))) return;
+        try
+        {
+            string path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Library", "VoiceMissing.jsonl");
+            File.AppendAllText(path, JsonUtility.ToJson(new MissingLine { voice = voice, text = text }) + "\n", Encoding.UTF8);
+        }
+        catch (Exception e) { Debug.LogWarning("[TTS] 녹음 없는 문장 기록 실패: " + e.Message); }
+    }
+#endif
 
     public void Stop()
     {
@@ -155,7 +201,7 @@ public sealed class FishNarrationService : MonoBehaviour
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Content-Type", "application/json");
             // 키는 쿼리스트링이 아니라 헤더로 보낸다 — URL 은 로그·프록시에 그대로 남는다.
-            req.SetRequestHeader("x-goog-api-key", settings.apiKey);
+            req.SetRequestHeader("x-goog-api-key", settings.ApiKey);
             req.timeout = Mathf.Max(5, settings.ttsTimeoutSeconds);
 
             yield return req.SendWebRequest();

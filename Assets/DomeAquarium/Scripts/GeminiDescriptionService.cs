@@ -146,7 +146,7 @@ public class GeminiDescriptionService : MonoBehaviour
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Content-Type", "application/json");
             // 키는 쿼리스트링이 아니라 헤더로 보낸다 — URL 은 로그·프록시에 그대로 남는다.
-            req.SetRequestHeader("x-goog-api-key", settings.apiKey);
+            req.SetRequestHeader("x-goog-api-key", settings.ApiKey);
             req.timeout = Mathf.Max(3, settings.timeoutSeconds);
 
             yield return req.SendWebRequest();

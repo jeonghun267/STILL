@@ -40,6 +40,7 @@ public sealed class LobbyNight : MonoBehaviour
     public AudioSource chime;                  // 새 줄이 생길 때 한 번
     public AudioClip chimeClip;
     public float revealSeconds = 1.6f;
+    public TMP_Text nextSignal;                // 맨 아래 줄 "새 신호 · 수심 2,500m" — 크레딧이 끝나면 깜빡이며 뜬다
 
     static readonly int TintId = Shader.PropertyToID("_Tint");
     static readonly int ExposureId = Shader.PropertyToID("_Exposure");
@@ -53,6 +54,7 @@ public sealed class LobbyNight : MonoBehaviour
     {
         if (sky != null) sky.SetActive(false);
         if (record != null) record.alpha = 0f;
+        if (nextSignal != null) nextSignal.alpha = 0f;
     }
 
     void OnDestroy()
@@ -127,6 +129,31 @@ public sealed class LobbyNight : MonoBehaviour
         if (recordDetail != null) recordDetail.text = detail;
         if (record != null) StartCoroutine(Reveal());
         if (chime != null && chimeClip != null) chime.PlayOneShot(chimeClip);
+    }
+
+    bool signalShown;
+
+    /// <summary>
+    /// 크레딧이 끝나면 데이터 월 맨 아래에 "새 신호 · 수심 2,500m" — 신호의 주인처럼 세 번 깜빡이고 켜진 채 남는다.
+    /// 밤 이야기 ⑤(다음 신호 2,500m)로 가는 이유를 벽에 보여 준다. 한 번만.
+    /// </summary>
+    public void RevealNextSignal()
+    {
+        if (signalShown || nextSignal == null) return;
+        signalShown = true;
+        nextSignal.text = ObservationTerms.NextSignal;
+        StartCoroutine(BlinkSignal());
+    }
+
+    IEnumerator BlinkSignal()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            for (float t = 0f; t < 0.35f; t += Time.deltaTime) { nextSignal.alpha = t / 0.35f; yield return null; }
+            for (float t = 0f; t < 0.35f; t += Time.deltaTime) { nextSignal.alpha = 1f - t / 0.35f * 0.75f; yield return null; }
+        }
+        for (float t = 0f; t < 0.8f; t += Time.deltaTime) { nextSignal.alpha = Mathf.Lerp(0.25f, 1f, t / 0.8f); yield return null; }
+        nextSignal.alpha = 1f;
     }
 
     IEnumerator Reveal()

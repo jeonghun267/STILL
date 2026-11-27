@@ -1,0 +1,110 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a310f941b1366624eb42ef3e8f1e07cf, type: 3}
+  m_Name: VoiceBank
+  m_EditorClassIdentifier: Assembly-CSharp::VoiceBank
+  entries:
+  - key: 299b67b92c571534
+    voice: Kore
+    text: "1934\uB144 8\uC6D4, \uBC84\uBBA4\uB2E4 \uC55E\uBC14\uB2E4. \uC70C\uB9AC\uC5C4
+      \uBE44\uBE0C\uC640 \uC624\uD2F0\uC2A4 \uBC14\uD134\uC740 \uC9C0\uB984 1.45m
+      \uC1E0\uACF5 '\uBC14\uC2DC\uC2A4\uD53C\uC5B4'\uC5D0 \uB4E4\uC5B4\uAC00, \uC904
+      \uD558\uB098\uC5D0 \uB9E4\uB2EC\uB824 \uB0B4\uB824\uAC14\uC5B4\uC694. \uCC3D\uC740
+      \uC190\uBC14\uB2E5\uB9CC \uD55C \uC11D\uC601 \uCC3D \uD558\uB098, \uADF8 \uBC14\uAE65\uC5D0
+      \uD0D0\uC870\uB4F1 \uD558\uB098\uBFD0\uC774\uC5D0\uC694. \uC624\uB298 \uBC24\uC740
+      \uB2F9\uC2E0\uC774 \uBE44\uBE0C\uC758 \uC790\uB9AC\uC5D0 \uC549\uC544\uC694."
+    clip: {fileID: 8300000, guid: 3e21c1932d607a44eb6a2db4428dcef7, type: 3}
+  - key: bb6a950e2121ff75
+    voice: Kore
+    text: "923m \u2014 \uC9C0\uAE08\uAE4C\uC9C0 \uC0AC\uB78C\uC774 \uB0B4\uB824\uC628
+      \uAC00\uC7A5 \uAE4A\uC740 \uACF3\uC774\uC5D0\uC694! \uCC3D\uBC16\uC744 \uC798
+      \uBCF4\uC138\uC694."
+    clip: {fileID: 8300000, guid: 6526dbcc50a2ffe448a7591f9d9b2e38, type: 3}
+  - key: 80f55fb2e8040a44
+    voice: Kore
+    text: "\uB3C5\uC0AC\uACE0\uAE30\uC608\uC694. \uC785\uC5D0 \uB2E4 \uB4E4\uC5B4\uAC00\uC9C0\uB3C4
+      \uC54A\uC744 \uB9CC\uD07C \uAE34 \uC774\uBE68\uB85C, \uC5B4\uB460 \uC18D\uC5D0\uC11C
+      \uBA39\uC774\uB97C \uBD99\uC7A1\uC544\uC694."
+    clip: {fileID: 8300000, guid: 19708018187a96140920c6aab7460767, type: 3}
+  - key: e8ae35df1420e9a5
+    voice: Kore
+    text: "\uBA38\uB9AC\uC5D0 \uB4F1\uBD88\uC744 \uB2E8 \uC544\uADC0\uC608\uC694.
+      \uC774 \uC5B4\uB460\uC5D0\uC11C\uB294 \uBE5B\uC774 \uBA39\uC774\uB97C \uBD80\uB974\uB294
+      \uBBF8\uB07C\uAC00 \uB3FC\uC694."
+    clip: {fileID: 8300000, guid: 0a577de022d06de4a9a19c1590287a10, type: 3}
+  - key: 53e352f76fffa8b8
+    voice: Kore
+    text: "\uBB3C\uBE5B\uC774 \uC810\uC810 \uC9D9\uC740 \uD30C\uB791\uC73C\uB85C
+      \uBC14\uB00C\uC5B4\uC694. \uBE68\uAC04\uBE5B\uBD80\uD130 \uBA3C\uC800 \uC0AC\uB77C\uC838\uC694."
+    clip: {fileID: 8300000, guid: 7703ab206d3f003458cf05c7f38c05e5, type: 3}
+  - key: a1f689a3386a0d1f
+    voice: Kore
+    text: "\uBC14\uC2DC\uC2A4\uD53C\uC5B4, \uB4E4\uB824\uC694? \uC5EC\uAE30\uB294
+      \uC218\uBA74\uC774\uC5D0\uC694. \uC9C0\uAE08\uBD80\uD130 \uB0B4\uB9BD\uB2C8\uB2E4.
+      \uCC3D\uBC16\uC5D0 \uBCF4\uC774\uB294 \uAC78 \uC804\uD654\uB85C \uC54C\uB824
+      \uC8FC\uC138\uC694."
+    clip: {fileID: 8300000, guid: e61b967b8422b764a98f3079bdf208b4, type: 3}
+  - key: 43a6491bc516804a
+    voice: Kore
+    text: "\uBE44\uBE0C\uAC00 \uBCF8 \uB2E4\uC12F \uC904 \uBB3C\uACE0\uAE30\uB294
+      \uC9C0\uAE08\uB3C4 \uB2E4\uC2DC \uBCF8 \uC0AC\uB78C\uC774 \uC5C6\uC5B4\uC694.
+      \uADF8\uB798\uB3C4 \uADF8\uB0A0 \uADF8\uB9B0 \uADF8\uB9BC\uC740 \uB0A8\uC558\uC5B4\uC694.
+      \uBCF8 \uAC83\uC744 \uADF8\uB300\uB85C \uC801\uC5B4 \uB450\uB294 \uC77C \u2014
+      \uC624\uB298 \uB2F9\uC2E0\uC774 1,000m \uC5D0\uC11C \uD55C \uC77C\uB3C4 \uBC14\uB85C
+      \uADF8\uAC70\uC608\uC694."
+    clip: {fileID: 8300000, guid: 953ecf13aa5088c4997de57802902212, type: 3}
+  - key: d0030fadbca918fe
+    voice: Kore
+    text: "\uBE44\uBE0C\uB294 \uC774 \uBB3C\uACE0\uAE30\uB97C '\uB2E4\uC12F \uC904
+      \uBCC4\uC790\uB9AC \uBB3C\uACE0\uAE30'\uB77C\uACE0 \uBD88\uB800\uC5B4\uC694.
+      \uADF8 \uB4A4\uB85C 90\uB144 \uB3D9\uC548 \uC544\uBB34\uB3C4 \uB2E4\uC2DC \uBCF4\uC9C0
+      \uBABB\uD588\uC5B4\uC694. \uC5B4\uB5A4 \uACFC\uD559\uC790\uB4E4\uC740 \uBE44\uBE0C\uAC00
+      \uBCF8 \uAC8C \uBB3C\uACE0\uAE30\uAC00 \uC544\uB2C8\uB77C \uBE57\uD574\uD30C\uB9AC\uC600\uC744
+      \uAC70\uB77C\uACE0 \uD574\uC694. \uC624\uB298 \uBC24 1,000m \uC5D0\uC11C \uB9CC\uB09C
+      '\uACE0\uC694\uBCC4'\uCC98\uB7FC, \uBAB8\uC744 \uB530\uB77C \uBE5B\uC904\uC774
+      \uD750\uB974\uB294 \uC0DD\uBB3C\uC774\uC694."
+    clip: {fileID: 8300000, guid: 5c4545b64083aaa448d803eb51609102, type: 3}
+  - key: 21aa544ece6d0c47
+    voice: Kore
+    text: "\uBE44\uBE0C\uB294 \uC774 \uBB3C\uACE0\uAE30\uB97C '\uB2E4\uC12F \uC904
+      \uBCC4\uC790\uB9AC \uBB3C\uACE0\uAE30'\uB77C\uACE0 \uBD88\uB800\uC5B4\uC694.
+      \uADF8 \uB4A4\uB85C 90\uB144 \uB3D9\uC548 \uC544\uBB34\uB3C4 \uB2E4\uC2DC \uBCF4\uC9C0
+      \uBABB\uD588\uC5B4\uC694. \uC5B4\uB5A4 \uACFC\uD559\uC790\uB4E4\uC740 \uBE44\uBE0C\uAC00
+      \uBCF8 \uAC8C \uBB3C\uACE0\uAE30\uAC00 \uC544\uB2C8\uB77C \uBE57\uD574\uD30C\uB9AC\uC600\uC744
+      \uAC70\uB77C\uACE0 \uD574\uC694. \uC624\uB298 \uBC24 1,000m \uC5D0\uC11C \uB9CC\uB09C
+      '\uC138\uBC88\uAE5C\uBE61\uC774'\uCC98\uB7FC, \uBAB8\uC744 \uB530\uB77C \uBE5B\uC904\uC774
+      \uD750\uB974\uB294 \uC0DD\uBB3C\uC774\uC694."
+    clip: {fileID: 8300000, guid: 3155df5417e75684dbd2ff83199025ba, type: 3}
+  - key: fa6f1ef5cca30d85
+    voice: Kore
+    text: "\uBE44\uBE0C\uB294 \uC774 \uBB3C\uACE0\uAE30\uB97C '\uB2E4\uC12F \uC904
+      \uBCC4\uC790\uB9AC \uBB3C\uACE0\uAE30'\uB77C\uACE0 \uBD88\uB800\uC5B4\uC694.
+      \uADF8 \uB4A4\uB85C 90\uB144 \uB3D9\uC548 \uC544\uBB34\uB3C4 \uB2E4\uC2DC \uBCF4\uC9C0
+      \uBABB\uD588\uC5B4\uC694. \uC5B4\uB5A4 \uACFC\uD559\uC790\uB4E4\uC740 \uBE44\uBE0C\uAC00
+      \uBCF8 \uAC8C \uBB3C\uACE0\uAE30\uAC00 \uC544\uB2C8\uB77C \uBE57\uD574\uD30C\uB9AC\uC600\uC744
+      \uAC70\uB77C\uACE0 \uD574\uC694. \uC624\uB298 \uBC24 1,000m \uC5D0\uC11C \uB9CC\uB09C
+      '\uD478\uB978\uB4F1\uBD88'\uCC98\uB7FC, \uBAB8\uC744 \uB530\uB77C \uBE5B\uC904\uC774
+      \uD750\uB974\uB294 \uC0DD\uBB3C\uC774\uC694."
+    clip: {fileID: 8300000, guid: 1bc023cf533d7ce418ba438710b086ff, type: 3}
+  - key: da946a70f8a2ccd1
+    voice: Kore
+    text: "\uC774\uC81C \uCC3D\uBC16\uC740 \uC644\uC804\uD788 \uAE5C\uAE5C\uD574\uC694.
+      \uBE44\uBE0C\uB294 \uC774 \uC5B4\uB460\uC744, \uC9C0\uAE08\uAE4C\uC9C0 \uBCF8
+      \uC5B4\uB5A4 \uAC80\uC815\uBCF4\uB2E4 \uB354 \uAC80\uB2E4\uACE0 \uC801\uC5C8\uC5B4\uC694."
+    clip: {fileID: 8300000, guid: 391614d5435729d44bead59e4bb9c22c, type: 3}
+  - key: e88305e77c249b69
+    voice: Kore
+    text: "\uD761\uD608\uC624\uC9D5\uC5B4\uC608\uC694. \uC774\uB984\uACFC \uB2EC\uB9AC
+      \uD53C\uB294 \uBA39\uC9C0 \uC54A\uACE0, \uB5A0\uB2E4\uB2C8\uB294 \uBC14\uB2E4\uB208\uC744
+      \uBAA8\uC544 \uBA39\uC5B4\uC694. \uC0B0\uC18C\uAC00 \uC544\uC8FC \uC801\uC740
+      \uC774 \uAE4A\uC774\uC5D0\uC11C \uC0B4\uC544\uC694."
+    clip: {fileID: 8300000, guid: fc9309e8b8a937747bb973d74af356f8, type: 3}

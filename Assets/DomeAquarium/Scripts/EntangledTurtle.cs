@@ -12,7 +12,20 @@ public sealed class EntangledTurtle : MonoBehaviour, IObservationTargets
     public FishData species;                   // 푸른바다거북 — 층 할 일은 이 종으로 센다 (돔을 헤엄치는 거북과 두 번 세지 않게)
     [TextArea(2, 4)] public string rescueLine =
         "관측소에서 해양 구조대에 연락했어요. 위치를 보냈으니 곧 그물을 풀어 줄 거예요. " +
-        "놀란이 말한 '유령 그물'이 바로 이거예요. 버려진 그물은 바닷속을 떠다니며 이렇게 생물을 붙잡아요.";
+        "이렇게 버려진 채 바다를 떠다니며 생물을 붙잡는 그물을 '유령 그물'이라고 불러요.";
+    // 해변에서 놀란에게 유령 그물 얘기를 들었으면 이쪽 (NpcDialogue 표시 netTold) — 예전에는 안 들은 사람에게도 "놀란이 말한"이 나왔다
+    [TextArea(2, 4)] public string toldRescueLine =
+        "관측소에서 해양 구조대에 연락했어요. 위치를 보냈으니 곧 그물을 풀어 줄 거예요. " +
+        "놀란이 말한 '유령 그물'이 바로 이거예요.";
+
+    /// <summary>놀란에게 그물 얘기를 들었는지에 맞춰 고른 구조 요청 대사.</summary>
+    public string RescueLine()
+    {
+        if (string.IsNullOrWhiteSpace(toldRescueLine)) return rescueLine;
+        foreach (var npc in FindObjectsByType<NpcDialogue>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (npc.Has("netTold")) return toldRescueLine;
+        return rescueLine;
+    }
     public float hintAfter = 40f;              // 24m 에 내려와 이만큼 지나도 기록하지 않으면 관측소장이 방향을 알려 준다
     [TextArea(2, 4)] public string hintLine =
         "{0} 보세요. 바다거북 한 마리가 그물에 걸려 버둥대고 있어요. 관찰기로 기록하면 관측소가 바로 구조 요청을 보낼게요.";

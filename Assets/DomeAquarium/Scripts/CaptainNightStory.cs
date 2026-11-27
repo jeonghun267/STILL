@@ -38,10 +38,10 @@ public sealed class CaptainNightStory : NightStory
     public float ownerDepth = 4f;
 
     [Header("선장")]
-    [TextArea(2, 4)] public string openLine = "이제 내 차례일세. 삼십 년 전, 폭풍우가 지나간 밤… 바로 이 바다에서 그 푸른빛을 봤지.";
+    [TextArea(2, 4)] public string openLine = "이제 내 차례일세. 삼십 년 전 폭풍우 치던 밤… 바로 이 바다에서 그 푸른빛을 봤지.";
     [TextArea(1, 3)] public string switchLine = "엔진을 끄고, 갑판 불도 꺼 주게. 앞쪽 난간의 단추 두 개라네.";
     [TextArea(1, 3)] public string stillLine = "좋아… 이제 가만히 있어 보게. 그날 밤도 엔진이 멎어 이렇게 조용했지. 깊은 바다 녀석들은 불빛과 엔진 소리를 피하거든.";
-    [TextArea(1, 3)] public string glowLine = "보게, 물이 빛나기 시작하는구먼. 야광 플랑크톤이라네. 배가 멈추니 바다가 깨어나는 게야.";
+    [TextArea(1, 3)] public string glowLine = "보게, 잔물결이 뱃전에 닿을 때마다 물이 빛나는구먼. 야광 플랑크톤이라네. 불을 끄니 이제야 보이는 게야.";   // 놀란: "물결에 흔들리면 빛을 내" 와 맞춘다
     [TextArea(1, 3)] public string whaleLine = "저기! 향유고래가 숨을 쉬러 올라왔어. 깊은 바다에서 사냥하고 돌아온 걸세.";
     [TextArea(2, 4)] public string whyLine =
         "그거 아나? 밤이 되면 깊은 바다의 많은 생물이 먹이를 따라 수면 가까이 올라온다네. 해가 뜨기 전에 다시 내려가고. " +
@@ -300,11 +300,7 @@ public sealed class CaptainNightStory : NightStory
         else if (captain != null) yield return captain.SayLine(line);
     }
 
-    static string NameLine(string line)
-    {
-        string name = DiveDirector.Instance != null ? DiveDirector.Instance.SignalName : string.Empty;
-        return line.Replace("{name}", string.IsNullOrWhiteSpace(name) ? "그 푸른빛" : $"'{name}'");
-    }
+    static string NameLine(string line) => NameLine(line, SignalName, "그 푸른빛");
 
 #if UNITY_EDITOR
     public float DebugGlow => glow;

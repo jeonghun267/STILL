@@ -50,7 +50,7 @@ public sealed class UnknownCreature : MonoBehaviour, IObservationTargets
     public float stillNeeded = 5f;             // 처음 다가오기까지
     public float resumeNeeded = 2.5f;          // 한 번 다가왔다 물러난 뒤 다시 다가오기까지
     public float lightForgetSeconds = 2.5f;    // 빛이 사라지고 이만큼 지나야 신호 자리로 돌아온다
-    public float hintAfterSeconds = 45f;       // 조명을 켠 채 이만큼 아무 일도 없으면 알려 준다
+    public float hintAfterSeconds = 25f;       // 조명을 켠 채 이만큼 아무 일도 없으면 알려 준다 (도착 대사가 답을 주지 않으므로 45 → 25)
     public float startleSeconds = 6f;          // 플래시에 놀라면 이만큼 더 어둠 속에 머문다 (FlashOrWatch)
 
     [Header("신호")]

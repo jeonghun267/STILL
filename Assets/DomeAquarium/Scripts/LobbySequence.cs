@@ -126,7 +126,11 @@ public sealed class LobbySequence : MonoBehaviour
         "오늘, 당신이 그 다음 관찰자입니다.",
     };
     [TextArea(2, 4)]
-    public string descentLine = "햇빛은 수심 200m까지만 닿습니다. 그 아래는, 우리가 거의 모르는 세계입니다.";
+    // 신호는 관측소장이 첫 하강에서 꺼낸다 — 예전에는 선장과의 대화(선택)에서만 나와, 선장을 건너뛰면 왜 내려가는지가 없었다.
+    public string descentLine = DefaultDescentLine;
+    public const string DefaultDescentLine =
+        "3주 전부터 수심 1,000m에서 푸른 빛 신호가 잡히고 있어요. 무엇이 보내는지는 아직 아무도 몰라요. " +
+        "오늘 그걸 확인하러 내려가요. 가는 길에 만나는 생물도 기록해 주세요.";
     [TextArea(2, 4)]
     public string arrivalLine = "여기가 수심 24m 산호초예요. 헤엄치는 생물에 관찰기를 겨누고 지켜보세요.";
 

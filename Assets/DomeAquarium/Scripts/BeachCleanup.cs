@@ -26,8 +26,9 @@ public sealed class BeachCleanup : MonoBehaviour
     public AudioSource sound;
     public AudioClip dropClip;
     [TextArea(2, 4)] public string doneLine =
-        "고마워! 방금 마지막 건 버려진 그물 조각이야. 바다를 떠다니는 그물은 '유령 그물'이라고 해. " +
-        "물고기랑 바다거북이 걸려서 빠져나오지 못하거든. 저 아래 바다에서도 보게 될지 몰라.";
+        // '유령 그물' 뜻풀이는 놀란의 "너는 여기서 뭐 해?" 대답과 24m 거북에서 한다 — 여기서는 되풀이하지 않는다
+        "고마워! 방금 마지막 건 버려진 그물 조각이야. 저런 게 바다로 흘러가면 생물이 걸려서 빠져나오지 못해. " +
+        "저 아래 바다에서도 보게 될지 몰라.";
 
     public int Collected { get; private set; }
     public bool Done => items != null && Collected >= items.Length;

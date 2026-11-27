@@ -560,9 +560,23 @@ public static class DomeAquariumLobbyBuilder
         chime.maxDistance = 20f;
         chime.volume = 0.7f;
 
+        // 맨 아래 줄 — 크레딧 뒤에 깜빡이며 뜨는 "새 신호 · 수심 2,500m" (LobbyNight.RevealNextSignal). 평소에는 투명
+        var signal = NewUI("NextSignal", go.transform, new Vector2(4000f, 150f)).gameObject.AddComponent<TextMeshProUGUI>();
+        signal.rectTransform.anchoredPosition = new Vector2(0f, -280f);
+        signal.font = font;
+        signal.fontSize = 100f;
+        signal.fontStyle = FontStyles.Bold;
+        signal.alignment = TextAlignmentOptions.Center;
+        signal.color = new Color(0.50f, 0.86f, 1f);
+        signal.textWrappingMode = TextWrappingModes.NoWrap;
+        signal.raycastTarget = false;
+        signal.text = ObservationTerms.NextSignal;
+        signal.alpha = 0f;
+
         night.record = group;
         night.recordTitle = title;
         night.recordDetail = detail;
+        night.nextSignal = signal;
         night.chime = chime;
         night.chimeClip = DomeAquariumDepthSounds.EnsureChime();
     }
@@ -611,7 +625,7 @@ public static class DomeAquariumLobbyBuilder
               new Vector2(0.56f, 0.34f),
               "<b>바시스피어  BATHYSPHERE</b>\n<size=70%>1930년, 윌리엄 비브와 오티스 바턴은 이 지름 1.45m의 쇠공을 타고 " +
               "사람으로서 처음 깊은 바다를 직접 들여다봤다. 1934년에는 수심 923m까지 내려갔다. " +
-              "그날 비브는 다섯 줄로 빛나는 물고기를 보고 그림으로 남겼지만, 그 뒤로 아무도 다시 보지 못했다.</size>",
+              "그해 여름 비브는 다섯 줄로 빛나는 물고기를 보고 그림으로 남겼지만, 그 뒤로 아무도 다시 보지 못했다.</size>",
               0.03f, new Color(0.88f, 0.95f, 1f), TextAlignmentOptions.TopLeft);
     }
 

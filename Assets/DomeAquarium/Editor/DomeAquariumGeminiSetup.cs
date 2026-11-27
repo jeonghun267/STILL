@@ -1,20 +1,20 @@
 #if UNITY_EDITOR
-using System;
-using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 /// <summary>
-/// 프로젝트 루트 .env 의 GEMINI_API_KEY 를 Resources/GeminiSettings.asset 으로 옮긴다.
-/// .env 는 에디터에서만 읽히고 빌드에 들어가지 않기 때문에, 기기에서 쓰려면 이 단계가 필요하다.
-/// 만들어진 .asset 에는 키가 들어 있으므로 .gitignore 로 막아 두었다.
+/// Resources/GeminiSettings.asset 을 만들고 고친다. API 키는 에셋에 넣지 않는다 — 에디터는 프로젝트 루트 .env 의
+/// GEMINI_API_KEY 를 직접 읽고(GeminiSettings.ApiKey), 빌드(APK)에는 키가 실리지 않는다(아래 빌드 전 검사).
+/// 기기에서 들리는 해설 · NPC 목소리는 에디터에서 미리 녹음한 것(VoiceBank, DomeAquariumVoiceBank)이다.
 /// </summary>
 public static class DomeAquariumGeminiSetup
 {
     const string ResourcesDir = "Assets/DomeAquarium/Resources";
     const string AssetPath = ResourcesDir + "/GeminiSettings.asset";
 
-    [MenuItem("DomeAquarium/8. Gemini 설정 생성 / .env 키 동기화", priority = 8)]
+    [MenuItem("DomeAquarium/8. Gemini 설정 생성 (키는 .env 에만)", priority = 8)]
     public static GeminiSettings SyncFromEnv()
     {
         if (!AssetDatabase.IsValidFolder(ResourcesDir))
@@ -60,23 +60,16 @@ public static class DomeAquariumGeminiSetup
             Debug.Log("[DomeAquarium] Gemini 종 식별 프롬프트를 한국어명+영문명+ID 방식으로 갱신했다.");
         }
 
-        string key = ReadKeyFromEnv();
-        if (string.IsNullOrEmpty(key))
+        // 키는 에셋에 두지 않는다 — 에디터는 .env 를 직접 읽고(GeminiSettings.ApiKey), 빌드(APK)에는 실리지 않는다.
+        // 예전에는 여기서 .env 의 키를 에셋에 복사했고, 그 키가 APK 와 다른 공개 저장소 기록에 실려 유출 판정(403)을 받았다.
+        if (!string.IsNullOrEmpty(settings.apiKey))
         {
-            Debug.LogWarning("[DomeAquarium] 프로젝트 루트 .env 에서 GEMINI_API_KEY 를 찾지 못했다. " +
-                             "설정 에셋은 만들었으니 인스펙터에서 직접 넣어도 된다.");
-        }
-        else if (settings.apiKey != key)
-        {
-            settings.apiKey = key;
+            settings.apiKey = string.Empty;
             EditorUtility.SetDirty(settings);
-            // 키 자체는 절대 로그에 찍지 않는다.
-            Debug.Log($"[DomeAquarium] .env 의 API 키를 GeminiSettings 에 동기화했다 (길이 {key.Length}).");
+            Debug.Log("[DomeAquarium] GeminiSettings 에 남아 있던 API 키를 비웠다 — 에디터는 .env 를 읽는다.");
         }
-        else
-        {
-            Debug.Log("[DomeAquarium] API 키가 이미 최신이다.");
-        }
+        if (string.IsNullOrEmpty(GeminiSettings.EnvKey()))
+            Debug.LogWarning("[DomeAquarium] 프로젝트 루트 .env 에서 GEMINI_API_KEY 를 찾지 못했다. 미리 녹음한 목소리(VoiceBank)만 쓴다.");
 
         // Quest 빌드에서 Gemini 를 부르려면 INTERNET 권한이 있어야 한다.
         // Auto 로 두면 Unity 가 코드 분석으로 판단하는데, 확실하게 Require 로 못박는다.
@@ -89,28 +82,19 @@ public static class DomeAquariumGeminiSetup
         AssetDatabase.SaveAssets();
         return settings;
     }
+}
 
-    static string ReadKeyFromEnv()
+/// <summary>빌드 전 검사 — GeminiSettings 에 API 키가 남아 있으면 빌드를 멈춘다(APK 안의 키는 꺼내 볼 수 있다).</summary>
+public sealed class DomeAquariumGeminiKeyGuard : IPreprocessBuildWithReport
+{
+    public int callbackOrder => 0;
+
+    public void OnPreprocessBuild(BuildReport report)
     {
-        // Application.dataPath = <project>/Assets
-        string envPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, ".env");
-        if (!File.Exists(envPath)) return null;
-
-        foreach (string raw in File.ReadAllLines(envPath))
-        {
-            string line = raw.Trim();
-            if (line.Length == 0 || line.StartsWith("#")) continue;
-
-            int eq = line.IndexOf('=');
-            if (eq <= 0) continue;
-
-            string name = line.Substring(0, eq).Trim();
-            if (!name.Equals("GEMINI_API_KEY", StringComparison.OrdinalIgnoreCase)) continue;
-
-            string value = line.Substring(eq + 1).Trim().Trim('"', '\'');
-            return string.IsNullOrWhiteSpace(value) ? null : value;
-        }
-        return null;
+        var settings = AssetDatabase.LoadAssetAtPath<GeminiSettings>("Assets/DomeAquarium/Resources/GeminiSettings.asset");
+        if (settings != null && !string.IsNullOrWhiteSpace(settings.apiKey))
+            throw new BuildFailedException("GeminiSettings 에 API 키가 들어 있어 빌드를 멈췄다. " +
+                                           "DomeAquarium/8 메뉴로 비우고(키는 .env 에만) 다시 빌드하세요.");
     }
 }
 #endif

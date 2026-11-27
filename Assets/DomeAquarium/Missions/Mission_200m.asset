@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiveMission
   depth: 1
   meters: 200
-  layerName: "\uBC15\uAD11\uCE35 \uC785\uAD6C"
+  layerName: "\uC5B4\uC2A4\uB984 \uBC14\uB2E4"
   rideSeconds: 12
   countSubject: "\uD070 \uC0DD\uBB3C"
   recordCount: 2
@@ -77,6 +77,7 @@ MonoBehaviour:
   showSignal: 0
   lightOnArrival: 0
   hintLine: 
+  toldHintLine: 
   finale: 0
   ascentLine: 
   finalLine: 

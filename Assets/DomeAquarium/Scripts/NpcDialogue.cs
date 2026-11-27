@@ -254,10 +254,12 @@ public sealed class NpcDialogue : MonoBehaviour
     }
 
     /// <summary>대사 속 {name} 을 체험자가 1,000m 에서 붙인 신호의 주인 이름으로 — 아직 없으면 "그 생물". {이라고} · {이에요} 는 받침에 맞춘다.</summary>
-    static string Fill(string line)
+    static string Fill(string line) => FillName(line, DiveDirector.Instance != null ? DiveDirector.Instance.SignalName : string.Empty);
+
+    /// <summary>Fill 과 같되 이름을 받는다 — 미리 녹음할 대사 목록(DomeAquariumVoiceBank)이 이름 후보마다 펼친다.</summary>
+    public static string FillName(string line, string name)
     {
         if (string.IsNullOrEmpty(line) || !line.Contains("{name}")) return line;
-        string name = DiveDirector.Instance != null ? DiveDirector.Instance.SignalName : string.Empty;
         if (string.IsNullOrWhiteSpace(name)) name = "그 생물";
         return line.Replace("{name}", name)
                    .Replace("{이라고}", ObservationTerms.Particle(name, "이라고", "라고"))

@@ -85,6 +85,7 @@ public static class ObservationTerms
     }
     public static string NewRecordDetail(string depth, string observer, System.DateTime when) =>
         $"수심 {depth}  ·  최초 관측자 {observer}  ·  {when:yyyy.MM.dd}";
+    public const string NextSignal = "새 신호  ·  수심 2,500m";   // 데이터 월 마지막 줄 — 크레딧 뒤에 뜬다 (밤 이야기 ⑤ 로 가는 이유)
     public const string EndTitle = "오늘 밤의 관측 끝";
     public const string Restart = "처음부터 다시";
 
