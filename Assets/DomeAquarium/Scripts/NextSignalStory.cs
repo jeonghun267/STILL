@@ -54,11 +54,16 @@ public sealed class NextSignalStory : NightStory
 
     [Header("말")]
     [TextArea(2, 4)] public string introLine =
-        "데이터 월 마지막 줄의 새 신호 — 수심 2,500m. 잠수정이 해저 열수구에 내려왔어요. 햇빛은 한 줄기도 닿지 않지만, 땅속에서 뜨거운 물이 뿜어져 나와요.";
+        "1,000m 의 만남 뒤, 관측소에 새 신호가 하나 더 잡혔어요 — 수심 2,500m. 신호를 따라 잠수정이 해저 열수구에 내려왔어요. " +
+        "햇빛은 한 줄기도 닿지 않지만, 땅속에서 뜨거운 물이 뿜어져 나와요.";
     [TextArea(2, 4)] public string howLine =
-        "오른쪽 화면은 밖에 있는 로봇 카메라예요. 아래 단추로 카메라를 돌려 화면 가운데 십자에 맞추고, 잠시 지켜보면 기록돼요. 세 가지를 찾아보세요.";
+        "오른쪽 화면은 밖에 있는 로봇 카메라예요. 아래 단추로 카메라를 돌려 화면 가운데 십자에 맞추고, 잠시 지켜보면 기록돼요. " +
+        "신호를 보낸 게 누구인지, 굴뚝 둘레의 세 가지를 살펴봐요.";
     [TextArea(1, 3)] public string nudgeLine = "단추로 카메라를 왼쪽, 오른쪽으로 돌려 보세요. 굴뚝 둘레에 무언가 살고 있어요.";
-    [TextArea(2, 4)] public string signalLine = "…방금, 또 신호가 잡혔어요. 이번엔 훨씬 더 깊은 곳이에요. 바다는 아직, 우리가 모르는 것으로 가득해요.";
+    [TextArea(2, 4)] public string signalLine = 
+        // 2,500m 신호를 거둔다 — 예전에는 신호 얘기 없이 세 가지만 기록하고 "또 신호"로 끝났다
+        "굴뚝도, 관벌레도, 게도 신호의 주인은 아니었어요. …방금, 또 잡혔어요. 여기가 아니에요 — 훨씬 더 깊은 곳에서 올라와요. " +
+        "바다는 아직, 우리가 모르는 것으로 가득해요.";
 
     float yaw, targetYaw;
     float watch;
@@ -167,7 +172,13 @@ public sealed class NextSignalStory : NightStory
             float a = Vector3.Angle(f, to);
             if (a < bestAngle) { best = t; bestAngle = a; }
         }
-        if (best != watching) { watching = best; watch = 0f; }
+        if (best != watching)
+        {
+            watching = best;
+            watch = 0f;
+            // 돌다가 십자를 스쳐 지나가면 그때 찬 %가 화면에 남아, 그 자리에서 멈춘 것처럼 보였다
+            if (watching == null && monitorStatus != null) monitorStatus.text = $"기록 {count} / {targets.Length}";
+        }
         if (watching == null)
         {
             if (crosshair != null) crosshair.color = new Color(1f, 1f, 1f, 0.6f);
@@ -203,8 +214,32 @@ public sealed class NextSignalStory : NightStory
             if (propellers[i] != null) propellers[i].Rotate(0f, 0f, i % 2 == 0 ? step : -step, Space.Self);
     }
 
-    public void TurnLeft() => targetYaw = Mathf.Clamp(targetYaw - yawStep, -yawLimit, yawLimit);
-    public void TurnRight() => targetYaw = Mathf.Clamp(targetYaw + yawStep, -yawLimit, yawLimit);
+    public void TurnLeft() => Turn(-yawStep);
+    public void TurnRight() => Turn(yawStep);
+
+    /// <summary>
+    /// 한 칸 돌리되, 아직 기록하지 않은 대상이 그 칸 가까이(칸의 0.6배 안)에 있으면 그 대상에 바로 맞춘다.
+    /// 칸으로만 돌면 끝(±yawLimit)에 부딪힌 뒤 칸이 10°씩 어긋나, 열수구 게(39°)가 십자(aimDegrees)에 영영 들어오지 않았다.
+    /// </summary>
+    void Turn(float step)
+    {
+        float next = Mathf.Clamp(targetYaw + step, -yawLimit, yawLimit), aimed = next, best = Mathf.Abs(step) * 0.6f;
+        if (targets != null && rovPivot != null)
+            foreach (var t in targets)
+            {
+                if (t == null || t.recorded || t.point == null) continue;
+                float y = YawTo(t.point.position), d = Mathf.Abs(Mathf.DeltaAngle(next, y));
+                if (d < best && Mathf.Abs(y) <= yawLimit) { best = d; aimed = y; }
+            }
+        targetYaw = aimed;
+    }
+
+    /// <summary>로봇 카메라가 p 를 정면에 두려면 돌아야 할 좌우 각도.</summary>
+    float YawTo(Vector3 p)
+    {
+        Vector3 to = rovPivot.parent.InverseTransformPoint(p) - rovPivot.localPosition;
+        return Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
+    }
 
     bool talking;
 
@@ -224,8 +259,7 @@ public sealed class NextSignalStory : NightStory
     public void DebugAimAt(int i)
     {
         if (targets == null || i < 0 || i >= targets.Length || rovPivot == null || targets[i].point == null) return;
-        Vector3 to = rovPivot.parent.InverseTransformPoint(targets[i].point.position) - rovPivot.localPosition;
-        targetYaw = Mathf.Clamp(Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg, -yawLimit, yawLimit);
+        targetYaw = Mathf.Clamp(YawTo(targets[i].point.position), -yawLimit, yawLimit);
     }
 #endif
 }

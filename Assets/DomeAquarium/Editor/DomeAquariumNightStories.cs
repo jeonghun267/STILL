@@ -244,13 +244,20 @@ public static class DomeAquariumNightStories
         DomeAquariumLobbyBuilder.Label("LeverSign", console, new Vector3(0f, 0.72f, -0.05f), 0f, new Vector2(0.3f, 0.08f),
             "등명기 손잡이\n<size=70%>눌러서 빛 보내기</size>", 0.03f, new Color(0.95f, 0.9f, 0.75f), TextAlignmentOptions.Center);
 
-        // 등대지기 일지 — 왼쪽 앞 낮은 받침 위에 비스듬히 펼쳐 둔다. 눈높이에 세웠더니 바다 위 대답하는 빛을 가렸다.
+        // 등대지기 일지 — 왼쪽 앞, 난간 안쪽에 기대어 건 독서대. 눈높이에 세웠더니 바다 위 대답하는 빛을 가렸다.
+        // 처음엔 낮은 받침 위에 두었는데 서는 자리가 통로(1.1m) 가운데라 왼쪽 앞이 곧 난간이고 앞은 손잡이가 차지해,
+        // 책장 모서리가 난간 살 사이에 끼어 보였다(받침을 세울 자리가 없다). 그래서 받침 없이 난간에 건다 —
+        // 책 가운데를 탑에서 2.33m(난간 안쪽 면 2.46m 보다 안), 난간 쪽 위 가장자리를 위 난간 높이에 맞추고 쇠 걸쇠 둘로 잇는다.
+        Vector3 toward = spot.position + Quaternion.Euler(0f, -40f, 0f) * dir * 0.45f - root.position;
+        toward.y = 0f;
+        Vector3 outward = toward.normalized;
         var log = new GameObject("Logbook").transform;
         log.SetParent(storyGo.transform, false);
-        log.SetPositionAndRotation(spot.position + dir * 0.35f - right * 0.2f, Quaternion.LookRotation(dir, Vector3.up));
-        Prim(PrimitiveType.Cube, "Stand", log, new Vector3(0f, 0.42f, 0f), Quaternion.identity, new Vector3(0.06f, 0.84f, 0.06f), iron);
-        Prim(PrimitiveType.Cube, "Book", log, new Vector3(0f, 0.86f, 0f), Quaternion.Euler(-40f, 0f, 0f), new Vector3(0.36f, 0.025f, 0.26f), paper);
-        var logText = DomeAquariumLobbyBuilder.Label("LogText", log, new Vector3(0f, 0.885f, -0.01f), 0f, new Vector2(0.34f, 0.22f),
+        log.SetPositionAndRotation(new Vector3(root.position.x, floor.y, root.position.z) + outward * 2.33f, Quaternion.LookRotation(outward, Vector3.up));
+        Prim(PrimitiveType.Cube, "Book", log, new Vector3(0f, 0.98f, 0f), Quaternion.Euler(-40f, 0f, 0f), new Vector3(0.36f, 0.025f, 0.26f), paper);
+        foreach (float x in new[] { -0.13f, 0.13f })                     // 걸쇠 — 책 위 가장자리에서 위 난간까지
+            Prim(PrimitiveType.Cube, "Clip", log, new Vector3(x, 1.06f, 0.12f), Quaternion.identity, new Vector3(0.03f, 0.03f, 0.06f), iron);
+        var logText = DomeAquariumLobbyBuilder.Label("LogText", log, new Vector3(0f, 1.005f, -0.01f), 0f, new Vector2(0.34f, 0.22f),
             "<b>등대지기 일지</b>\n1987년 10월 3일\n밤 11시 40분, 바다 쪽에 푸른 빛.\n등을 세 번 깜빡였더니,\n바다가 세 번 대답했다.",
             0.022f, new Color(0.18f, 0.14f, 0.10f), TextAlignmentOptions.Center);
         logText.transform.parent.localRotation = Quaternion.Euler(50f, 0f, 0f);   // 책장 위에 누워 위(눈) 쪽을 본다
@@ -279,7 +286,7 @@ public static class DomeAquariumNightStories
         var quad = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
         story.seaLight = Glow("SeaLight", storyGo.transform, seaPoint, 34f, halo, quad);       // 115m 앞 — 작으면 점 하나로 보였다
         story.seaLightSize = 34f;
-        // 인사를 주고받을 때마다 다가오는 자리 — 115m → 70m → 45m. 마지막엔 등대 앞 40m 물 위로 떠오른다(난간 너머로 내려다보인다)
+        // 인사를 주고받을 때마다 다가오는 자리 — 115m → 70m → 45m. 떠오르지는 않고 마지막에 먼 바다로 물러난다(가까이 만나는 건 ③ 선장의 밤바다)
         var approach = new List<Transform>();
         foreach (float d in new[] { 115f, 70f, 45f })
         {
@@ -289,24 +296,6 @@ public static class DomeAquariumNightStories
             approach.Add(a);
         }
         story.approach = approach.ToArray();
-
-        // 마지막 — 등대 아래 바닷가. 바다 쪽으로 땅이 물 높이(+0.5m)까지 내려오는 곳 반걸음 앞에 서고, 5m 앞 물 위로 떠오른다
-        var terrain = Object.FindFirstObjectByType<Terrain>(FindObjectsInactive.Include);
-        float edge = 15f;
-        if (terrain != null)
-            for (float d = 4f; d < 60f; d += 0.5f)
-            {
-                Vector3 q = root.position + seaDir * d;
-                if (terrain.SampleHeight(q) + terrain.transform.position.y <= seaY + 0.5f) { edge = d; break; }
-            }
-        Vector3 shoreAt = root.position + seaDir * (edge - 0.6f);
-        shoreAt.y = terrain != null ? terrain.SampleHeight(shoreAt) + terrain.transform.position.y : seaY + 0.5f;
-        var shore = new GameObject("ShoreSpot").transform;
-        shore.SetParent(storyGo.transform, false);
-        shore.SetPositionAndRotation(shoreAt, Quaternion.LookRotation(seaDir, Vector3.up));
-        story.shoreSpot = shore;
-        Vector3 rise = shoreAt + seaDir * 5f;
-        story.creature = BuildPuppet("SignalOwner", storyGo.transform, new Vector3(rise.x, seaY + 0.3f, rise.z));
         var rng = new System.Random(1987);
         var chorus = new List<Renderer>();
         for (int i = 0; i < 26; i++)
@@ -618,11 +607,12 @@ public static class DomeAquariumNightStories
         story.seaGlow = glows.ToArray();
         whale.SetActive(false);
 
-        // 신호의 주인 — 서는 자리 오른쪽 앞 6m, 물 위로 몸 위쪽 절반을 내민다. 1,000m 에서 만난 것과 같은 모습 · 크기
-        // (예전에는 1.8m 둥근 공 + 8m 빛무리라 다른 생물처럼 보였다)
+        // 신호의 주인 — 서는 자리 오른쪽 앞 6m, 길쭉한 등만 낮게 내민다. 1,000m 에서 만난 것과 같은 모습 · 크기
+        // (예전에는 1.8m 둥근 공 + 8m 빛무리라 다른 생물처럼 보였고, 다음엔 몸이 다 물 위로 떠 늘어진 실 두 가닥이 다리처럼 보였다.
+        //  가운데를 수면 15cm 아래에 두면 등만 27cm 나오고 실은 물속에 잠긴다 — 물속 빛은 수면의 빛 번짐으로)
         Vector3 toOwner = (boat.right * 8f + boat.forward * 1.5f).normalized;
         Vector3 o = spot.position + new Vector3(toOwner.x, 0f, toOwner.z).normalized * 6f;
-        story.owner = BuildPuppet("SignalOwner", scene, new Vector3(o.x, seaY + 0.3f, o.z));          // 몸이 거의 다 물 위로 — 반쯤 잠기면 반구처럼 보였다
+        story.owner = BuildPuppet("SignalOwner", scene, new Vector3(o.x, seaY - 0.15f, o.z), seaY);
         scene.gameObject.SetActive(false);                                 // 장면 동안만 켠다 (런타임에는 Awake 도 끈다)
 
         EditorUtility.SetDirty(story);
@@ -1331,7 +1321,7 @@ public static class DomeAquariumNightStories
         // 열수구 게 — 걷는 게 모델(majidakbarimoganjogi)을 하얗게. 열수구 게(Bythograea)처럼 희고 납작하다. 굴뚝 오른쪽 바위 위
         var crabs = new GameObject("VentCrabs").transform;
         crabs.SetParent(scene, false);
-        crabs.localPosition = new Vector3(3.6f, -6.2f, 6.6f);
+        crabs.localPosition = new Vector3(3.6f, -6.05f, 6.6f);              // 바닥 윗면(-6.1) 위 홍합 밭 위 — -6.2 에서는 다리가 바닥에 묻혀 납작했다
         var walk = LoopedVentClip("CrabWalking", "VentCrabWalk");
         var ctrl = walk != null ? CrabController(walk) : null;
         for (int i = 0; i < 6; i++)
@@ -1389,6 +1379,10 @@ public static class DomeAquariumNightStories
         rovLight.localRotation = Quaternion.Euler(18f, 0f, 0f);
         story.rovLight = rovLight;
 
+        // 바닥 생물 밭 — 굴뚝 · 관벌레 · 게 둘레를 홍합 · 대합 · 작은 관벌레 덤불로 빽빽하게
+        string life = BuildVentLife(scene, rov.localPosition, new[] { chimneyTop.parent, scene.Find("BlackSmoker2") },
+            wormSpots.Select(s => worms.localPosition + s.Item1).ToArray(), crabs.localPosition, rng);
+
         // 화면 — 앞 오른쪽 벽 (렌더 텍스처 판 + 위아래 글자 + 가운데 십자)
         Vector3 monitorDir = new Vector3(0.55f, -0.12f, 0.8f).normalized;
         var monitor = new GameObject("Monitor").transform;
@@ -1443,8 +1437,295 @@ public static class DomeAquariumNightStories
 
         scene.gameObject.SetActive(false);
         EditorUtility.SetDirty(story);
-        Debug.Log($"[NightStory] ⑤ 다음 신호 2,500m — 잠수정 {SubmersibleAt}, 굴뚝 스캔 2 · 관벌레 무리 3 · 게 6 · 로봇 카메라(추진기 {story.propellers.Length}).");
+        Debug.Log($"[NightStory] ⑤ 다음 신호 2,500m — 잠수정 {SubmersibleAt}, 굴뚝 스캔 2 · 관벌레 무리 3 · 게 6 · 바닥 {life} · 로봇 카메라(추진기 {story.propellers.Length}).");
         return story;
+    }
+
+    /// <summary>
+    /// 열수구 바닥 생물 밭. 실제 동태평양 열수구처럼 뜨거운 물이 스미는 굴뚝 밑동 · 관벌레 둘레가 생물로 빽빽하다:
+    ///   홍합(Bathymodiolus) 밭 · 흰 대합(Calyptogena, 틈을 따라 줄지어) · 붉은 깃을 내민 작은 관벌레(Tevnia) 덤불.
+    /// 수천 개라 모델 대신 낮은 다각형(홍합 6 · 대합 24 · 관벌레 36 삼각형)을 메시 둘로 묶는다 — 재질 하나, 색은 팔레트 텍스처 칸을 UV 로 고른다.
+    /// 로봇 카메라에서 관벌레 · 게로 가는 시선 아래와 게 둘레에는 덤불을 두지 않는다(낮은 홍합 · 대합만).
+    /// </summary>
+    static string BuildVentLife(Transform scene, Vector3 rov, Transform[] chimneys, Vector3[] wormClusters, Vector3 crabs, System.Random rng)
+    {
+        const float floorY = -6.1f;                                         // 바닥 원기둥 윗면 (가운데 -6.2 + 두께 절반 0.1) — -6.2 에 두면 껍데기가 다 묻혔다
+        Color[] palette =
+        {
+            new Color(0.22f, 0.17f, 0.1f), new Color(0.55f, 0.44f, 0.24f), new Color(0.68f, 0.64f, 0.5f),     // 홍합 — 짙은 · 누런 · 세균이 하얗게 낀 (바닥 흙과 구별되게)
+            new Color(0.93f, 0.92f, 0.86f), new Color(0.84f, 0.81f, 0.72f),                                     // 대합
+            new Color(0.88f, 0.86f, 0.8f), new Color(0.7f, 0.66f, 0.56f),                                       // 관
+            new Color(0.85f, 0.08f, 0.06f),                                                                     // 붉은 깃(아가미)
+        };
+        string palPath = "Assets/DomeAquarium/Materials/Vent/VentLifePalette.asset";
+        var pal = AssetDatabase.LoadAssetAtPath<Texture2D>(palPath);
+        if (pal == null)
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(palPath));
+            pal = new Texture2D(palette.Length, 1, TextureFormat.RGBA32, false) { name = "VentLifePalette" };
+            AssetDatabase.CreateAsset(pal, palPath);
+        }
+        pal.filterMode = FilterMode.Point;
+        pal.wrapMode = TextureWrapMode.Clamp;
+        pal.SetPixels(palette);
+        pal.Apply(false);
+        EditorUtility.SetDirty(pal);
+        var mat = VentMaterial("Vent/Mat_VentLife", pal, Color.white);
+        mat.SetFloat("_Cull", 2f);                                          // 닫힌 도형이고 밑은 바닥에 묻힌다 — 뒷면은 그리지 않는다
+
+        var shells = new LifeMesh(palette.Length);
+        var tubes = new LifeMesh(palette.Length);
+        int mussels = 0, clams = 0, worms = 0, beds = 0;
+        float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
+        // c 둘레 r0~r1 — 안쪽(밑동)일수록 빽빽하다
+        Vector2 Around(Vector2 c, float r0, float r1)
+        {
+            float a = R(0f, Mathf.PI * 2f), r = Mathf.Lerp(r0, r1, (float)(rng.NextDouble() * rng.NextDouble()));
+            return c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
+        }
+        Vector2 XZ(Vector3 v) => new Vector2(v.x, v.z);
+        Vector2 rovXZ = XZ(rov), crabXZ = XZ(crabs);
+        var sightTargets = new List<Vector2>(wormClusters.Select(XZ)) { crabXZ };
+        bool Clear(Vector2 p)                                               // 덤불을 두어도 되는 곳
+        {
+            if (Vector2.Distance(p, crabXZ) < 1.5f) return false;
+            foreach (var w in wormClusters) if (Vector2.Distance(p, XZ(w)) < 0.9f) return false;
+            foreach (var t in sightTargets)
+            {
+                Vector2 d = t - rovXZ;
+                float u = Mathf.Clamp01(Vector2.Dot(p - rovXZ, d) / d.sqrMagnitude);
+                if (Vector2.Distance(p, rovXZ + d * u) < 1.2f) return false;
+            }
+            return true;
+        }
+
+        void Mussel(Vector2 p, float lift)
+        {
+            var rot = Quaternion.Euler(R(-22f, 22f), R(0f, 360f), R(-18f, 18f));   // 서로 기대어 쌓인다
+            double c = rng.NextDouble();
+            shells.Ellipsoid(new Vector3(p.x, floorY + lift + R(-0.006f, 0.006f), p.y), rot,
+                new Vector3(R(0.025f, 0.035f), R(0.02f, 0.03f), R(0.06f, 0.09f)), c < 0.5 ? 0 : c < 0.9 ? 1 : 2, LifeMesh.Shape.Cap);   // 다 자라면 12~18cm
+            mussels++;
+        }
+        // 홍합 밭 — 짙은 더미(가운데가 볼록) 위에 껍데기를 겹겹이. 흩뿌리기만 하면 쌀알처럼 보였고,
+        // 더미가 껍데기보다 넓으면 각진 판이 드러났다 — 더미는 껍데기 퍼진 폭의 0.7 배로 숨기고 가장자리 껍데기는 흙 위로 흩어지게
+        void Bed(Vector2 c, float radius)
+        {
+            float height = R(0.015f, 0.03f);
+            shells.Mound(new Vector3(c.x, floorY, c.y), radius * 0.7f, height, rng, 0);
+            for (int i = 0, count = Mathf.RoundToInt(Mathf.PI * radius * radius * 100f); i < count; i++)
+            {
+                Vector2 o = Random2(rng);
+                float d = o.magnitude;
+                Mussel(c + o * radius * 1.05f, 0.006f + Mathf.Max(0f, 1f - d / 0.7f) * height);
+            }
+            beds++;
+        }
+        void Clam(Vector2 p, float yaw)
+        {
+            var rot = Quaternion.Euler(R(-8f, 8f), yaw + R(-25f, 25f), R(-70f, -50f) * (rng.Next(2) * 2 - 1));   // 옆으로 서서 반쯤 묻힌다
+            shells.Ellipsoid(new Vector3(p.x, floorY + R(0.01f, 0.03f), p.y), rot,
+                new Vector3(R(0.035f, 0.045f), R(0.04f, 0.05f), R(0.09f, 0.12f)), 3 + rng.Next(2), LifeMesh.Shape.Full);   // 옆으로 서서 아래가 보이니 닫힌 타원체
+            clams++;
+        }
+        void Thicket(Vector2 c, int count, float radius)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                Vector2 p = c + Random2(rng) * radius;
+                if (!Clear(p)) continue;
+                float len = R(0.25f, 0.9f), r = R(0.008f, 0.016f);
+                var rot = Quaternion.Euler(R(-12f, 12f), R(0f, 360f), R(-12f, 12f));
+                Vector3 b = new Vector3(p.x, floorY - 0.04f, p.y), up = rot * Vector3.up;
+                tubes.Cylinder(b, rot, r, len + 0.04f, 5 + rng.Next(2));
+                tubes.Ellipsoid(b + up * (len + 0.04f + r * 2f), rot, new Vector3(r * 2.4f, r * 4.5f, r * 2.4f), 7, LifeMesh.Shape.Full);
+                worms++;
+            }
+        }
+
+        // 굴뚝 밑동 — 밑동을 빙 둘러 홍합 밭, 그 바깥 둘레에 관벌레 덤불
+        for (int k = 0; k < chimneys.Length; k++)
+        {
+            if (chimneys[k] == null) continue;
+            Vector2 c = XZ(chimneys[k].localPosition);
+            float rb = VentBaseRadius(chimneys[k]);
+            int ring = k == 0 ? 10 : 7;
+            for (int i = 0; i < ring; i++)
+            {
+                float a = (i + R(-0.3f, 0.3f)) / ring * Mathf.PI * 2f;
+                Bed(c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (rb + R(0.1f, 0.6f)), R(0.5f, 0.85f));
+            }
+            for (int i = 0; i < ring - 1; i++) Thicket(Around(c, rb + 0.4f, rb + 1.2f), 35 + rng.Next(26), R(0.25f, 0.45f));
+            for (int i = 0; i < 10; i++) { Vector2 p = Around(c, rb, rb + 1.4f); Clam(p, Mathf.Atan2(p.x - c.x, p.y - c.y) * Mathf.Rad2Deg + 90f); }
+        }
+        // 관벌레(스캔) 둘레 — 홍합 밭과 덤불 (시선 아래는 Clear 가 비운다)
+        Vector2 wc = Vector2.zero;
+        foreach (var w in wormClusters) wc += XZ(w);
+        wc /= Mathf.Max(1, wormClusters.Length);
+        for (int i = 0; i < 5; i++) Bed(Around(wc, 0.6f, 2.0f), R(0.5f, 0.8f));
+        for (int i = 0; i < 6; i++) Thicket(Around(wc, 1.0f, 2.6f), 35 + rng.Next(26), R(0.25f, 0.45f));
+        // 게 아래 — 홍합 밭 위를 게가 걷는다
+        Bed(crabXZ + new Vector2(-0.25f, 0.1f), 0.8f);
+        Bed(crabXZ + new Vector2(0.5f, -0.35f), 0.6f);
+        // 바닥 곳곳 — 작은 밭, 대합은 틈을 따라 줄지어
+        for (int n = 0, tries = 0; n < 14 && tries < 300; tries++)
+        {
+            var c = new Vector2(R(-9f, 10f), R(4.5f, 16f));
+            if (chimneys.Any(ch => ch != null && Vector2.Distance(c, XZ(ch.localPosition)) < 2.6f) || Vector2.Distance(c, wc) < 2f || Vector2.Distance(c, crabXZ) < 1.8f) continue;
+            n++;
+            Bed(c, R(0.55f, 0.95f));
+            if (rng.Next(3) > 0) Bed(c + Random2(rng) * 1.2f, R(0.35f, 0.6f));
+            if (rng.Next(2) == 0) Thicket(Around(c, 0.2f, 0.8f), 30 + rng.Next(21), R(0.2f, 0.35f));
+            float yaw = R(0f, 360f);
+            Vector2 dir = new Vector2(Mathf.Sin(yaw * Mathf.Deg2Rad), Mathf.Cos(yaw * Mathf.Deg2Rad));
+            for (int i = 0, m = 4 + rng.Next(8); i < m; i++) Clam(c + dir * R(-1.6f, 1.6f) + Random2(rng) * 0.08f, yaw);
+        }
+
+        var root = new GameObject("VentLife").transform;
+        root.SetParent(scene, false);
+        foreach (var (lm, name) in new[] { (shells, "VentShells"), (tubes, "VentTubeWorms") })
+        {
+            var go = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
+            go.transform.SetParent(root, false);
+            go.GetComponent<MeshFilter>().sharedMesh = SaveStoryMesh(lm.ToMesh(name), name);
+            var r = go.GetComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+        }
+        return $"홍합 밭 {beds}곳 {mussels} · 대합 {clams} · 작은 관벌레 {worms} (삼각형 {(shells.Triangles + tubes.Triangles) / 1000}k)";
+    }
+
+    /// <summary>단위 원 안 한 점 — 가운데일수록 많다(가우스 비슷하게).</summary>
+    static Vector2 Random2(System.Random rng)
+    {
+        float a = (float)rng.NextDouble() * Mathf.PI * 2f, r = (float)(rng.NextDouble() + rng.NextDouble()) * 0.5f;
+        return new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
+    }
+
+    /// <summary>스캔 밑동 반지름 — 바닥에서 40cm 안 꼭짓점들의 굴뚝 축에서 거리(80번째 백분위).</summary>
+    static float VentBaseRadius(Transform chimney)
+    {
+        var pts = new List<Vector3>();
+        foreach (var mf in chimney.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (mf.sharedMesh == null) continue;
+            foreach (var v in mf.sharedMesh.vertices) pts.Add(chimney.InverseTransformPoint(mf.transform.TransformPoint(v)));
+        }
+        if (pts.Count == 0) return 1f;
+        float bottom = pts.Min(p => p.y);
+        var d = pts.Where(p => p.y < bottom + 0.4f).Select(p => new Vector2(p.x, p.z).magnitude).OrderBy(x => x).ToList();
+        return d[(int)(d.Count * 0.8f)];
+    }
+
+    /// <summary>낮은 다각형 생물을 한 메시로 모은다. 색은 팔레트 칸(UV), 둘레는 6각.</summary>
+    sealed class LifeMesh
+    {
+        const int Sides = 6;
+        readonly List<Vector3> v = new List<Vector3>(), n = new List<Vector3>();
+        readonly List<Vector2> uv = new List<Vector2>();
+        readonly List<int> t = new List<int>();
+        readonly int colors;
+        public LifeMesh(int colors) { this.colors = colors; }
+        public int Triangles => t.Count / 3;
+
+        Vector2 Uv(int color) => new Vector2((color + 0.5f) / colors, 0.5f);
+
+        public enum Shape
+        {
+            Cap,    // 꼭지 + 바닥 고리 하나(6 삼각형) — 멀리서만 보이는 작은 껍데기
+            Dome,   // 바닥이 열린 반쪽(18 삼각형)
+            Full,   // 위아래 꼭지 + 고리 둘(24 삼각형) — 옆이나 아래가 보이는 것
+        }
+
+        public void Ellipsoid(Vector3 at, Quaternion rot, Vector3 radii, int color, Shape shape)
+        {
+            var rings = shape == Shape.Cap ? new[] { 90f } : shape == Shape.Dome ? new[] { 50f, 90f } : new[] { 60f, 120f };   // 위 꼭지에서 잰 각
+            int apex = v.Count;
+            Add(at, rot, Vector3.up, radii, color);
+            foreach (float deg in rings)
+            {
+                float th = deg * Mathf.Deg2Rad;
+                for (int j = 0; j < Sides; j++)
+                {
+                    float ph = j * Mathf.PI * 2f / Sides;
+                    Add(at, rot, new Vector3(Mathf.Sin(th) * Mathf.Cos(ph), Mathf.Cos(th), Mathf.Sin(th) * Mathf.Sin(ph)), radii, color);
+                }
+            }
+            for (int j = 0; j < Sides; j++) t.AddRange(new[] { apex, apex + 1 + (j + 1) % Sides, apex + 1 + j });
+            for (int k = 1; k < rings.Length; k++)
+            {
+                int top = apex + 1 + (k - 1) * Sides, bot = top + Sides;
+                for (int j = 0; j < Sides; j++)
+                {
+                    int j1 = (j + 1) % Sides;
+                    t.AddRange(new[] { top + j, top + j1, bot + j, top + j1, bot + j1, bot + j });
+                }
+            }
+            if (shape != Shape.Full) return;
+            int last = apex + 1 + (rings.Length - 1) * Sides, bottom = v.Count;
+            Add(at, rot, Vector3.down, radii, color);
+            for (int j = 0; j < Sides; j++) t.AddRange(new[] { last + j, last + (j + 1) % Sides, bottom });
+        }
+
+        /// <summary>바닥에 깐 낮은 더미 — 가장자리가 들쭉날쭉한 원판, 가운데가 height 만큼 볼록(14 삼각형).</summary>
+        public void Mound(Vector3 at, float radius, float height, System.Random rng, int color)
+        {
+            const int rim = 14;
+            int center = v.Count;
+            v.Add(at + Vector3.up * height);
+            n.Add(Vector3.up);
+            uv.Add(Uv(color));
+            for (int j = 0; j < rim; j++)
+            {
+                float ph = j * Mathf.PI * 2f / rim, r = radius * (0.7f + (float)rng.NextDouble() * 0.45f);
+                var dir = new Vector3(Mathf.Cos(ph), 0f, Mathf.Sin(ph));
+                v.Add(at + dir * r + Vector3.up * 0.002f);
+                n.Add((dir * (height / r) + Vector3.up).normalized);
+                uv.Add(Uv(color));
+            }
+            for (int j = 0; j < rim; j++) t.AddRange(new[] { center, center + 1 + (j + 1) % rim, center + 1 + j });
+        }
+
+        /// <summary>열린 원기둥(12 삼각형) — 밑은 바닥에 묻히고 위는 깃이 덮는다.</summary>
+        public void Cylinder(Vector3 at, Quaternion rot, float radius, float length, int color)
+        {
+            int top = v.Count;
+            for (int ring = 0; ring < 2; ring++)
+                for (int j = 0; j < Sides; j++)
+                {
+                    float ph = j * Mathf.PI * 2f / Sides;
+                    var side = new Vector3(Mathf.Cos(ph), 0f, Mathf.Sin(ph));
+                    v.Add(at + rot * (side * radius + Vector3.up * (ring == 0 ? length : 0f)));
+                    n.Add(rot * side);
+                    uv.Add(Uv(color));
+                }
+            int bot = top + Sides;
+            for (int j = 0; j < Sides; j++)
+            {
+                int j1 = (j + 1) % Sides;
+                t.AddRange(new[] { top + j, top + j1, bot + j, top + j1, bot + j1, bot + j });
+            }
+        }
+
+        void Add(Vector3 at, Quaternion rot, Vector3 unit, Vector3 radii, int color)
+        {
+            v.Add(at + rot * Vector3.Scale(unit, radii));
+            n.Add(rot * new Vector3(unit.x / radii.x, unit.y / radii.y, unit.z / radii.z).normalized);
+            uv.Add(Uv(color));
+        }
+
+        public Mesh ToMesh(string name)
+        {
+            var mesh = new Mesh { name = name };
+            if (v.Count > 65000) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.SetVertices(v);
+            mesh.SetNormals(n);
+            mesh.SetUVs(0, uv);
+            mesh.SetTriangles(t, 0);
+            mesh.RecalculateBounds();
+            return mesh;
+        }
     }
 
     /// <summary>
@@ -1678,12 +1959,21 @@ public static class DomeAquariumNightStories
     /// <summary>
     /// 밤 이야기의 신호의 주인 — 장면의 UnknownCreature(1,000m)에서 재질 · 크기를 그대로 옮겨 같은 모습으로 (SignalCreaturePuppet).
     /// </summary>
-    static SignalCreaturePuppet BuildPuppet(string name, Transform parent, Vector3 at)
+    static SignalCreaturePuppet BuildPuppet(string name, Transform parent, Vector3 at, float waterY)
     {
         var go = new GameObject(name);
         go.transform.SetParent(parent, false);
         go.transform.position = at;
         var p = go.AddComponent<SignalCreaturePuppet>();
+        // 수면에 눕힌 빛 번짐 — 몸 아래쪽 · 실이 잠긴 물속에서 빛이 올라오는 것처럼
+        var glowMat = DomeAquariumLobbyBuilder.AdditiveMaterial("Mat_SignalWaterGlow", "Universal Render Pipeline/Particles/Unlit");
+        glowMat.SetTexture("_BaseMap", DomeAquariumParticleSetup.EnsureSoftDotTexture());
+        glowMat.SetColor("_BaseColor", Color.black);
+        EditorUtility.SetDirty(glowMat);
+        var water = Glow("WaterGlow", go.transform, new Vector3(at.x, waterY + 0.03f, at.z), 3.2f, glowMat, Resources.GetBuiltinResource<Mesh>("Quad.fbx"));
+        water.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        water.enabled = true;
+        p.waterGlow = water;
         var real = Object.FindFirstObjectByType<UnknownCreature>(FindObjectsInactive.Include);
         if (real != null)
         {

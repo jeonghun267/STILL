@@ -457,7 +457,7 @@ public sealed class DiveDirector : MonoBehaviour
     IEnumerator RescueRoutine()
     {
         yield return WaitQuiet(narrationWaitLimit * 2f);
-        if (Current == State.Briefing || Current == State.Observing || Current == State.Complete) Say(entangled.rescueLine);
+        if (Current == State.Briefing || Current == State.Observing || Current == State.Complete) Say(entangled.RescueLine());
     }
 
     /// <summary>관측소장 · 생물 해설 · 기록 카드가 모두 조용해질 때까지 (카드가 사라지는 동안도 조금 더) 기다린다.</summary>
@@ -617,8 +617,16 @@ public sealed class DiveDirector : MonoBehaviour
         if (hintGiven || m == null || !m.encounter || string.IsNullOrWhiteSpace(m.hintLine)) return;
         if (Current != State.Briefing && Current != State.Observing) return;
         hintGiven = true;
-        Say(m.hintLine);
+        Say(!string.IsNullOrWhiteSpace(m.toldHintLine) && CaptainStoryHeard() ? m.toldHintLine : m.hintLine);
         if (aim != null) aim.ShowNotice(ObservationTerms.LightHint, noticeSeconds + 4f);
+    }
+
+    /// <summary>로비에서 선장의 "불을 끄고 가만히" 이야기를 끝까지 들었나 (대화 마디 story2 가 남기는 표시).</summary>
+    static bool CaptainStoryHeard()
+    {
+        foreach (var npc in FindObjectsByType<NpcDialogue>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (npc.Has("signalTold")) return true;
+        return false;
     }
 
     IEnumerator FadeAmbience(float seconds)
@@ -651,7 +659,7 @@ public sealed class DiveDirector : MonoBehaviour
                Time.time - start < narrationWaitLimit)
             yield return null;
         // 마지막 기록이 그물에 걸린 거북이었으면 구조 요청부터
-        if (rescue && entangled != null && lobby != null) yield return lobby.SayLine(entangled.rescueLine);
+        if (rescue && entangled != null && lobby != null) yield return lobby.SayLine(entangled.RescueLine());
 
         // 찍을까, 바라볼까 — 플래시 없이 지켜보며 기록했으면 한마디 (플래시를 썼으면 그때 이미 말했다)
         if (m.encounter && flash != null && flash.Offered && !flash.Used && lobby != null) yield return lobby.SayLine(watchLine);
@@ -725,6 +733,7 @@ public sealed class DiveDirector : MonoBehaviour
 
     void OnCreditsFinished()
     {
+        if (night != null) night.RevealNextSignal();   // 데이터 월 마지막 줄 "새 신호 · 수심 2,500m"
         if (hub != null && hub.stories != null && hub.stories.Length > 0) hub.Open();
         else if (endPanel != null) endPanel.Show(ObservationTerms.EndTitle);
         if (nightWhale != null && !nightWhale.Played) StartCoroutine(NightWhaleRoutine());

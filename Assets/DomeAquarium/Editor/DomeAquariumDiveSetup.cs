@@ -303,10 +303,10 @@ public static class DomeAquariumDiveSetup
         m.musicLevel = 1f;
         m.descentLine = lobby != null && !string.IsNullOrWhiteSpace(lobby.descentLine)
             ? lobby.descentLine
-            : "햇빛은 수심 200m까지만 닿습니다. 그 아래는, 우리가 거의 모르는 세계입니다.";
+            : LobbySequence.DefaultDescentLine;
         m.arrivalLine = "여기가 수심 24m 산호초예요. 관찰기를 생물에 겨누고 지켜보면 기록돼요. " +
                         "아무 생물이나 4종을 기록해 주세요.";
-        m.completeLine = "24m 기록 완료! 이제 200m로 내려갈 수 있어요. 준비되면 엘리베이터를 타세요.";
+        m.completeLine = "24m 기록 완료! 신호는 아직 저 아래예요. 이제 200m로 내려갈 수 있어요. 준비되면 엘리베이터를 타세요.";   // 24m 에서도 줄기(신호)가 끊기지 않게
         EditorUtility.SetDirty(m);
         return m;
     }
@@ -324,7 +324,7 @@ public static class DomeAquariumDiveSetup
         var m = LoadOrCreate("Mission_200m");
         m.depth = DiveDepth.Twilight200;
         m.meters = 200f;
-        m.layerName = "박광층 입구";
+        m.layerName = "어스름 바다";              // 로비 수심 벽과 같은 이름 (예전 "박광층 입구")
         m.rideSeconds = 12f;
         m.countSubject = "큰 생물";
         m.recordCount = 2;
@@ -426,7 +426,7 @@ public static class DomeAquariumDiveSetup
         var m = LoadOrCreate("Mission_1000m");
         m.depth = DiveDepth.Midnight1000;
         m.meters = 1000f;
-        m.layerName = "심해";
+        m.layerName = "깊은 바다";                // 로비 수심 벽과 같은 이름 (예전 "심해")
         m.rideSeconds = 15f;
         m.countSubject = "";
         m.recordCount = 1;
@@ -451,15 +451,19 @@ public static class DomeAquariumDiveSetup
         m.ambience = DomeAquariumDepthSounds.Ensure("Midnight");  // 아주 낮은 웅웅거림 + 드문 '띵'
         m.ambienceVolume = 0.32f;
         m.musicLevel = 0f;                      // 3막은 음악을 끄고 낮은 물소리만
-        m.descentLine = "1,000m까지 내려갑니다. 여기부터는 햇빛이 전혀 닿지 않아요. 신호가 점점 강해지고 있어요.";
-        m.arrivalLine = "수심 1,000m예요. 저 멀리 깜빡이는 푸른 빛 보이나요? 3주 동안 잡히던 신호, 해파리를 닮은 빛나는 생물이에요. " +
-                        "빛을 싫어해서, 관찰기 조명을 끄고(A 또는 X 버튼) 가만히 기다리면 다가와요.";
-        m.hintLine = "조명을 꺼 봐요. 그리고 움직이지 말고 기다려요. 해파리를 닮은 생물이 다가올 거예요.";
+        m.descentLine = "1,000m까지 내려가요. 여기부터는 햇빛이 전혀 닿지 않아요. 신호가 점점 강해지고 있어요.";
+        // 도착 대사는 답을 주지 않는다 — "불을 꺼 볼까?"를 스스로 떠올리는 것이 3막의 한가운데다.
+        // 조명을 켠 채 두 번 놓치거나 한동안 아무 일도 없으면(UnknownCreature.hintAfterSeconds) 그때 hintLine 으로 알려 준다.
+        m.arrivalLine = "수심 1,000m예요. 저 멀리 깜빡이는 푸른 빛 보이나요? 3주 동안 잡히던 신호가 바로 저기서 와요. " +
+                        "무엇인지는 아직 아무도 몰라요. 관찰기를 겨눠서 기록해 봐요.";
+        m.hintLine = "빛이 닿으면 물러나요. 조명을 꺼 봐요 — A 버튼이나 X 버튼이에요. 그리고 움직이지 말고 기다려요.";
+        // 로비에서 선장의 푸른빛 이야기를 들은 사람에게는 그 말을 돌려준다 (NpcDialogue 표시 signalTold)
+        m.toldHintLine = "보리 선장님 이야기 기억나요? 불을 끄고 가만히. 조명을 꺼 봐요 — A 버튼이나 X 버튼이에요. 그리고 움직이지 말고 기다려요.";
         m.completeLine = "신호의 주인을 처음으로 기록했어요. 이제 올라갈게요.";
         m.finale = true;
-        m.ascentLine = "1,000m에서 해수면까지 올라갑니다. 신호는 다시 조용해졌어요.";
+        m.ascentLine = "1,000m에서 해수면까지 올라가요. 신호는 다시 조용해졌어요.";
         m.finalLine = "90년 전 비브가 그랬던 것처럼, 오늘 밤 당신은 아무도 본 적 없는 생물을 처음 보았습니다. " +
-                      "바다의 80%는 여전히 아무도 본 적이 없습니다. 하지만 오늘 밤, 그중 한 칸에 당신의 이름이 적혔습니다.";
+                      "바다의 80%는 여전히 아무도 본 적이 없습니다. 하지만 오늘 밤, 그중 한 칸이 당신의 기록으로 채워졌습니다.";   // 벽에 적히는 것은 생물 이름과 "최초 관측자 탐험가 N" — 내 이름이 아니다
         EditorUtility.SetDirty(m);
         return m;
     }

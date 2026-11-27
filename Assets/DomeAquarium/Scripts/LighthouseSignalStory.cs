@@ -8,9 +8,9 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 ///   왜 1,000m 생물이 바다 위에? — 밤이면 깊은 바다 생물이 먹이를 따라 수면 가까이 올라온다(밤의 대이동, 200m 에서 본 빛 기둥).
 ///   왜 같은 수로? — 신호의 주인은 빛으로 말한다. 같은 수로 대답하면 "나도 여기 있어" 하는 인사가 되고, 인사할 때마다 한 걸음씩 다가온다.
 ///   ① 내가 세 번 → 세 번 대답 · 다가옴 ② 그가 두 번 → 나도 두 번 · 다가옴 ③ 그가 네 번 → 나도 네 번
-///   → 등대 아래 바닷가로 내려가면(암전) 5m 앞 물 위로 떠오른다 — 1,000m 에서 만난 것과 같은 모습 · 크기(SignalCreaturePuppet).
-///     등대 꼭대기(32m 위)에서는 1.4m 몸이 점 하나로만 보여 같은 생물인지 알 수 없었다.
-///   → 만 곳곳에 무리의 빛. "혼자가 아니었어요."
+///   → 천천히 세 번 — 오늘 밤 인사는 여기까지. 먼 바다로 물러나며 잦아든다 → 만 곳곳에 무리의 빛. "혼자가 아니었어요."
+///   등대에서는 빛으로만 이야기한다. 가까이 다시 만나는 건 ③ 선장의 밤바다 — 예전에는 여기서도 바닷가 앞 물 위로 떠올라
+///   두 이야기의 끝이 같았다.
 /// 손잡이는 찌르기(손) · 레이(컨트롤러) 둘 다. 마지막으로 누르고 gap 초가 지나면 몇 번 보냈는지 센다.
 /// 장면 동안 등대의 도는 빛줄기는 끄고(Lighthouse 를 멈춤), 누를 때마다 바다 쪽으로 곧은 빛줄기가 한 번 번쩍인다.
 /// </summary>
@@ -32,8 +32,6 @@ public sealed class LighthouseSignalStory : NightStory
     public Renderer seaLight;                   // 대답하는 푸른 빛 (보는 쪽을 향하는 판) — 멀리서 본 신호의 주인
     public Transform[] approach;                // 먼 곳 → 가까운 곳. 인사를 주고받을 때마다 다음 자리로 다가온다
     public float seaLightSize = 34f;            // approach[0] 에서의 빛 판 크기 — 다가오면 거리만큼 줄인다(보이는 크기는 그대로)
-    public SignalCreaturePuppet creature;       // 마지막에 바닷가 5m 앞 물 위로 떠오르는 모습
-    public Transform shoreSpot;                 // 등대 아래 바닷가 — 마지막에 여기로 내려간다(암전)
     public Renderer[] chorus;                   // 끝에 만 곳곳에서 켜지는 빛들 — 함께 올라온 무리
     [ColorUsage(false, true)] public Color blue = new Color(0.35f, 0.8f, 1.6f);
 
@@ -49,23 +47,24 @@ public sealed class LighthouseSignalStory : NightStory
         "여기는 곶 끝 등대 꼭대기예요. 1987년 가을, 이 등대를 지키던 사람이 일지에 이상한 걸 적었어요. " +
         "'바다 쪽에 푸른 빛. 등을 세 번 깜빡였더니, 바다가 세 번 대답했다.'";
     [TextArea(2, 4)] public string whyUpLine =
-        "1,000m 에 사는 생물이 어떻게 바다 위에 있었을까요? 깊은 바다 생물 중에는 밤이 되면 먹이를 따라 수면 가까이 올라왔다가, " +
-        "해가 뜨기 전에 다시 내려가는 녀석들이 많아요. 200m 에서 본, 위로 솟던 빛 알갱이 기둥 — 그게 바로 이 '밤의 대이동'이에요.";
+        "1,000m 에 사는 생물이 어떻게 바다 위에 있었을까요? 깊은 바다 생물 중에는 밤마다 수면 가까이 올라오는 녀석들이 있어요. " +
+        "왜 그러는지는 보리 선장님이 잘 알아요.";     // '밤의 대이동' 설명은 ③ 선장의 밤바다에만 둔다 — 두 장면이 같은 문장으로 설명했다
     [TextArea(1, 3)] public string lookLine = "저기, 먼 바다 — 세 번씩 깜빡이는 푸른 빛 보이죠? 오늘 밤에도 올라왔어요.";
     [TextArea(2, 4)] public string goalLine =
-        "{name}은 빛으로 말해요. 같은 수만큼 깜빡여 대답하면 '나도 여기 있어' 하는 인사가 돼요. " +
-        "인사를 주고받을 때마다 조금씩 다가올 거예요. 등대 빛으로 이 아래까지 불러 봐요.";
+        // 1,000m 에서는 빛을 비추면 달아났다 — 왜 등대 빛은 괜찮은지를 여기서 말한다 (비추는 빛 ↔ 깜빡여 말하는 빛)
+        "{name}은 빛으로 말해요. 가까이서 계속 비추는 센 빛은 달아나게 하지만, 멀리서 같은 박자로 깜빡이는 빛은 말로 알아들어요. " +
+        "같은 수만큼 깜빡여 대답하면 '나도 여기 있어' 하는 인사가 돼요. 등대 빛으로 인사를 나눠 봐요. 주고받을 때마다 조금씩 다가올 거예요.";
     [TextArea(1, 3)] public string sendThreeLine = "앞에 있는 손잡이를 한 번 누를 때마다 등대 빛이 한 번 나가요. 먼저 세 번 보내 보세요.";
     [TextArea(1, 3)] public string retryLine = "몇 번 보냈는지 세면서 다시 해 볼까요? 세 번이에요.";
     [TextArea(1, 3)] public string answeredLine = "대답했어요! 세 번 — 1,000m 에서 {name}이 하던 바로 그 말이에요. 봐요, 조금 다가와요.";
     [TextArea(1, 3)] public string seaFirstLine = "이번엔 {name}이 먼저 보내요. 몇 번 깜빡이는지 세어 보고, 같은 수만큼 대답해 주세요.";
     [TextArea(1, 3)] public string seaRetryLine = "다시 한 번 보낼게요. 잘 세어 보세요.";
     [TextArea(1, 3)] public string goodLine = "맞아요! 또 다가와요.";
-    [TextArea(1, 3)] public string goDownLine = "등대 바로 아래까지 왔어요. 바닷가로 내려가 가까이서 만나 봐요.";
-    [TextArea(1, 3)] public string nearLine = "바로 앞이에요. 오늘 밤 1,000m 에서 만난 — 바로 그 모습이죠?";
+    [TextArea(1, 3)] public string byeLine = "네 번까지 맞혔어요. 방금 천천히 세 번 — 오늘 밤 인사는 여기까지래요. {name}이 먼 바다로 돌아가요.";
     [TextArea(2, 4)] public string finaleLine =
         "그리고… 보세요, 바다 곳곳에서 푸른 빛이 켜져요. 오늘 밤 함께 올라온 무리예요. 등대지기도, 선장님도, 오늘 밤의 우리도 혼자가 아니었어요.";
-    [TextArea(1, 3)] public string outroLine = "해가 뜨기 전에 다시 깊은 바다로 내려가겠죠. 이제 관측소로 돌아가요.";
+    [TextArea(2, 4)] public string outroLine =
+        "더 가까이서 만나려면 등대가 아니라 배를 타고 나가야 해요. 그건 보리 선장님의 이야기예요. 이제 관측소로 돌아가요.";
 
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
@@ -118,7 +117,6 @@ public sealed class LighthouseSignalStory : NightStory
             seaLight.enabled = false;
             if (approach != null && approach.Length > 0 && approach[0] != null) seaLight.transform.position = approach[0].position;
         }
-        if (creature != null) creature.Show(false);
         if (chorus != null)
         {
             chorusLevel = new float[chorus.Length];
@@ -170,12 +168,10 @@ public sealed class LighthouseSignalStory : NightStory
             if (count == 2) { StartCoroutine(MoveSea(2, 6f)); yield return Say(goodLine); }
         }
 
-        // 등대 바로 아래로 — 바닷가로 내려가면 눈앞 물 위로 1,000m 에서 본 모습이 떠오른다
-        yield return Say(goDownLine);
-        yield return GoDown();
-        yield return Surface();
-        yield return Say(nearLine);
-        yield return CreatureBlinks(3);
+        // 마지막 인사 — 천천히 세 번 깜빡이고 먼 바다로 물러나며 잦아든다
+        yield return SeaFlashes(3, 1.6f);
+        StartCoroutine(Leave(12f));
+        yield return Say(NameLine(byeLine));
 
         // 끝 — 만 곳곳에 무리의 빛
         StartCoroutine(Chorus());
@@ -198,55 +194,22 @@ public sealed class LighthouseSignalStory : NightStory
         seaLight.transform.position = to;
     }
 
-    /// <summary>암전 뒤 등대 아래 바닷가로 — 먼 빛은 끄고, 바다를 보고 선다.</summary>
-    IEnumerator GoDown()
+    /// <summary>마지막 인사 뒤 — 처음 자리(approach[0])보다 더 먼 바다로 물러나며 잦아들고 꺼진다.</summary>
+    IEnumerator Leave(float seconds)
     {
-        var lobby = FindFirstObjectByType<LobbySequence>();
-        if (shoreSpot == null || lobby == null) yield break;
-        ScreenFader fader = lobby.Fader;
-        if (fader != null) yield return fader.FadeTo(1f, 0.8f);
-        seaIdle = 0f;
-        if (seaLight != null) seaLight.enabled = false;
-        lobby.MoveRigTo(shoreSpot);
-        yield return null;
-        if (fader != null) yield return fader.FadeTo(0f, 1.2f);
-        yield return new WaitForSeconds(0.5f);
-    }
-
-    IEnumerator Surface()
-    {
-        if (creature == null) yield break;
-        Transform c = creature.transform;
-        Vector3 top = c.position, bottom = top - Vector3.up * 3f;
-        Vector3 farFrom = seaLight != null ? seaLight.transform.position : top;
-        c.position = bottom;
-        creature.blinking = false;
-        creature.glow = 0.2f;
-        creature.Show(true);
-        for (float t = 0f; t < 1f; t += Time.deltaTime / 6f)
+        if (seaLight == null || approach == null || approach.Length == 0 || approach[0] == null) yield break;
+        Vector3 from = seaLight.transform.position, far = approach[0].position;
+        Vector3 to = far + (far - from).normalized * 80f;
+        for (float t = 0f; t < 1f; t += Time.deltaTime / seconds)
         {
             float k = Mathf.SmoothStep(0f, 1f, t);
-            if (seaLight != null) seaLight.transform.position = Vector3.Lerp(farFrom, top, k);
-            seaFade = 1f - k;                                              // 먼 빛은 줄어들며 사라지고
-            c.position = Vector3.Lerp(bottom, top, k);                     // 몸이 떠오른다
-            creature.glow = 0.2f + 0.7f * k;
+            seaLight.transform.position = Vector3.Lerp(from, to, k);
+            seaFade = 1f - k;
             yield return null;
         }
-        c.position = top;
         seaFade = 0f;
         seaIdle = 0f;
-        if (seaLight != null) seaLight.enabled = false;
-    }
-
-    IEnumerator CreatureBlinks(int times)
-    {
-        if (creature == null) yield break;
-        for (int i = 0; i < times; i++)
-        {
-            if (seaSound != null && seaClip != null) seaSound.PlayOneShot(seaClip, 0.6f);
-            creature.Pulse();
-            yield return new WaitForSeconds(0.75f);
-        }
+        seaLight.enabled = false;
     }
 
     /// <summary>누르기를 기다렸다가, 마지막으로 누르고 gap 초가 지나면 몇 번인지 돌려준다. 오래 누르지 않으면 -1.</summary>
@@ -301,8 +264,8 @@ public sealed class LighthouseSignalStory : NightStory
         leverArm.localRotation = rest;
     }
 
-    /// <summary>바다 위 푸른 빛이 count 번 깜빡인다 — 켜지며 짧게 삑.</summary>
-    IEnumerator SeaFlashes(int count)
+    /// <summary>바다 위 푸른 빛이 count 번 깜빡인다 — 켜지며 짧게 삑. slow 배만큼 느리게(마지막 인사).</summary>
+    IEnumerator SeaFlashes(int count, float slow = 1f)
     {
         if (seaLight == null) yield break;
         seaLight.enabled = true;
@@ -310,13 +273,14 @@ public sealed class LighthouseSignalStory : NightStory
         for (int i = 0; i < count; i++)
         {
             if (seaSound != null && seaClip != null) seaSound.PlayOneShot(seaClip, 0.6f);
-            for (float t = 0f; t < 0.7f; t += Time.deltaTime)
+            for (float t = 0f; t < 0.7f * slow; t += Time.deltaTime)
             {
-                seaLevel = t < 0.15f ? t / 0.15f : t < 0.4f ? 1f : 1f - (t - 0.4f) / 0.3f;
+                float u = t / slow;
+                seaLevel = u < 0.15f ? u / 0.15f : u < 0.4f ? 1f : 1f - (u - 0.4f) / 0.3f;
                 yield return null;
             }
             seaLevel = 0f;
-            yield return new WaitForSeconds(0.35f);
+            yield return new WaitForSeconds(0.35f * slow);
         }
     }
 
@@ -393,14 +357,9 @@ public sealed class LighthouseSignalStory : NightStory
         if (lobby != null) yield return lobby.SayLine(line);
     }
 
-    static string NameLine(string line)
-    {
-        string name = DiveDirector.Instance != null ? DiveDirector.Instance.SignalName : string.Empty;
-        return line.Replace("{name}", string.IsNullOrWhiteSpace(name) ? "신호의 주인" : $"'{name}'");
-    }
+    static string NameLine(string line) => NameLine(line, SignalName);
 
 #if UNITY_EDITOR
     public bool DebugListening => listening;
-    public bool DebugSurfaced => creature != null && creature.Shown;
 #endif
 }

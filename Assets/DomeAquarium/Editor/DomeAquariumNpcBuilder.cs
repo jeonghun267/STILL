@@ -54,17 +54,19 @@ public static class DomeAquariumNpcBuilder
         N("whale_found", "봤구먼! 그 녀석은 이 만에 자주 들르는 혹등고래라네. 꼬리 아랫면 무늬는 고래마다 다 달라서, 그 무늬로 누가 누군지 알아본다네. " +
                          "꼬리를 들 때 쌍안경으로 보고 있으면 사진도 찍힌다네.", "whaleThanked",
           C("사람 지문 같네요!", "whale_found2")),
+        // 꼬리 무늬 설명은 사진이 찍힐 때 관측소장이 이미 했다(FlukePhotoId) — 선장은 되풀이하지 않고 '하얀별' 이야기만 한다
         N("whale_found_id", "꼬리 사진까지 찍었다고? 허허, '하얀별'이로구먼! 내가 젊었을 때부터 해마다 이 만에 돌아오는 녀석이야. " +
-                            "꼬리 아랫면 무늬가 고래마다 달라서, 사진만 있으면 누가 누군지 알 수 있지.", "whaleThanked",
-          C("사람 지문 같네요!", "whale_found2")),
-        N("whale_found2", "허허, 바로 그거야! 자네는 관찰하는 눈이 좋구먼. 그 눈이면 저 깊은 바다에서도 잘 해낼 걸세.", null,
+                            "자네 사진 덕분에 올해도 무사히 돌아온 걸 알았구먼.", "whaleThanked",
+          C("올해도 돌아왔네요!", "whale_found2")),
+        N("whale_found2", "허허, 그렇지! 자네는 관찰하는 눈이 좋구먼. 그 눈이면 저 깊은 바다에서도 잘 해낼 걸세.", null,
           C("다녀올게요!", null), C("신호 얘기 다시 해 주세요", "story")),
         N("revisit", "또 왔구먼! 바다는 늘 같아 보여도 매일 달라. 오늘은 저 아래서 뭘 보게 될지 나도 궁금하다네.", null,
           C("신호 얘기 다시 해 주세요", "story"), C("고래는 어디서 봐요?", "whale_quest")),
         N("night", "돌아왔군! 관측소에 불이 환하게 켜진 걸 보고 알았지. 그 푸른빛… 자네가 정말 만났구먼. '{name}'{이라고} 이름도 붙였다지? 좋은 이름일세.", null,
           C("불을 끄고 가만히 있었더니 다가왔어요", "night2")),
         N("night2", "그렇지, 그렇지! 내가 삼십 년 동안 못 본 걸 자네가 오늘 기록했어. 바다엔 아직 아무도 못 본 게 훨씬 많다네. " +
-                    "참, 해변에도 내려가 보게. 오늘 밤은 파도까지 푸르게 빛난다네. 놀란이 기다리고 있을 걸세.", null,
+                    "참, 해변에도 내려가 보게. 오늘 밤은 파도까지 푸르게 빛난다네. 놀란이 기다리고 있을 걸세. " +
+                    "그리고 '오늘 밤의 이야기'에서 나를 찾게. 자네를 태우고 밤바다에 한번 나가 보고 싶구먼.", null,   // ③ "이제 내 차례일세"를 여기서 깔아 둔다
           C("가 볼게요!", null)),
     };
 
@@ -104,9 +106,51 @@ public static class DomeAquariumNpcBuilder
           C("진짜 만났어!", "night2")),
         N("night_waves", "그리고 " + NolantNightWaves, null,
           C("진짜 만났어!", "night2")),
-        N("night2", "대단하다… 나도 언젠가 꼭 내려가 볼 거야. 그때까지 여기 바닷가를 깨끗하게 지키고 있을게!", null,
+        N("night2", "대단하다… 나도 언젠가 꼭 내려가 볼 거야. 그때까지 여기 바닷가를 깨끗하게 지키고 있을게! " +
+                    "참, 오늘 밤 이 모래밭에서 거북 알이 깨어날지도 몰라. '오늘 밤의 이야기'에서 나를 불러 줘!", null,   // ② 로 잇는다
           C("또 올게!", null)),
     };
+
+    /// <summary>
+    /// 대사 글만 고쳤을 때 — NPC 를 다시 세우지 않고 씬의 대화 마디(글 · 대답)만 위 Story() · NolantStory() 로 바꾼다.
+    /// 마디 차례나 표시(set)가 달라졌으면 손대지 않고 알린다 (그때는 22번 메뉴로 다시 세울 것). 씬 저장은 하지 않는다.
+    /// </summary>
+    [MenuItem("DomeAquarium/디버그/NPC 대사 글만 다시 넣기", priority = 215)]
+    public static void RefreshDialogueLines()
+    {
+        int changed = RefreshNodes("보리 선장", Story()) + RefreshNodes("놀란", NolantStory());
+        Debug.Log($"[NPC] 대사 글 다시 넣기 — 바뀐 마디 {changed}개.");
+    }
+
+    static int RefreshNodes(string speaker, NpcDialogue.Node[] fresh)
+    {
+        int changed = 0;
+        foreach (var talk in Object.FindObjectsByType<NpcDialogue>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (talk.speaker != speaker || talk.nodes == null) continue;
+            bool same = talk.nodes.Length == fresh.Length;
+            for (int i = 0; same && i < fresh.Length; i++) same = talk.nodes[i].id == fresh[i].id && talk.nodes[i].set == fresh[i].set;
+            if (!same) { Debug.LogWarning($"[NPC] {speaker} 대화 마디 구성이 달라 글만 바꿀 수 없다 — 22번 메뉴로 다시 세울 것."); continue; }
+
+            int diff = 0;
+            for (int i = 0; i < fresh.Length; i++)
+            {
+                bool differs = talk.nodes[i].line != fresh[i].line || talk.nodes[i].choices.Length != fresh[i].choices.Length;
+                for (int c = 0; !differs && c < fresh[i].choices.Length; c++)
+                    differs = talk.nodes[i].choices[c].label != fresh[i].choices[c].label || talk.nodes[i].choices[c].next != fresh[i].choices[c].next;
+                if (!differs) continue;
+                diff++;
+                Debug.Log($"[NPC] {speaker}.{fresh[i].id} → {fresh[i].line}");
+            }
+            if (diff == 0) continue;
+            Undo.RecordObject(talk, "NPC 대사 글");
+            talk.nodes = fresh;
+            EditorUtility.SetDirty(talk);
+            EditorSceneManager.MarkSceneDirty(talk.gameObject.scene);
+            changed += diff;
+        }
+        return changed;
+    }
 
     static NpcDialogue.Node N(string id, string line, string set, params NpcDialogue.Choice[] choices) =>
         new NpcDialogue.Node { id = id, line = line, set = set ?? "", choices = choices };

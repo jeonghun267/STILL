@@ -82,6 +82,7 @@ public sealed class DiveMission : ScriptableObject
     public bool showSignal;                    // 할 일 판에 신호 세기 막대
     public bool lightOnArrival;                // 도착할 때 관찰기 조명을 켜 둔다 (어둠 — 그리고 꺼야 할 빛)
     [TextArea(1, 3)] public string hintLine;   // 조명을 켠 채 두 번 놓치면 관측소장이
+    [TextArea(1, 3)] public string toldHintLine;   // 로비에서 선장의 푸른빛 이야기를 들었으면 이쪽 (비면 hintLine)
 
     [Header("엔딩 — 이 층을 마치면 엘리베이터가 저절로 올라간다")]
     public bool finale;

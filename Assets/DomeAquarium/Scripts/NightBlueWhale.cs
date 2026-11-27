@@ -19,7 +19,8 @@ public sealed class NightBlueWhale : MonoBehaviour
     public float animSpeed = 0.3f;
 
     [TextArea(2, 4)] public string line =
-        "잠깐 — {0} 보세요. 창밖 바다에 대왕고래예요. 오늘 200m 에서 만난 바로 그 고래, 이번엔 실제 크기 그대로예요. " +
+        // 200m 생물은 무작위라 대왕고래를 못 본 사람도 있다 — "200m 에서 만난 바로 그 고래"는 뺐다
+        "잠깐 — {0} 보세요. 창밖 바다에 대왕고래예요. 숨을 쉬러 올라왔어요. " +
         "몸길이 25m — 지금까지 알려진 가장 큰 동물이에요. 테라스로 나가면 더 잘 보여요.";
 
     public bool Played { get; private set; }

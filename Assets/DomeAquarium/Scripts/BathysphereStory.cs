@@ -49,7 +49,7 @@ public sealed class BathysphereStory : NightStory
 
     [Header("말")]
     [TextArea(2, 4)] public string introLine =
-        "1934년 8월, 버뮤다 앞바다. 윌리엄 비브와 오티스 바턴은 지름 1.45m 쇠공 '바시스피어'에 들어가, 줄 하나에 매달려 내려갔어요. 창은 손바닥만 한 석영 창 하나, 그 바깥에 탐조등 하나뿐이에요.";
+        "1934년 8월, 버뮤다 앞바다. 윌리엄 비브와 오티스 바턴은 지름 1.45m 쇠공 '바시스피어'에 들어가, 줄 하나에 매달려 내려갔어요. 창은 손바닥만 한 석영 창 하나, 그 바깥에 탐조등 하나뿐이에요. 오늘 밤은 당신이 비브의 자리에 앉아요.";
     [TextArea(2, 4)] public string callLine = "바시스피어, 들려요? 여기는 수면이에요. 지금부터 내립니다. 창밖에 보이는 걸 전화로 알려 주세요.";
     [TextArea(1, 3)] public string blueLine = "물빛이 점점 짙은 파랑으로 바뀌어요. 빨간빛부터 먼저 사라져요.";
     [TextArea(1, 3)] public string ask300 = "지금 300m예요. 창밖에 무엇이 보이나요?";
@@ -61,15 +61,19 @@ public sealed class BathysphereStory : NightStory
     [TextArea(1, 3)] public string ask580 = "지금 580m예요. 창밖에 무엇이 보이나요?";
     public string[] choices580 = { "빛줄 다섯 개가 있는 물고기!", "푸른빛 생물!" };
     [TextArea(2, 4)] public string reply580 =
-        "받아 적었어요! 1934년 8월 11일, 비브도 바로 이 깊이에서 노란 빛점이 다섯 줄로 늘어선 물고기를 보고 '다섯 줄 별자리 물고기'라고 이름 붙였어요. 그 뒤로 아무도 다시 보지 못했어요.";
+        // 수면(글로리아)은 1934년 그 자리에서 말한다 — 뒷이야기(이름 · 그 뒤로 아무도 못 봄)는 관측소장이 잇는다
+        "받아 적었어요! 노란 빛점이 다섯 줄로 늘어선 물고기라니… 그런 물고기는 어떤 책에도 없어요. 처음 보는 물고기예요!";
     [TextArea(2, 4)] public string combJellyLine =
+        "비브는 이 물고기를 '다섯 줄 별자리 물고기'라고 불렀어요. 그 뒤로 90년 동안 아무도 다시 보지 못했어요. " +
         "어떤 과학자들은 비브가 본 게 물고기가 아니라 빗해파리였을 거라고 해요. 오늘 밤 1,000m 에서 만난 {name}처럼, 몸을 따라 빛줄이 흐르는 생물이요.";
-    [TextArea(2, 4)] public string darkLine = "이제 햇빛이 거의 닿지 않아요. 비브는 이 어둠을, 지금까지 본 어떤 검정보다 더 검다고 적었어요.";
+    [TextArea(2, 4)] public string darkLine = "이제 창밖은 완전히 깜깜해요. 비브는 이 어둠을, 지금까지 본 어떤 검정보다 더 검다고 적었어요.";
     [TextArea(2, 4)] public string vampireLine = "흡혈오징어예요. 이름과 달리 피는 먹지 않고, 떠다니는 바다눈을 모아 먹어요. 산소가 아주 적은 이 깊이에서 살아요.";
-    [TextArea(1, 3)] public string arriveLine = "8월 15일, 923m — 그때까지 사람이 내려간 가장 깊은 곳이에요! 창밖을 잘 보세요.";
+    [TextArea(1, 3)] public string arriveLine = "923m — 지금까지 사람이 내려온 가장 깊은 곳이에요! 창밖을 잘 보세요.";
     [TextArea(1, 3)] public string anglerLine = "머리에 등불을 단 아귀예요. 이 어둠에서는 빛이 먹이를 부르는 미끼가 돼요.";
     [TextArea(2, 4)] public string outroLine =
-        "90년 전 비브가 그랬던 것처럼, 오늘 당신도 아무도 본 적 없는 생물을 기록했어요. 바다는 아직 그런 이야기로 가득해요.";
+        // 엔딩 마지막 대사("90년 전 비브가 그랬던 것처럼…")와 같은 말이 되지 않게 — 여기서는 '본 것을 적어 두는 일'을 말한다
+        "비브가 본 다섯 줄 물고기는 지금도 다시 본 사람이 없어요. 그래도 그날 그린 그림은 남았어요. " +
+        "본 것을 그대로 적어 두는 일 — 오늘 당신이 1,000m 에서 한 일도 바로 그거예요.";
     public float waitChoice = 25f;
 
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -188,11 +192,7 @@ public sealed class BathysphereStory : NightStory
         yield return new WaitForSeconds(1.5f);
     }
 
-    static string NameLine(string line)
-    {
-        string name = DiveDirector.Instance != null ? DiveDirector.Instance.SignalName : string.Empty;
-        return line.Replace("{name}", string.IsNullOrWhiteSpace(name) ? "신호의 주인" : $"'{name}'");
-    }
+    static string NameLine(string line) => NameLine(line, SignalName);
 
     IEnumerator Descend(float from, float to, float seconds)
     {
